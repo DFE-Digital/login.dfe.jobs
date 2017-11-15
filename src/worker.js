@@ -1,22 +1,20 @@
+const config = require('./infrastructure/config');
 const logger = require('./infrastructure/logger');
 const Monitor = require('./app/monitor');
+const {getProcessorMappings} = require('./app/processors');
 
 logger.info('starting');
 
-const processorMapping = [];
-// TODO: load handlers
-processorMapping.push({
-  type: 'test',
-  processor: (jobData) => {
-    logger.info(`Test job - ${JSON.stringify(jobData)}`);
-    return Promise.resolve();
-  },
-});
+const processorMapping = getProcessorMappings(config, logger);
 
 const monitor = new Monitor(processorMapping);
 monitor.start();
-process.once('SIGTERM', function () {
+
+const stop = () => {
+  logger.info('stopping');
   monitor.stop().then(() => {
+    logger.info('stopped');
     process.exit(0);
   });
-});
+};
+process.once('SIGTERM', stop);
