@@ -28,6 +28,7 @@
     "kue": "^0.11.6",
     "lodash": "^4.17.4",
     "login.dfe.migration.admin.job": "git+https://github.com/DFE-Digital/login.dfe.migration.admin.jobs.git",
+    "login.dfe.notification.jobs": "git+https://github.com/DFE-Digital/login.dfe.notifications.jobs.git",
     "morgan": "^1.9.0",
     "winston": "^2.4.0",
     "winston-redis": "^1.0.0"
