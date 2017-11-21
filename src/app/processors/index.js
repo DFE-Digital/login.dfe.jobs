@@ -1,4 +1,5 @@
 const migrationAdmin = require('login.dfe.migration.admin.job');
+const notifications = require('login.dfe.notification.jobs');
 
 const registerExternalJobs = (externalJobs, mappings, config, logger) => {
   const processors = externalJobs.register(config, logger);
@@ -21,6 +22,7 @@ const getProcessorMappings = (config, logger) => {
   logger.info('Added test processor');
 
   registerExternalJobs(migrationAdmin, mappings, config, logger);
+  registerExternalJobs(notifications, mappings, config, logger);
 
   return mappings;
 };
