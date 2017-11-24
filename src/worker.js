@@ -1,7 +1,10 @@
 const config = require('./infrastructure/config');
 const logger = require('./infrastructure/logger');
 const Monitor = require('./app/monitor');
-const {getProcessorMappings} = require('./app/processors');
+const { getProcessorMappings } = require('./app/processors');
+
+const { jobsSchema, validateConfigAndQuitOnError } = require('login.dfe.config.schema');
+validateConfigAndQuitOnError(jobsSchema, config, logger);
 
 logger.info('starting');
 
