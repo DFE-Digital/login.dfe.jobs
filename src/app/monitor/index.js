@@ -36,7 +36,7 @@ class Monitor {
 
   async stop() {
     return new Promise((reject, resolve) => {
-      this.queue.shutdown(5000, function (err) {
+      this.queue.shutdown(5000, (err) => {
         if (err) {
           reject(err);
         } else {
