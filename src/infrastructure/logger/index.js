@@ -36,7 +36,7 @@ if (config && config.loggerSettings && config.loggerSettings.redis && config.log
 const logger = new (winston.Logger)(loggerConfig);
 
 process.on('unhandledRejection', (reason, p) => {
-  logger.error('Unhandled Rejection at:', p, 'reason:', reason);
+  logger.error(`Unhandled Rejection at: ${p} reason: ${reason}`);
 });
 
 module.exports = logger;
