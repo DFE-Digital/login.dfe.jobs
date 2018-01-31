@@ -1,7 +1,6 @@
 'use strict';
 
-/* eslint-disable no-unused-expressions */
-
+// eslint-disable-next-line no-unused-expressions
 require('winston-redis').Redis;
 const winston = require('winston');
 const config = require('./../config');
@@ -18,7 +17,12 @@ const loggerConfig = {
     debug: 5,
     silly: 6,
   },
-  colors: (config && config.loggerSettings && config.loggerSettings.colors) ? config.loggerSettings.colors : null,
+  colors: {
+    info: 'yellow',
+    ok: 'green',
+    error: 'red',
+    audit: 'magenta',
+  },
   transports: [],
 };
 

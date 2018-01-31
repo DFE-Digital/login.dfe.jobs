@@ -28,7 +28,7 @@
     "express-ejs-layouts": "^2.3.1",
     "kue": "^0.11.6",
     "lodash": "^4.17.4",
-    "login.dfe.config.schema": "git+https://github.com/DFE-Digital/login.dfe.config.schema.git#v1.7",
+    "login.dfe.config.schema": "git+https://github.com/DFE-Digital/login.dfe.config.schema.git#v3.1",
     "login.dfe.migration.admin.job": "git+https://github.com/DFE-Digital/login.dfe.migration.admin.jobs.git",
     "login.dfe.notification.jobs": "git+https://github.com/DFE-Digital/login.dfe.notifications.jobs.git#v1.0",
     "morgan": "^1.9.0",
