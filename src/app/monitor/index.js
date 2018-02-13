@@ -20,9 +20,6 @@ class Monitor {
     this.processorMapping = processorMapping;
 
     let connectionString = (config.queueStorage && config.queueStorage.connectionString) ? config.queueStorage.connectionString : 'redis://127.0.0.1:6379';
-    if (connectionString.includes("6380")) {
-      connectionString = connectionString.replace('redis://', 'rediss://');
-    }
     this.queue = kue.createQueue({
       redis: connectionString
     });
