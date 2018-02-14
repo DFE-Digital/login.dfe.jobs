@@ -23,6 +23,9 @@ class Monitor {
     this.queue = kue.createQueue({
       redis: connectionString
     });
+    this.queue.on('error', (e)=>{
+      logger.warn(`An error occured in the monitor queue - ${e.message}`, e);
+    });
   }
 
   start() {
