@@ -4,9 +4,9 @@ const Monitor = require('./app/monitor');
 const { getProcessorMappings } = require('./app/processors');
 const appInsights = require('applicationinsights');
 
-const { jobsSchema, validateConfigAndQuitOnError } = require('login.dfe.config.schema');
+const { jobsSchema, validateConfig } = require('login.dfe.config.schema');
 
-validateConfigAndQuitOnError(jobsSchema, config, logger);
+validateConfig(jobsSchema, config, logger, config.hostingEnvironment.env !== 'dev');
 if (config.hostingEnvironment.applicationInsights) {
   appInsights.setup(config.hostingEnvironment.applicationInsights).start();
 }
