@@ -29,7 +29,7 @@
     "kue": "^0.11.6",
     "lodash": "^4.17.4",
     "login.dfe.config.schema": "git+https://github.com/DFE-Digital/login.dfe.config.schema.git#v3.5",
-    "login.dfe.migration.admin.job": "git+https://github.com/DFE-Digital/login.dfe.migration.admin.jobs.git#v1.2",
+    "login.dfe.migration.admin.job": "git+https://github.com/DFE-Digital/login.dfe.migration.admin.jobs.git#v1.2.1",
     "login.dfe.notification.jobs": "git+https://github.com/DFE-Digital/login.dfe.notifications.jobs.git#v1.1",
     "morgan": "^1.9.0",
     "winston": "^2.4.0",
