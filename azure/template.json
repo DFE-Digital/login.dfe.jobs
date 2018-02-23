@@ -26,10 +26,16 @@
             "metadata": {
                 "description": "JSON string containing app config"
             }
+        },
+        "appServicePlanRG": {
+            "type": "string",
+            "metadata": {
+                "description": "Resource Group where the ASP lives"
+            }
         }
     },
     "variables": {
-        "appServicePlanId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]"
+        "appServicePlanId": "[resourceId(parameters('appServicePlanRG'), 'Microsoft.Web/serverfarms', parameters('appServicePlanName'))]"
     },
     "resources": [
         {
