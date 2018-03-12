@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/DFE-Digital/login.dfe.node-boilerplate#readme",
   "dependencies": {
+    "agentkeepalive": "^3.4.1",
     "applicationinsights": "^1.0.1",
     "body-parser": "^1.18.1",
     "ejs": "^2.5.7",
