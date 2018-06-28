@@ -5,6 +5,8 @@ const { getProcessorMappings } = require('./app/processors');
 const http = require('http');
 const https = require('https');
 const KeepAliveAgent = require('agentkeepalive');
+const express = require('express');
+const healthCheck = require('login.dfe.healthcheck');
 
 const { jobsSchema, validateConfig } = require('login.dfe.config.schema');
 
@@ -29,6 +31,16 @@ const processorMapping = getProcessorMappings(config, logger);
 
 const monitor = new Monitor(processorMapping);
 monitor.start();
+
+const port = process.env.PORT || 3000;
+const app = express();
+app.use('/healthcheck', healthCheck({ config }));
+app.get('/', (req, res) => {
+  res.send();
+});
+app.listen(port, () => {
+  logger.info(`Server listening on http://localhost:${port}`);
+});
 
 const stop = () => {
   logger.info('stopping');
