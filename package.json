@@ -30,6 +30,7 @@
     "kue": "^0.11.6",
     "lodash": "^4.17.4",
     "login.dfe.config.schema": "git+https://github.com/DFE-Digital/login.dfe.config.schema.git#v6.0",
+    "login.dfe.healthcheck": "git+https://github.com/DFE-Digital/login.dfe.healthcheck.git#v1.4",
     "login.dfe.migration.admin.job": "git+https://github.com/DFE-Digital/login.dfe.migration.admin.jobs.git#v1.2.1",
     "login.dfe.notification.jobs": "git+https://github.com/DFE-Digital/login.dfe.notifications.jobs.git#v2.5.1",
     "login.dfe.winston-appinsights": "git+https://github.com/DFE-Digital/login.dfe.winston-appinsights.git#v1.1",
