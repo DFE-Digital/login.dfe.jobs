@@ -7,10 +7,9 @@ const https = require('https');
 const KeepAliveAgent = require('agentkeepalive');
 const express = require('express');
 const healthCheck = require('login.dfe.healthcheck');
+const configSchema = require('./infrastructure/config/schema');
 
-const { jobsSchema, validateConfig } = require('login.dfe.config.schema');
-
-validateConfig(jobsSchema, config, logger, config.hostingEnvironment.env !== 'dev');
+configSchema.validate();
 
 logger.info('starting');
 
