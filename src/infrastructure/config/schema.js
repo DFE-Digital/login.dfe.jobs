@@ -112,6 +112,7 @@ const serviceNotificationsSchema = new SimpleSchema({
   access: schemas.apiClient,
   organisations: schemas.apiClient,
   applications: schemas.apiClient,
+  directories: schemas.apiClient,
 });
 
 const schema = new SimpleSchema({
