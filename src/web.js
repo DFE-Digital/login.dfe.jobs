@@ -6,9 +6,12 @@ const logger = require('./infrastructure/logger');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const configSchema = require('./infrastructure/config/schema');
 
 const app = express();
 const config = require('./infrastructure/config');
+
+configSchema.validate();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan('combined', { stream: fs.createWriteStream('./access.log', { flags: 'a' }) }));
