@@ -1,6 +1,7 @@
 const migrationAdmin = require('login.dfe.migration.admin.job');
 const notifications = require('login.dfe.notification.jobs');
 const publicApi = require('login.dfe.public-api.jobs');
+const serviceNotifications = require('login.dfe.service-notifications.jobs');
 
 const registerExternalJobs = (externalJobs, mappings, config, logger) => {
   const processors = externalJobs.register(config, logger);
@@ -25,6 +26,7 @@ const getProcessorMappings = (config, logger) => {
   registerExternalJobs(migrationAdmin, mappings, config, logger);
   registerExternalJobs(notifications, mappings, config, logger);
   registerExternalJobs(publicApi, mappings, config, logger);
+  registerExternalJobs(serviceNotifications, mappings, config, logger);
 
   return mappings;
 };
