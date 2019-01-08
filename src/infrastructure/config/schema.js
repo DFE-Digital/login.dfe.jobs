@@ -80,6 +80,7 @@ const notificationsSchema = new SimpleSchema({
   migrationUrl: patterns.url,
   profileUrl: patterns.url,
   servicesUrl: patterns.url,
+  saUrl: patterns.url,
   supportEmailAddress: String,
   email: Object,
   'email.type': {
