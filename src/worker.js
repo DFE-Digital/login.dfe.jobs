@@ -12,6 +12,7 @@ const configSchema = require('./infrastructure/config/schema');
 configSchema.validate();
 
 logger.info('starting');
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
 
 http.GlobalAgent = new KeepAliveAgent({
   maxSockets: config.hostingEnvironment.agentKeepAlive.maxSockets,
