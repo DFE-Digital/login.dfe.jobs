@@ -46,6 +46,10 @@ const stop = () => {
   monitor.stop().then(() => {
     logger.info('stopped');
     process.exit(0);
-  });
+  }).catch((e) => {
+    logger.error(`Error stopping - ${e}. Ending process anyway`);
+    process.exit(1);
+  })
 };
 process.once('SIGTERM', stop);
+process.once('SIGINT', stop);
