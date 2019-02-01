@@ -23,7 +23,7 @@ class Monitor {
     this.queue = kue.createQueue({
       redis: connectionString
     });
-    this.queue.on('error', (e)=>{
+    this.queue.on('error', (e) => {
       logger.warn(`An error occured in the monitor queue - ${e.message}`, e);
     });
   }
@@ -38,14 +38,18 @@ class Monitor {
   }
 
   async stop() {
-    return new Promise((reject, resolve) => {
-      this.queue.shutdown(5000, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
+    return new Promise((resolve, reject) => {
+      try {
+        this.queue.shutdown(5000, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      } catch (e) {
+        reject(e);
+      }
     });
   }
 }
