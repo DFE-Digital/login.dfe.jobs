@@ -26,6 +26,7 @@ class Monitor {
     this.queue.on('error', (e) => {
       logger.warn(`An error occured in the monitor queue - ${e.message}`, e);
     });
+    this.queue.watchStuckJobs(10000);
   }
 
   start() {
