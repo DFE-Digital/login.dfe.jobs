@@ -8,6 +8,7 @@ const KeepAliveAgent = require('agentkeepalive');
 const express = require('express');
 const bodyParser = require('body-parser');
 const healthCheck = require('login.dfe.healthcheck');
+const apiAuth = require('login.dfe.api.auth');
 const configSchema = require('./infrastructure/config/schema');
 
 configSchema.validate();
@@ -39,6 +40,10 @@ app.use('/healthcheck', healthCheck({ config }));
 app.get('/', (req, res) => {
   res.send();
 });
+
+if (config.hostingEnvironment.env !== 'dev') {
+  app.use('/', apiAuth(app, config));
+}
 app.get('/monitor', async (req, res) => {
   res.json({ status: monitor.currentStatus });
 });

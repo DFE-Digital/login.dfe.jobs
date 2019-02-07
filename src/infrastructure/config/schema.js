@@ -119,6 +119,7 @@ const serviceNotificationsSchema = new SimpleSchema({
 const schema = new SimpleSchema({
   loggerSettings: schemas.loggerSettings,
   hostingEnvironment: schemas.hostingEnvironment,
+  auth: schemas.apiServerAuth,
   queueStorage: queueStorageSchema,
   persistentStorage: schemas.sequelizeConnection,
   migrationAdmin: migrationAdminSchema,
