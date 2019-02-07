@@ -125,6 +125,11 @@ const schema = new SimpleSchema({
   notifications: notificationsSchema,
   publicApi: publicApiSchema,
   serviceNotifications: serviceNotificationsSchema,
+  concurrency: {
+    type: Object,
+    optional: true,
+    blackbox: true,
+  },
 });
 
 module.exports.validate = () => {
