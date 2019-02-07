@@ -19,6 +19,14 @@ class Monitor {
   constructor(processorMapping) {
     this.processorMapping = processorMapping;
 
+    this.status = 'stopped';
+  }
+
+  get currentStatus() {
+    return this.status;
+  }
+
+  start() {
     let connectionString = (config.queueStorage && config.queueStorage.connectionString) ? config.queueStorage.connectionString : 'redis://127.0.0.1:6379';
     this.queue = kue.createQueue({
       redis: connectionString
@@ -27,15 +35,14 @@ class Monitor {
       logger.warn(`An error occured in the monitor queue - ${e.message}`, e);
     });
     this.queue.watchStuckJobs(10000);
-  }
 
-  start() {
     this.processorMapping.forEach((mapping) => {
       logger.info(`start monitoring ${mapping.type}`);
       this.queue.process(mapping.type, (job, done) => {
         process(job, mapping.processor, done);
       });
     });
+    this.status = 'started';
   }
 
   async stop() {
@@ -45,6 +52,7 @@ class Monitor {
           if (err) {
             reject(err);
           } else {
+            this.status = 'stopped';
             resolve();
           }
         });

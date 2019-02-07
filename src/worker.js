@@ -6,6 +6,7 @@ const http = require('http');
 const https = require('https');
 const KeepAliveAgent = require('agentkeepalive');
 const express = require('express');
+const bodyParser = require('body-parser');
 const healthCheck = require('login.dfe.healthcheck');
 const configSchema = require('./infrastructure/config/schema');
 
@@ -33,9 +34,34 @@ monitor.start();
 
 const port = process.env.PORT || 3000;
 const app = express();
+app.use(bodyParser.json());
 app.use('/healthcheck', healthCheck({ config }));
 app.get('/', (req, res) => {
   res.send();
+});
+app.get('/monitor', async (req, res) => {
+  res.json({ status: monitor.currentStatus });
+});
+app.patch('/monitor', async (req, res) => {
+  const requestedState = req.body.state;
+  if (requestedState === 'stopped') {
+    if (monitor.currentStatus === 'stopped') {
+      return res.status(304).send();
+    }
+
+    logger.info('Stopping monitor based on api request');
+    await monitor.stop();
+    return res.send();
+  } else if(requestedState === 'started') {
+    if (monitor.currentStatus === 'started') {
+      return res.status(304).send();
+    }
+
+    logger.info('Starting monitor based on api request');
+    await monitor.start();
+    return res.send();
+  }
+  res.json({ status: monitor.currentStatus });
 });
 app.listen(port, () => {
   logger.info(`Server listening on http://localhost:${port}`);
