@@ -3,15 +3,15 @@ const notifications = require('login.dfe.notification.jobs');
 const publicApi = require('login.dfe.public-api.jobs');
 const serviceNotifications = require('login.dfe.service-notifications.jobs');
 
-const registerExternalJobs = (externalJobs, mappings, config, logger) => {
-  const processors = externalJobs.register(config, logger);
+const registerExternalJobs = async (externalJobs, mappings, config, logger) => {
+  const processors = await externalJobs.register(config, logger);
   processors.forEach((processor) => {
     mappings.push(processor);
     logger.info(`Added ${processor.type} processor`);
   });
 };
 
-const getProcessorMappings = (config, logger) => {
+const getProcessorMappings = async (config, logger) => {
   const mappings = [];
 
   mappings.push({
@@ -23,10 +23,10 @@ const getProcessorMappings = (config, logger) => {
   });
   logger.info('Added test processor');
 
-  registerExternalJobs(migrationAdmin, mappings, config, logger);
-  registerExternalJobs(notifications, mappings, config, logger);
-  registerExternalJobs(publicApi, mappings, config, logger);
-  registerExternalJobs(serviceNotifications, mappings, config, logger);
+  await registerExternalJobs(migrationAdmin, mappings, config, logger);
+  await registerExternalJobs(notifications, mappings, config, logger);
+  await registerExternalJobs(publicApi, mappings, config, logger);
+  await registerExternalJobs(serviceNotifications, mappings, config, logger);
 
   return mappings;
 };

@@ -46,22 +46,22 @@ describe('when getting processor mappings', () => {
     notifications.register = notificationsRegister;
   });
 
-  it('then it should return an array of processors', () => {
-    const actual = getProcessorMappings(config, logger);
+  it('then it should return an array of processors', async () => {
+    const actual = await getProcessorMappings(config, logger);
 
     expect(actual).not.toBeNull();
     expect(actual).toBeDefined();
     expect(actual).toBeInstanceOf(Array);
   });
 
-  it('then it should register test processor', () => {
-    const actual = getProcessorMappings(config, logger);
+  it('then it should register test processor', async () => {
+    const actual = await getProcessorMappings(config, logger);
 
     expect(actual.find((x) => x.type === 'test')).toBeDefined();
   });
 
-  it('then it should register migration admin processors', () => {
-    const actual = getProcessorMappings(config, logger);
+  it('then it should register migration admin processors', async () => {
+    const actual = await getProcessorMappings(config, logger);
 
     expect(migrationAdminRegister.mock.calls.length).toBe(1);
     expect(migrationAdminRegister.mock.calls[0][0]).toBe(config);
@@ -70,8 +70,8 @@ describe('when getting processor mappings', () => {
     expect(actual.find((x) => x.type === 'migrationAdmin2')).toBeDefined();
   });
 
-  it('then it should register notification processors', () => {
-    const actual = getProcessorMappings(config, logger);
+  it('then it should register notification processors', async () => {
+    const actual = await getProcessorMappings(config, logger);
 
     expect(notificationsRegister.mock.calls.length).toBe(1);
     expect(notificationsRegister.mock.calls[0][0]).toBe(config);
