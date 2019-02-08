@@ -28,59 +28,64 @@ https.GlobalAgent = new KeepAliveAgent({
   keepAliveTimeout: config.hostingEnvironment.agentKeepAlive.keepAliveTimeout,
 });
 
-const processorMapping = getProcessorMappings(config, logger);
+logger.info('Getting processor mappings');
+getProcessorMappings(config, logger).then((processorMapping) => {
+  const monitor = new Monitor(processorMapping);
+  monitor.start();
 
-const monitor = new Monitor(processorMapping);
-monitor.start();
+  const port = process.env.PORT || 3000;
+  const app = express();
+  app.use(bodyParser.json());
+  app.use('/healthcheck', healthCheck({ config }));
+  app.get('/', (req, res) => {
+    res.send();
+  });
 
-const port = process.env.PORT || 3000;
-const app = express();
-app.use(bodyParser.json());
-app.use('/healthcheck', healthCheck({ config }));
-app.get('/', (req, res) => {
-  res.send();
-});
-
-if (config.hostingEnvironment.env !== 'dev') {
-  app.use('/', apiAuth(app, config));
-}
-app.get('/monitor', async (req, res) => {
-  res.json({ status: monitor.currentStatus });
-});
-app.patch('/monitor', async (req, res) => {
-  const requestedState = req.body.state;
-  if (requestedState === 'stopped') {
-    if (monitor.currentStatus === 'stopped') {
-      return res.status(304).send();
-    }
-
-    logger.info('Stopping monitor based on api request');
-    await monitor.stop();
-    return res.send();
-  } else if(requestedState === 'started') {
-    if (monitor.currentStatus === 'started') {
-      return res.status(304).send();
-    }
-
-    logger.info('Starting monitor based on api request');
-    await monitor.start();
-    return res.send();
+  if (config.hostingEnvironment.env !== 'dev') {
+    app.use('/', apiAuth(app, config));
   }
-  res.json({ status: monitor.currentStatus });
-});
-app.listen(port, () => {
-  logger.info(`Server listening on http://localhost:${port}`);
+  app.get('/monitor', async (req, res) => {
+    res.json({ status: monitor.currentStatus });
+  });
+  app.patch('/monitor', async (req, res) => {
+    const requestedState = req.body.state;
+    if (requestedState === 'stopped') {
+      if (monitor.currentStatus === 'stopped') {
+        return res.status(304).send();
+      }
+
+      logger.info('Stopping monitor based on api request');
+      await monitor.stop();
+      return res.send();
+    } else if (requestedState === 'started') {
+      if (monitor.currentStatus === 'started') {
+        return res.status(304).send();
+      }
+
+      logger.info('Starting monitor based on api request');
+      await monitor.start();
+      return res.send();
+    }
+    res.json({ status: monitor.currentStatus });
+  });
+  app.listen(port, () => {
+    logger.info(`Server listening on http://localhost:${port}`);
+  });
+
+  const stop = () => {
+    logger.info('stopping');
+    monitor.stop().then(() => {
+      logger.info('stopped');
+      process.exit(0);
+    }).catch((e) => {
+      logger.error(`Error stopping - ${e}. Ending process anyway`);
+      process.exit(1);
+    })
+  };
+  process.once('SIGTERM', stop);
+  process.once('SIGINT', stop);
+}).catch((e) => {
+  console.error(`FATAL error starting: ${e.stack}`);
+  process.exit(1);
 });
 
-const stop = () => {
-  logger.info('stopping');
-  monitor.stop().then(() => {
-    logger.info('stopped');
-    process.exit(0);
-  }).catch((e) => {
-    logger.error(`Error stopping - ${e}. Ending process anyway`);
-    process.exit(1);
-  })
-};
-process.once('SIGTERM', stop);
-process.once('SIGINT', stop);
