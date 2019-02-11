@@ -105,6 +105,7 @@ const notificationsSchema = new SimpleSchema({
 const publicApiSchema = new SimpleSchema({
   directories: schemas.apiClient,
   organisations: schemas.apiClient,
+  applications: schemas.apiClient,
   auth: Object,
   'auth.jwtSecret': String,
 });
