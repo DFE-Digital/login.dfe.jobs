@@ -1,5 +1,19 @@
+const { getQueryIntValueOrDefault } = require('./../../utils');
+
 const listJobs = async (req, res) => {
-  const page = await req.monitor.getJobs(1, 100);
+  const pageNumber = getQueryIntValueOrDefault(req, 'page', 1);
+  if (!pageNumber) {
+    return res.status(400).json({
+      reasons: ['page query value is not a valid number'],
+    });
+  }
+  const pageSize = getQueryIntValueOrDefault(req, 'pageSize', 100);
+  if (!pageSize) {
+    return res.status(400).json({
+      reasons: ['pageSize query value is not a valid number'],
+    });
+  }
+  const page = await req.monitor.getJobs(pageNumber, pageSize);
 
   const content = JSON.stringify({
     jobs: page.jobs,
