@@ -1,6 +1,7 @@
-const config = require('./../../infrastructure/config');
-const logger = require('./../../infrastructure/logger');
+const config = require('./../config');
+const logger = require('./../logger');
 const kue = require('kue');
+const { promisify } = require('util');
 
 const getProcessorConcurrency = (type) => {
   if (!config.concurrency || !config.concurrency[type]) {
@@ -25,6 +26,57 @@ const process = (job, processor, done) => {
       logger.error(`Error processing job ${job.id} - ${err.message}`);
       done(err);
     });
+};
+
+const getInactiveCount = async (queue) => {
+  return new Promise((resolve, reject) => {
+    queue.inactiveCount((err, count) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(count);
+    });
+  });
+};
+const getActiveCount = async (queue) => {
+  return new Promise((resolve, reject) => {
+    queue.activeCount((err, count) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(count);
+    });
+  });
+};
+const getFailedCount = async (queue) => {
+  return new Promise((resolve, reject) => {
+    queue.failedCount((err, count) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(count);
+    });
+  });
+};
+const getCompleteCount = async (queue) => {
+  return new Promise((resolve, reject) => {
+    queue.completeCount((err, count) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(count);
+    });
+  });
+};
+const getRangeOfJobs = async (offset, count, sort) => {
+  return new Promise((resolve, reject) => {
+    kue.Job.range(offset, count, sort, (err, jobs) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(jobs);
+    });
+  });
 };
 
 class Monitor {
@@ -77,6 +129,29 @@ class Monitor {
         reject(e);
       }
     });
+  }
+
+  async getJobs(page, pageSize) {
+    const offset = (page - 1) * pageSize;
+
+    const inactive = await getInactiveCount(this.queue);
+    const active = await getActiveCount(this.queue);
+    const failed = await getFailedCount(this.queue);
+    const completed = await getCompleteCount(this.queue);
+    const jobs = await getRangeOfJobs(offset, pageSize, 'asc');
+    const numberOfJobs = inactive;
+    const numberOfPages = Math.ceil(numberOfJobs / pageSize);
+    return {
+      jobs,
+      numberOfPages,
+      numberOfJobs,
+      counts: {
+        inactive,
+        active,
+        failed,
+        completed,
+      },
+    };
   }
 }
 
