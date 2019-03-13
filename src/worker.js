@@ -1,6 +1,5 @@
 const config = require('./infrastructure/config');
 const logger = require('./infrastructure/logger');
-const Monitor = require('./app/monitor');
 const { getProcessorMappings } = require('./app/processors');
 const http = require('http');
 const https = require('https');
@@ -10,6 +9,9 @@ const bodyParser = require('body-parser');
 const healthCheck = require('login.dfe.healthcheck');
 const apiAuth = require('login.dfe.api.auth');
 const configSchema = require('./infrastructure/config/schema');
+const registerRoutes = require('./routes');
+const { getErrorHandler } = require('login.dfe.express-error-handling');
+const Monitor = require('./infrastructure/jobQueue/Monitor');
 
 configSchema.validate();
 
@@ -33,45 +35,6 @@ getProcessorMappings(config, logger).then((processorMapping) => {
   const monitor = new Monitor(processorMapping);
   monitor.start();
 
-  const port = process.env.PORT || 3000;
-  const app = express();
-  app.use(bodyParser.json());
-  app.use('/healthcheck', healthCheck({ config }));
-  app.get('/', (req, res) => {
-    res.send();
-  });
-
-  if (config.hostingEnvironment.env !== 'dev') {
-    app.use('/', apiAuth(app, config));
-  }
-  app.get('/monitor', async (req, res) => {
-    res.json({ status: monitor.currentStatus });
-  });
-  app.patch('/monitor', async (req, res) => {
-    const requestedState = req.body.state;
-    if (requestedState === 'stopped') {
-      if (monitor.currentStatus === 'stopped') {
-        return res.status(304).send();
-      }
-
-      logger.info('Stopping monitor based on api request');
-      await monitor.stop();
-      return res.send();
-    } else if (requestedState === 'started') {
-      if (monitor.currentStatus === 'started') {
-        return res.status(304).send();
-      }
-
-      logger.info('Starting monitor based on api request');
-      await monitor.start();
-      return res.send();
-    }
-    res.json({ status: monitor.currentStatus });
-  });
-  app.listen(port, () => {
-    logger.info(`Server listening on http://localhost:${port}`);
-  });
-
   const stop = () => {
     logger.info('stopping');
     monitor.stop().then(() => {
@@ -84,6 +47,32 @@ getProcessorMappings(config, logger).then((processorMapping) => {
   };
   process.once('SIGTERM', stop);
   process.once('SIGINT', stop);
+
+  const port = process.env.PORT || 3000;
+  const app = express();
+  app.use(bodyParser.json());
+  app.use('/healthcheck', healthCheck({ config }));
+  app.get('/', (req, res) => {
+    res.send();
+  });
+
+  if (config.hostingEnvironment.env !== 'dev') {
+    app.use('/', apiAuth(app, config));
+  }
+
+  app.use((req, res, next) => {
+    req.monitor = monitor;
+    next();
+  });
+  registerRoutes(app);
+
+  app.use(getErrorHandler({
+    logger,
+  }));
+
+  app.listen(port, () => {
+    logger.info(`Server listening on http://localhost:${port}`);
+  });
 }).catch((e) => {
   console.error(`FATAL error starting: ${e.stack}`);
   process.exit(1);
