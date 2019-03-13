@@ -131,6 +131,10 @@ class Monitor {
     });
   }
 
+  getJobTypes() {
+    return this.processorMapping.map(mapping => mapping.type);
+  }
+
   async getJobs(page, pageSize) {
     const offset = (page - 1) * pageSize;
 
