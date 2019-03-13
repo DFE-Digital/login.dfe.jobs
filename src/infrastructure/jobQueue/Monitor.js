@@ -1,7 +1,6 @@
 const config = require('./../config');
 const logger = require('./../logger');
 const kue = require('kue');
-const { promisify } = require('util');
 
 const getProcessorConcurrency = (type) => {
   if (!config.concurrency || !config.concurrency[type]) {
@@ -28,44 +27,64 @@ const process = (job, processor, done) => {
     });
 };
 
-const getInactiveCount = async (queue) => {
+const getInactiveCount = async (queue, type) => {
   return new Promise((resolve, reject) => {
-    queue.inactiveCount((err, count) => {
+    const callback = (err, count) => {
       if (err) {
         return reject(err);
       }
       resolve(count);
-    });
+    };
+    if (type) {
+      queue.inactiveCount(type, callback);
+    } else {
+      queue.inactiveCount(callback);
+    }
   });
 };
-const getActiveCount = async (queue) => {
+const getActiveCount = async (queue, type) => {
   return new Promise((resolve, reject) => {
-    queue.activeCount((err, count) => {
+    const callback = (err, count) => {
       if (err) {
         return reject(err);
       }
       resolve(count);
-    });
+    };
+    if (type) {
+      queue.activeCount(type, callback);
+    } else {
+      queue.activeCount(callback);
+    }
   });
 };
-const getFailedCount = async (queue) => {
+const getFailedCount = async (queue, type) => {
   return new Promise((resolve, reject) => {
-    queue.failedCount((err, count) => {
+    const callback = (err, count) => {
       if (err) {
         return reject(err);
       }
       resolve(count);
-    });
+    };
+    if (type) {
+      queue.failedCount(type, callback);
+    } else {
+      queue.failedCount(callback);
+    }
   });
 };
-const getCompleteCount = async (queue) => {
+const getCompleteCount = async (queue, type) => {
   return new Promise((resolve, reject) => {
-    queue.completeCount((err, count) => {
+    const callback = (err, count) => {
       if (err) {
         return reject(err);
       }
       resolve(count);
-    });
+    };
+    if (type) {
+      queue.completeCount(type, callback);
+    } else {
+      queue.completeCount(callback);
+    }
   });
 };
 const getRangeOfJobs = async (offset, count, sort) => {
@@ -77,6 +96,55 @@ const getRangeOfJobs = async (offset, count, sort) => {
       resolve(jobs);
     });
   });
+};
+const getRangeOfJobsOfType = async (type, offset, count, sort, numberInactive, numberActive, numberFailed, numberComplete) => {
+  const takeFromState = async (state, stateCount, skipped, required) => {
+    const stateOffset = skipped > offset ? 0 : offset - skipped;
+    if (stateOffset < stateCount) {
+      let takeFromState = stateCount - stateOffset;
+      if (takeFromState > required) {
+        takeFromState = required;
+      }
+      return new Promise((resolve, reject) => {
+        kue.Job.rangeByType(type, state, stateOffset, takeFromState, sort, (err, jobs) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve(jobs);
+        })
+      });
+    }
+    return Promise.resolve([]);
+  };
+
+  let skipped = 0;
+  const jobs = [];
+
+  if (jobs.length < count) {
+    const stateJobs = await takeFromState('inactive', numberInactive, skipped, count - jobs.length);
+    jobs.push(...stateJobs);
+    skipped += numberInactive;
+  }
+
+  if (jobs.length < count) {
+    const stateJobs = await takeFromState('active', numberActive, skipped, count - jobs.length);
+    jobs.push(...stateJobs);
+    skipped += numberActive;
+  }
+
+  if (jobs.length < count) {
+    const stateJobs = await takeFromState('failed', numberFailed, skipped, count - jobs.length);
+    jobs.push(...stateJobs);
+    skipped += numberFailed;
+  }
+
+  if (jobs.length < count) {
+    const stateJobs = await takeFromState('complete', numberComplete, skipped, count - jobs.length);
+    jobs.push(...stateJobs);
+    // skipped += numberComplete;
+  }
+
+  return jobs;
 };
 
 class Monitor {
@@ -135,15 +203,16 @@ class Monitor {
     return this.processorMapping.map(mapping => mapping.type);
   }
 
-  async getJobs(page, pageSize) {
+  async getJobs(page, pageSize, type = undefined) {
     const offset = (page - 1) * pageSize;
 
-    const inactive = await getInactiveCount(this.queue);
-    const active = await getActiveCount(this.queue);
-    const failed = await getFailedCount(this.queue);
-    const complete = await getCompleteCount(this.queue);
-    const jobs = await getRangeOfJobs(offset, pageSize, 'asc');
-    const numberOfJobs = inactive;
+    const inactive = await getInactiveCount(this.queue, type);
+    const active = await getActiveCount(this.queue, type);
+    const failed = await getFailedCount(this.queue, type);
+    const complete = await getCompleteCount(this.queue, type);
+    const jobs = type ? await getRangeOfJobsOfType(type, offset, pageSize, 'asc', inactive, active, failed, complete)
+      : await getRangeOfJobs(offset, pageSize, 'asc');
+    const numberOfJobs = inactive + active + failed + complete;
     const numberOfPages = Math.ceil(numberOfJobs / pageSize);
     return {
       jobs,
