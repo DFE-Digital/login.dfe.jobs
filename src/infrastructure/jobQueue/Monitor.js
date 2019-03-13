@@ -141,7 +141,7 @@ class Monitor {
     const inactive = await getInactiveCount(this.queue);
     const active = await getActiveCount(this.queue);
     const failed = await getFailedCount(this.queue);
-    const completed = await getCompleteCount(this.queue);
+    const complete = await getCompleteCount(this.queue);
     const jobs = await getRangeOfJobs(offset, pageSize, 'asc');
     const numberOfJobs = inactive;
     const numberOfPages = Math.ceil(numberOfJobs / pageSize);
@@ -153,7 +153,7 @@ class Monitor {
         inactive,
         active,
         failed,
-        completed,
+        complete,
       },
     };
   }

@@ -11,7 +11,7 @@ const listJobs = async (req, res) => {
     'content-length': content.length,
     'x-count-inactive': page.counts.inactive,
     'x-count-active': page.counts.active,
-    'x-count-completed': page.counts.completed,
+    'x-count-complete': page.counts.complete,
     'x-count-failed': page.counts.failed,
   });
   return res.send(req.method === 'HEAD' ? undefined : content);
