@@ -226,6 +226,20 @@ class Monitor {
       },
     };
   }
+
+  async getJob(id) {
+    return new Promise((resolve, reject) => {
+      kue.Job.get(id, (err, job) => {
+        if (err) {
+          if (err.message.match(/job "\d*" doesnt exist/)) {
+            return resolve(undefined);
+          }
+          return reject(err);
+        }
+        resolve(job);
+      });
+    });
+  }
 }
 
 module.exports = Monitor;
