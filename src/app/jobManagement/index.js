@@ -10,9 +10,9 @@ const router = express.Router();
 
 const area = () => {
   router.get('/', asyncWrapper(listJobs));
-  router.get('/:id', asyncWrapper(getJob));
   router.get('/types', asyncWrapper(listJobTypes));
   router.get('/types/:type', asyncWrapper(listJobsOfType));
+  router.get('/:id', asyncWrapper(getJob));
 
   return router;
 };
