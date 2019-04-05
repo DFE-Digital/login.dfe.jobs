@@ -36,7 +36,7 @@
     "login.dfe.migration.admin.job": "git+https://github.com/DFE-Digital/login.dfe.migration.admin.jobs.git#v1.2.1",
     "login.dfe.notification.jobs": "git+https://github.com/DFE-Digital/login.dfe.notifications.jobs.git#v4.1",
     "login.dfe.public-api.jobs": "git+https://github.com/DFE-Digital/login.dfe.public-api.jobs.git#v1.3.2",
-    "login.dfe.service-notifications.jobs": "git+https://github.com/DFE-Digital/login.dfe.service-notifications.jobs.git#v1.9.6",
+    "login.dfe.service-notifications.jobs": "git+https://github.com/DFE-Digital/login.dfe.service-notifications.jobs.git#v1.9.7",
     "login.dfe.winston-appinsights": "git+https://github.com/DFE-Digital/login.dfe.winston-appinsights.git#v1.1",
     "morgan": "^1.9.1",
     "simpl-schema": "^1.5.3",
