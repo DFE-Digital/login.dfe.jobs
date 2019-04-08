@@ -81,6 +81,7 @@ const notificationsSchema = new SimpleSchema({
   profileUrl: patterns.url,
   servicesUrl: patterns.url,
   saUrl: patterns.url,
+  helpUrl: patterns.url,
   supportEmailAddress: String,
   email: Object,
   'email.type': {
