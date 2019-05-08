@@ -34,7 +34,7 @@
     "login.dfe.express-error-handling": "git+https://github.com/DFE-Digital/login.dfe.express-error-handling.git#v1.2",
     "login.dfe.healthcheck": "git+https://github.com/DFE-Digital/login.dfe.healthcheck.git#v1.4.5",
     "login.dfe.migration.admin.job": "git+https://github.com/DFE-Digital/login.dfe.migration.admin.jobs.git#v1.2.1",
-    "login.dfe.notification.jobs": "git+https://github.com/DFE-Digital/login.dfe.notifications.jobs.git#v4.3",
+    "login.dfe.notification.jobs": "git+https://github.com/DFE-Digital/login.dfe.notifications.jobs.git#v4.3.1",
     "login.dfe.public-api.jobs": "git+https://github.com/DFE-Digital/login.dfe.public-api.jobs.git#v1.3.2",
     "login.dfe.service-notifications.jobs": "git+https://github.com/DFE-Digital/login.dfe.service-notifications.jobs.git#v1.9.10",
     "login.dfe.winston-appinsights": "git+https://github.com/DFE-Digital/login.dfe.winston-appinsights.git#v1.1",
