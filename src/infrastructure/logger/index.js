@@ -29,7 +29,9 @@ const loggerConfig = {
 loggerConfig.transports.push(new (winston.transports.Console)({ level: logLevel, colorize: true }));
 
 if (config.hostingEnvironment.applicationInsights) {
-  appInsights.setup(config.hostingEnvironment.applicationInsights).setAutoCollectConsole(false, false).start();
+  appInsights.setup(config.hostingEnvironment.applicationInsights)
+    .setAutoCollectConsole(false, false)
+    .start();
   loggerConfig.transports.push(new AppInsightsTransport({
     client: appInsights.defaultClient,
     applicationName: config.loggerSettings.applicationName || 'Jobs',
