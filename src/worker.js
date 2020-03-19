@@ -3,7 +3,6 @@ const logger = require('./infrastructure/logger');
 const { getProcessorMappings } = require('./app/processors');
 const http = require('http');
 const https = require('https');
-const KeepAliveAgent = require('agentkeepalive');
 const express = require('express');
 const bodyParser = require('body-parser');
 const healthCheck = require('login.dfe.healthcheck');
@@ -17,18 +16,7 @@ configSchema.validate();
 
 logger.info('starting');
 
-http.GlobalAgent = new KeepAliveAgent({
-  maxSockets: config.hostingEnvironment.agentKeepAlive.maxSockets,
-  maxFreeSockets: config.hostingEnvironment.agentKeepAlive.maxFreeSockets,
-  timeout: config.hostingEnvironment.agentKeepAlive.timeout,
-  keepAliveTimeout: config.hostingEnvironment.agentKeepAlive.keepAliveTimeout,
-});
-https.GlobalAgent = new KeepAliveAgent({
-  maxSockets: config.hostingEnvironment.agentKeepAlive.maxSockets,
-  maxFreeSockets: config.hostingEnvironment.agentKeepAlive.maxFreeSockets,
-  timeout: config.hostingEnvironment.agentKeepAlive.timeout,
-  keepAliveTimeout: config.hostingEnvironment.agentKeepAlive.keepAliveTimeout,
-});
+https.globalAgent.maxSockets = http.globalAgent.maxSockets = config.hostingEnvironment.agentKeepAlive.maxSockets || 50;
 
 logger.info('Getting processor mappings');
 getProcessorMappings(config, logger).then((processorMapping) => {
