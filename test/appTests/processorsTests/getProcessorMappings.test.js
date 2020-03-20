@@ -5,10 +5,16 @@ jest.mock('login.dfe.service-notifications.jobs');
 const { getProcessorMappings } = require('./../../../src/app/processors');
 
 const config = {
-  key: 'value'
+  key: 'value',
+  registration: {
+    enableAdmin: true,
+    enableNotifications: true,
+    enablePublicApi: true,
+    enableServiceNotifications: true
+  }
 };
 const logger = {
-  info: () => {},
+  info: () => { },
 };
 
 describe('when getting processor mappings', () => {

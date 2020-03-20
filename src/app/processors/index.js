@@ -1,5 +1,3 @@
-const config = require('../../infrastructure/config/index');
-
 const migrationAdmin = require('login.dfe.migration.admin.job');
 const notifications = require('login.dfe.notification.jobs');
 const publicApi = require('login.dfe.public-api.jobs');
