@@ -28,7 +28,7 @@
     "express": "^4.16.3",
     "express-ejs-layouts": "^2.4.0",
     "kue": "^0.11.6",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "login.dfe.api.auth": "git+https://github.com/DFE-Digital/login.dfe.api.auth.git#v2.0.2",
     "login.dfe.config.schema.common": "git+https://github.com/DFE-Digital/login.dfe.config.schema.common.git#v1.4",
     "login.dfe.express-error-handling": "git+https://github.com/DFE-Digital/login.dfe.express-error-handling.git#v1.2",
