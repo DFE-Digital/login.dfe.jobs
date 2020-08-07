@@ -104,6 +104,7 @@ const notificationsSchema = new SimpleSchema({
     type: Object,
     blackbox: true,
   },
+  slackWebHookUrl: String
 });
 
 const publicApiSchema = new SimpleSchema({
