@@ -67,7 +67,7 @@ pm2.connect(function (err) {
     }
 
     pm2.start({
-        script: 'src/index.js',   // Script to be run DFE Directory 
+        script: 'src/worker.js',
         name: APP_NAME,
         exec_mode: 'cluster',
         instances: 1,
