@@ -1,3 +1,11 @@
+name: $(BuildDefinitionName)_tag-$(BuildID)_at-$(Date:yyyyMMdd)$(Rev:.r)
+resources:
+  repositories:
+  - repository: self
+    type: github
+    endpoint: DfE-Digital
+    name: DFE-Digital/login.dfe.jobs
+    ref: master
 trigger:
   branches:
     include:
@@ -7,11 +15,6 @@ trigger:
     - release/*
     - develop
     - hotfix/*
-resources:
-  repositories:
-  - repository: self
-    type: git
-    ref: master
 jobs:
 - job: Phase_1
   displayName: Phase 1
@@ -54,7 +57,7 @@ jobs:
       verbose: false
       customCommand: install --production --json
   - task: CopyFiles@2
-    displayName: 'Copy Files to: $(System.DefaultWorkingDirectory)\Publish'
+    displayName: 'Copy Files to: $(System.DefaultWorkingDirectory)'
     inputs:
       SourceFolder: $(System.DefaultWorkingDirectory)
       Contents: >-
@@ -66,12 +69,12 @@ jobs:
         external_modules\**
         package.json
         web.config
-      TargetFolder: $(System.DefaultWorkingDirectory)\Publish
+      TargetFolder: $(System.DefaultWorkingDirectory)
       CleanTargetFolder: true
   - task: ArchiveFiles@1
     displayName: 'Archive files '
     inputs:
-      rootFolder: $(System.DefaultWorkingDirectory)\Publish
+      rootFolder: $(System.DefaultWorkingDirectory)
       includeRootFolder: false
   - task: CopyFiles@2
     displayName: Copy any database scripts
