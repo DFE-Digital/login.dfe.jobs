@@ -1,6 +1,8 @@
 trigger:
   branches:
     include:
+    - NSA-3397
+    exclude:
     - master
     - release/*
     - develop
@@ -57,19 +59,12 @@ jobs:
       SourceFolder: $(System.DefaultWorkingDirectory)
       Contents: >-
         app_data\**
-
         azure\**
-
         config\**
-
         node_modules\**
-
         src\**
-
         external_modules\**
-
         package.json
-
         web.config
       TargetFolder: $(System.DefaultWorkingDirectory)\Publish
       CleanTargetFolder: true
