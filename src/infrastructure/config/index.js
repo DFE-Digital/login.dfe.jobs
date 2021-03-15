@@ -3,6 +3,17 @@
 const fs = require('fs');
 const Path = require('path');
 
+jest.mock('./../../../../../src/infrastructure/config', () => {
+  return {
+    "registration": {
+      "emableAdmin": true,
+      "enableNotifications": true,
+      "enablePublicApi": true,
+      "enableServiceNotifications": true
+    }
+  };
+});
+
 const getSettingsObject = (settings) => {
   try {
     return JSON.parse(settings);
