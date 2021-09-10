@@ -75,6 +75,21 @@ const migrationAdminSchema = new SimpleSchema({
   organisations: migrationAdminApiClient,
 });
 
+const adapterSchema = new SimpleSchema({
+  type: {
+    type: String,
+    allowedValues: ['file', 'redis', 'mongo', 'azuread', 'sequelize'],
+  },
+  directories: {
+    type: schemas.sequelizeConnection,
+    optional: true,
+  },
+  organisation: {
+    type: schemas.sequelizeConnection,
+    optional: true,
+  },
+});
+
 const notificationsSchema = new SimpleSchema({
   interactionsUrl: patterns.url,
   migrationUrl: patterns.url,
@@ -138,6 +153,7 @@ const schema = new SimpleSchema({
     optional: true,
     blackbox: true,
   },
+  adapter: adapterSchema,
 });
 
 module.exports.validate = () => {
