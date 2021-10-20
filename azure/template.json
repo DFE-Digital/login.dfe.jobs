@@ -99,7 +99,7 @@
         },
         "subnetPrefix": {
             "type": "string",
-            "defaultValue": "mng-sn",
+            "defaultValue": "jobs-sn",
             "metadata": {
                 "description": "Prefix of the subnet to integrate the app service with"
             }
