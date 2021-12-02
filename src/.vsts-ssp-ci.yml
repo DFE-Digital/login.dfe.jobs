@@ -9,7 +9,7 @@ resources:
 trigger:
   branches:
     include:
-    - NSA-3397
+    - release/1.0.12
     exclude:
     - master
     - release/*
