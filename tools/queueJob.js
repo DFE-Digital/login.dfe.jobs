@@ -1,4 +1,4 @@
-const kue = require('kue');
+const kue = require('login.dfe.kue');
 const redisUrl = process.argv.redisUrl ? process.argv.redisUrl : 'redis://127.0.0.1:6379?db=1';
 
 const getJob = () => {
