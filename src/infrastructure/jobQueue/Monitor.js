@@ -1,6 +1,6 @@
 const config = require('./../config');
 const logger = require('./../logger');
-const kue = require('kue');
+const kue = require('login.dfe.kue');
 
 const getProcessorConcurrency = (type) => {
   if (!config.concurrency || !config.concurrency[type]) {

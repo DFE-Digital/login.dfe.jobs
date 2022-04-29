@@ -1,5 +1,5 @@
 jest.mock('login.dfe.migration.admin.job');
-jest.mock('login.dfe.notification.jobs');
+jest.mock('login.dfe.notification.jobs',()=>({}));
 jest.mock('login.dfe.service-notifications.jobs');
 
 const { getProcessorMappings } = require('./../../../src/app/processors');
