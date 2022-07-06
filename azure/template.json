@@ -112,6 +112,7 @@
             }
         },
         "http20Enabled": {
+            "type": "bool",
             "value": true
         }
     },
@@ -218,6 +219,9 @@
                     },
                     "vnetRouteAllEnabled": {
                         "value": "[parameters('vnetRouteAllEnabled')]"
+                    },
+                    "http20Enabled": {
+                        "value": "[parameters('http20Enabled')]"
                     }
                 }
             },
