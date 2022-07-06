@@ -113,7 +113,10 @@
         },
         "http20Enabled": {
             "type": "bool",
-            "value": true
+            "defaultValue": true,
+            "metadata": {
+                "description": "HTTP version to 2.0"
+            }
         }
     },
     "variables": {
