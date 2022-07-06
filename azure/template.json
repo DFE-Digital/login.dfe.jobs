@@ -183,7 +183,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "https://raw.githubusercontent.com/DFE-Digital/login.dfe.infrastructure/feature/DSI-5294/Shared/app-service.json]",
+                    "uri": "https://raw.githubusercontent.com/DFE-Digital/login.dfe.infrastructure/feature/DSI-5294/Shared/app-service.json",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
