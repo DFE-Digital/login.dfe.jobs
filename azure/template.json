@@ -110,6 +110,13 @@
             "metadata": {
                 "description": "Enable Route All to send all traffic through the virtual network"
             }
+        },
+        "http20Enabled": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "HTTP version to 2.0"
+            }
         }
     },
     "variables": {
@@ -176,7 +183,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('templatesBaseUri'),'Shared/app-service.json')]",
+                    "uri": "[concat(parameters('templatesBaseUri'), 'Shared/app-service.json')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -215,6 +222,9 @@
                     },
                     "vnetRouteAllEnabled": {
                         "value": "[parameters('vnetRouteAllEnabled')]"
+                    },
+                    "http20Enabled": {
+                        "value": "[parameters('http20Enabled')]"
                     }
                 }
             },
