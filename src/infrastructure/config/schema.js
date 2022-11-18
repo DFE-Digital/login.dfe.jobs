@@ -92,10 +92,8 @@ const adapterSchema = new SimpleSchema({
 
 const notificationsSchema = new SimpleSchema({
   interactionsUrl: patterns.url,
-  migrationUrl: patterns.url,
   profileUrl: patterns.url,
   servicesUrl: patterns.url,
-  saUrl: patterns.url,
   helpUrl: patterns.url,
   feConnectUrl: patterns.url,
   supportEmailAddress: String,
