@@ -2,8 +2,8 @@ const monitor = require('./app/monitor');
 const jobs = require('./app/jobManagement');
 
 const registerRoutes = (app) => {
-  app.use('/jobs/monitor', monitor());
-  app.use('/jobs', jobs());
+  app.use('/monitor', monitor());
+  app.use('/', jobs());
 };
 
 module.exports = registerRoutes;
