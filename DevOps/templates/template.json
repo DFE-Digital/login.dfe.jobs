@@ -103,7 +103,8 @@
         "enableVirtualNetworkIntegration": "[and(not(empty(parameters('virtualNetworkResourceGroupName'))), not(empty(parameters('virtualNetworkName'))))]",
         "serviceSubnetResourceId": "[if(variables('enableVirtualNetworkIntegration'), resourceId(parameters('virtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), concat(parameters('subnetPrefix'))), '')]",
         "midtierG1Id": "[resourceId(parameters('virtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets',parameters('virtualNetworkName'), 'midtier-g1-sn')]",
-        "midtierG2Id": "[resourceId(parameters('virtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets',parameters('virtualNetworkName'), 'midtier-g2-sn')]"
+        "midtierG2Id": "[resourceId(parameters('virtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets',parameters('virtualNetworkName'), 'midtier-g2-sn')]",
+        "backendG2Id": "[resourceId(parameters('virtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets',parameters('virtualNetworkName'), 'backend-g1-sn')]"
     },
     "resources": [
         {
@@ -172,6 +173,13 @@
                                 "action": "Allow",
                                 "tag": "Default",
                                 "name": "midtier-g2",
+                                "priority": 20
+                            },
+                            {
+                                "vnetSubnetResourceId": "[variables('backendG1Id')]",
+                                "action": "Allow",
+                                "tag": "Default",
+                                "name": "backend-g2",
                                 "priority": 20
                             }
                         ]
