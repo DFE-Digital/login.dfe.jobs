@@ -101,10 +101,7 @@
     },
     "variables": {
         "enableVirtualNetworkIntegration": "[and(not(empty(parameters('virtualNetworkResourceGroupName'))), not(empty(parameters('virtualNetworkName'))))]",
-        "serviceSubnetResourceId": "[if(variables('enableVirtualNetworkIntegration'), resourceId(parameters('virtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), concat(parameters('subnetPrefix'))), '')]",
-        "midtierG1Id": "[resourceId(parameters('virtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets',parameters('virtualNetworkName'), 'midtier-g1-sn')]",
-        "midtierG2Id": "[resourceId(parameters('virtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets',parameters('virtualNetworkName'), 'midtier-g2-sn')]",
-        "backendG1Id": "[resourceId(parameters('virtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets',parameters('virtualNetworkName'), 'backend-g1-sn')]"
+        "serviceSubnetResourceId": "[if(variables('enableVirtualNetworkIntegration'), resourceId(parameters('virtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), concat(parameters('subnetPrefix'))), '')]"
     },
     "resources": [
         {
@@ -158,31 +155,6 @@
                     },
                     "includeDeploymentSlot": {
                         "value": "[parameters('includeDeploymentSlot')]"
-                    },
-                    "ipSecurityRestrictions": {
-                        "value": [
-                            {
-                                "vnetSubnetResourceId": "[variables('midtierG1Id')]",
-                                "action": "Allow",
-                                "tag": "Default",
-                                "name": "midtier-g1",
-                                "priority": 10
-                            },
-                            {
-                                "vnetSubnetResourceId": "[variables('midtierG2Id')]",
-                                "action": "Allow",
-                                "tag": "Default",
-                                "name": "midtier-g2",
-                                "priority": 20
-                            },
-                            {
-                                "vnetSubnetResourceId": "[variables('backendG1Id')]",
-                                "action": "Allow",
-                                "tag": "Default",
-                                "name": "backend-g1",
-                                "priority": 20
-                            }
-                        ]
                     }
                 }
             }
