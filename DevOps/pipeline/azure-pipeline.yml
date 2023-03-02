@@ -164,7 +164,7 @@ stages:
         - ${{ if parameters.InfrDeploy }}:
           - template: pipeline/appInfrastructure.yml@devopsTemplates
             parameters:
-              ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran'), eq(parameter.key,'idm')) }}:
+              ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran'), eq(var.key,'idm')) }}:
                 serviceConnection: $(devServiceConnection)
               ${{ elseif eq(var.key, 'pr') }}:
                 serviceConnection: $(prodServiceConnection)
@@ -183,7 +183,7 @@ stages:
         - ${{ if parameters.AppDeploy }}:
           - template: pipeline/deploy.yml@devopsTemplates
             parameters: 
-              ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran'), eq(parameter.key,'idm')) }}:
+              ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran'), eq(var.key,'idm')) }}:
                 serviceConnection: $(devServiceConnection)
               ${{ elseif eq(var.key, 'pr') }}:
                 serviceConnection: $(prodServiceConnection)
