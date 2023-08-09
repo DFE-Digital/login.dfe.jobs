@@ -9,7 +9,7 @@
             "value": ""
         },
         "appServicePlanSku": {
-            "value": {}
+            "value": ""
         },
         "appServicePlanRG": {
             "value": ""
@@ -37,10 +37,6 @@
         },
         "appServiceConfigPath": {
             "value": ""
-        },
-        "http20Enabled": {
-            "value": true
         }
-
     }
 }
