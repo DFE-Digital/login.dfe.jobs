@@ -69,7 +69,7 @@ pm2.connect(function (err) {
     }
 
     pm2.start({
-        script: 'src/worker.js',
+        script: 'src/index.js',
         name: APP_NAME,
         exec_mode: 'cluster',
         instances: 1,

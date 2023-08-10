@@ -8,7 +8,7 @@
           "skipFiles": [
               "<node_internals>/**"
           ],
-          "program": "${workspaceFolder}/src/worker.js",
+          "program": "${workspaceFolder}/src/index.js",
           "outputCapture": "std",
           "env": {
               "settings": "config/login.dfe.jobs.local.json",
