@@ -182,4 +182,5 @@ stages:
                   InfrDeploy: ${{parameters.InfrDeploy}}
                   deploymentLocation: ${{location}}
                   runtimeStack: NODE|18-lts
+                  pm2ProcessFileName: process.json
   
