@@ -27,13 +27,11 @@ pr:
 
 parameters:
 - name: location
-  type: string
-  displayName: 'Select Deploy location'
-  default: bothregions
-  values:
-    - bothregions
-    - westeurope
-    - northeurope
+  type: object
+  displayName: 'Deployment locations'
+  default:
+    westeurope
+    northeurope
 - name: AppDeploy
   type: boolean
   displayName: 'App Deployment only'
@@ -71,28 +69,18 @@ variables:
   value: 'jobs'
 - name: numberOfWorkers
   value: 1
-- name: primRegion
-  ${{ if or(eq(parameters.location, 'westeurope'), eq(parameters.location, 'bothregions')) }}:
-    value: "westeurope"
-  ${{ else }}:
-    value: "null"
-- name: SecRegion
-  ${{ if or(eq(parameters.location, 'northeurope'), eq(parameters.location, 'bothregions')) }}:
-    value: "northeurope"
-  ${{ else }}:
-    value: "null"
 - name: tran
   ${{ if eq(parameters.tran, 'true') }}:
     value: true
   ${{ else }}:
     value: false
 - name: dev
-  ${{ if and(or(eq(parameters.dev, 'true'), contains(variables['Build.SourceBranch'],'feature')),eq(variables['primRegion'], 'null')) }}:
+  ${{ if and(or(eq(parameters.dev, 'true'), contains(variables['Build.SourceBranch'],'feature')), containsValue(parameters.location, 'westeurope')) }}:
     value: true
   ${{ else }}:
     value: false
 - name: test
-  ${{ if and(or(eq(parameters.test, 'true'), contains(variables['Build.SourceBranch'],'develop')),eq(variables['primRegion'], 'null')) }}:
+  ${{ if and(or(eq(parameters.dev, 'true'), contains(variables['Build.SourceBranch'],'develop')), containsValue(parameters.location, 'westeurope')) }}:
     value: true
   ${{ else }}:
     value: false
@@ -109,94 +97,90 @@ variables:
 
 
 stages:
-- ${{ each loc in variables }}:
-  - ${{ if in(loc.key, 'primRegion','SecRegion') }}:
-    - ${{ if not(eq(loc.value, 'null')) }}:
-      # Code Scans & Build the artifact for deployment
-      - stage: scanBuildApp_${{loc.value}}
-        displayName: "Scan tools & Build [${{loc.value}}]"
-        jobs:
-          # Code scaning tools
-        - ${{ if eq(parameters.InfrDeploy, 'true') }}:
-          - template:  pipeline/checkov.yml@devopsTemplates
+  # Code Scans & Build the artifact for deployment
+  - stage: scanBuildApp
+    displayName: "Scan tools & Build"
+    jobs:
+      # Code scaning tools
+    - ${{ if eq(parameters.InfrDeploy, 'true') }}:
+      - template:  pipeline/checkov.yml@devopsTemplates
 
-        - ${{ if eq(parameters.AppDeploy, 'true') }}:
+    - ${{ if eq(parameters.AppDeploy, 'true') }}:
 
-          - template:  pipeline/eslint.yml@devopsTemplates
+      - template:  pipeline/eslint.yml@devopsTemplates
 
-          # - template:  pipeline/dependencyCheck.yml@devopsTemplates
-          #   parameters:
-          #     npmInstCmd: 'install --force --json --no-package-lock'
+      # - template:  pipeline/dependencyCheck.yml@devopsTemplates
+      #   parameters:
+      #     npmInstCmd: 'install --force --json --no-package-lock'
 
-          - template: pipeline/build.yml@devopsTemplates
-            parameters:
-              applicationName: ${{variables.applicationFullName}}
-              custRegAuth: $(custRegAuth)
-              environmentNames:
-                - ${{ if eq(variables.tran, 'true') }}:
-                  - tran
-                - ${{ if eq(variables.dev, 'true') }}:
-                  - dev
-                - ${{ if eq(variables.test, 'true') }}:
-                  - test
-                - ${{ if eq(variables.pp, 'true') }}:
-                  - pp
-                - ${{ if eq(variables.pr, 'true') }}:
-                  - pr
-              pm2ProcessFileName: process.json
-              nodeVersionSpec: '18.17.0'
-              npmInstCmd: 'install --force --json --no-package-lock'
-              npmPruneFixCmd: 'install --production --json --force --no-package-lock'
-              deploymentLocation: ${{loc.value}}
+      - template: pipeline/build.yml@devopsTemplates
+        parameters:
+          applicationName: ${{variables.applicationShortName}}
+          custRegAuth: $(custRegAuth)
+          environmentNames:
+            - ${{ if eq(variables.tran, 'true') }}:
+              - tran
+            - ${{ if eq(variables.dev, 'true') }}:
+              - dev
+            - ${{ if eq(variables.test, 'true') }}:
+              - test
+            - ${{ if eq(variables.pp, 'true') }}:
+              - pp
+            - ${{ if eq(variables.pr, 'true') }}:
+              - pr
+          pm2ProcessFileName: process.json
+          nodeVersionSpec: '18.17.0'
+          npmInstCmd: 'install --force --json --no-package-lock'
+          npmPruneFixCmd: 'install --production --json --force --no-package-lock'
 
-
-      - ${{ each var in variables }}:
-        - ${{ if in(var.key, 'tran','dev','test','pp','pr') }}:
-          - ${{ if eq(var.value, 'true') }}:
-            - stage: Deployment_${{var.Key}}_${{loc.value}}
-              displayName: "Deployment [${{var.Key}}] ${{loc.value}}"
-              dependsOn: 
-              - scanBuildApp_${{loc.value}}
-              condition: in(dependencies.scanBuildApp.result, 'Succeeded', 'Skipped')
-              variables:
-              - group: dsi-${{var.key}}-kv
-              jobs:
-              - ${{ if parameters.InfrDeploy }}:
-                - template: pipeline/appInfrastructure.yml@devopsTemplates
-                  parameters:
-                    ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran')) }}:
-                      serviceConnection: $(devServiceConnection)
-                    ${{ elseif eq(var.key, 'pr') }}:
-                      serviceConnection: $(prodServiceConnection)
-                    ${{ else }}:
-                      serviceConnection: $(testServiceConnection)
-                    environmentName: ${{var.key}}
-                    applicationShortName: ${{variables.applicationShortName}}
-                    applicationFullName: ${{variables.applicationFullName}}
-                    releaseArtifactName: ${{variables.applicationFullName}}-${{var.key}}-$(Build.BuildId)-release
-                    ${{ if eq(var.key, 'pr') }}:
-                      certificateName: signin-generic
-                    ${{ else }}:
-                      certificateName: non-prod-gateway
-                    AppDeploy: ${{parameters.AppDeploy}}
-                    deploymentLocation: ${{loc.value}}
-                    runtimeStack: NODE|18-lts
+      - ${{ each location in parameters.location }}:
+        - ${{ each var in variables }}:
+          - ${{ if in(var.key, 'tran','dev','test','pp','pr') }}:
+            - ${{ if not(eq(var.value, 'null')) }}:
+              - stage: Deployment_${{var.Key}}_${{location}}
+                displayName: "Deployment [${{var.Key}}] ${{location}}"
+                dependsOn: 
+                - scanBuildApp
+                condition: in(dependencies.scanBuildApp.result, 'Succeeded', 'Skipped')
+                variables:
+                - group: dsi-${{var.key}}-kv
+                jobs:
+                - ${{ if parameters.InfrDeploy }}:
+                  - template: pipeline/appInfrastructure.yml@devopsTemplates
+                    parameters:
+                      ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran')) }}:
+                        serviceConnection: $(devServiceConnection)
+                      ${{ elseif eq(var.key, 'pr') }}:
+                        serviceConnection: $(prodServiceConnection)
+                      ${{ else }}:
+                        serviceConnection: $(testServiceConnection)
+                      environmentName: ${{var.key}}
+                      applicationShortName: ${{variables.applicationShortName}}
+                      applicationFullName: ${{variables.applicationFullName}}
+                      releaseArtifactName: ${{variables.applicationShortName}}-${{var.key}}-$(Build.BuildId)-release
+                      ${{ if eq(var.key, 'pr') }}:
+                        certificateName: signin-generic
+                      ${{ else }}:
+                        certificateName: non-prod-gateway
+                      AppDeploy: ${{parameters.AppDeploy}}
+                      deploymentLocation: ${{location}}
+                      runtimeStack: NODE|18-lts
 
 
-              - ${{ if parameters.AppDeploy }}:
-                - template: pipeline/deploy.yml@devopsTemplates
-                  parameters: 
-                    ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran')) }}:
-                      serviceConnection: $(devServiceConnection)
-                    ${{ elseif eq(var.key, 'pr') }}:
-                      serviceConnection: $(prodServiceConnection)
-                    ${{ else }}:
-                      serviceConnection: $(testServiceConnection)
-                    environmentName: ${{var.key}}
-                    applicationFullName: ${{variables.applicationFullName}}
-                    applicationShortName: ${{variables.applicationShortName}}
-                    releaseArtifactName: ${{variables.applicationFullName}}-${{var.key}}-$(Build.BuildId)-release
-                    InfrDeploy: ${{parameters.InfrDeploy}}
-                    deploymentLocation: ${{loc.value}}
-                    runtimeStack: NODE|18-lts
-    
+                - ${{ if parameters.AppDeploy }}:
+                  - template: pipeline/deploy.yml@devopsTemplates
+                    parameters: 
+                      ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran')) }}:
+                        serviceConnection: $(devServiceConnection)
+                      ${{ elseif eq(var.key, 'pr') }}:
+                        serviceConnection: $(prodServiceConnection)
+                      ${{ else }}:
+                        serviceConnection: $(testServiceConnection)
+                      environmentName: ${{var.key}}
+                      applicationFullName: ${{variables.applicationFullName}}
+                      applicationShortName: ${{variables.applicationShortName}}
+                      releaseArtifactName: ${{variables.applicationShortName}}-${{var.key}}-$(Build.BuildId)-release
+                      InfrDeploy: ${{parameters.InfrDeploy}}
+                      deploymentLocation: ${{location}}
+                      runtimeStack: NODE|18-lts
+      
