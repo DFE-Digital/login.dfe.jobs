@@ -141,7 +141,7 @@ stages:
             displayName: "Deployment [${{var.Key}}] ${{location}}"
             dependsOn: 
             - scanBuildApp
-            condition: and(in(dependencies.scanBuildApp.result, 'Succeeded', 'Skipped'), and(eq('${{location}}','northeurope'),not(or(eq(variables.dev, 'true'),eq(variables.test, 'true')))))
+            condition: and(in(dependencies.scanBuildApp.result, 'Succeeded', 'Skipped'), and(eq('${{location}}','westeurope'),not(or(eq(variables.dev, 'true'),eq(variables.test, 'true')))))
             variables:
             - group: dsi-${{var.key}}-kv
             jobs:
