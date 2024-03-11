@@ -137,7 +137,7 @@ stages:
     - ${{ each var in variables }}:
       - ${{ if in(var.key, 'tran','dev','test','pp','pr') }}:
         - ${{ if eq(var.value, 'true') }}:
-          - ${{ if and(eq('${{location}}','westeurope'),or(eq(variables.dev, 'true'),eq(variables.test, 'true'))) }}:
+          - ${{ if eq('${{location}}','westeurope') }}:
             - template: pipeline/deploymentStages.yml@devopsTemplates  # Template reference
               parameters:
                 ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran')) }}:
@@ -154,7 +154,7 @@ stages:
                 AppDeploy: ${{parameters.AppDeploy}}
                 InfrDeploy: ${{parameters.InfrDeploy}}
 
-          - ${{ else }}:
+          - ${{ elseif and(eq('${{location}}','northeurope'), in(var.key, 'tran', 'pp','pr')) }}:
             - template: pipeline/deploymentStages.yml@devopsTemplates  # Template reference
               parameters:
                 ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran')) }}:
