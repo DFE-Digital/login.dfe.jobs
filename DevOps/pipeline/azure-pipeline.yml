@@ -137,51 +137,50 @@ stages:
     - ${{ each var in variables }}:
       - ${{ if in(var.key, 'tran','dev','test','pp','pr') }}:
         - ${{ if eq(var.value, 'true') }}:
-          - ${{ if  and(eq(location,'northeurope'),not(or(eq(variables.dev, 'true'),eq(variables.test, 'true')))) }}:
-            - stage: Deployment_${{var.Key}}_${{location}}
-              displayName: "Deployment [${{var.Key}}] ${{location}}"
-              dependsOn: 
-              - scanBuildApp
-              condition: in(dependencies.scanBuildApp.result, 'Succeeded', 'Skipped')
-              variables:
-              - group: dsi-${{var.key}}-kv
-              jobs:
-              - ${{ if parameters.InfrDeploy }}:
-                - template: pipeline/appInfrastructure.yml@devopsTemplates
-                  parameters:
-                    ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran')) }}:
-                      serviceConnection: $(devServiceConnection)
-                    ${{ elseif eq(var.key, 'pr') }}:
-                      serviceConnection: $(prodServiceConnection)
-                    ${{ else }}:
-                      serviceConnection: $(testServiceConnection)
-                    environmentName: ${{var.key}}
-                    applicationShortName: ${{variables.applicationShortName}}
-                    applicationFullName: ${{variables.applicationFullName}}
-                    ${{ if eq(var.key, 'pr') }}:
-                      certificateName: signin-generic
-                    ${{ else }}:
-                      certificateName: non-prod-gateway
-                    AppDeploy: ${{parameters.AppDeploy}}
-                    deploymentLocation: ${{location}}
-                    runtimeStack: NODE|18-lts
+          - stage: Deployment_${{var.Key}}_${{location}}
+            displayName: "Deployment [${{var.Key}}] ${{location}}"
+            dependsOn: 
+            - scanBuildApp
+            condition: and(in(dependencies.scanBuildApp.result, 'Succeeded', 'Skipped'), and(eq(${{location}},'northeurope'),not(or(eq(variables.dev, 'true'),eq(variables.test, 'true')))))
+            variables:
+            - group: dsi-${{var.key}}-kv
+            jobs:
+            - ${{ if parameters.InfrDeploy }}:
+              - template: pipeline/appInfrastructure.yml@devopsTemplates
+                parameters:
+                  ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran')) }}:
+                    serviceConnection: $(devServiceConnection)
+                  ${{ elseif eq(var.key, 'pr') }}:
+                    serviceConnection: $(prodServiceConnection)
+                  ${{ else }}:
+                    serviceConnection: $(testServiceConnection)
+                  environmentName: ${{var.key}}
+                  applicationShortName: ${{variables.applicationShortName}}
+                  applicationFullName: ${{variables.applicationFullName}}
+                  ${{ if eq(var.key, 'pr') }}:
+                    certificateName: signin-generic
+                  ${{ else }}:
+                    certificateName: non-prod-gateway
+                  AppDeploy: ${{parameters.AppDeploy}}
+                  deploymentLocation: ${{location}}
+                  runtimeStack: NODE|18-lts
 
 
-              - ${{ if parameters.AppDeploy }}:
-                - template: pipeline/deploy.yml@devopsTemplates
-                  parameters: 
-                    ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran')) }}:
-                      serviceConnection: $(devServiceConnection)
-                    ${{ elseif eq(var.key, 'pr') }}:
-                      serviceConnection: $(prodServiceConnection)
-                    ${{ else }}:
-                      serviceConnection: $(testServiceConnection)
-                    environmentName: ${{var.key}}
-                    applicationFullName: ${{variables.applicationFullName}}
-                    applicationShortName: ${{variables.applicationShortName}}
-                    releaseArtifactName: ${{variables.applicationShortName}}-${{var.key}}-$(Build.BuildId)-release
-                    InfrDeploy: ${{parameters.InfrDeploy}}
-                    deploymentLocation: ${{location}}
-                    runtimeStack: NODE|18-lts
-                    pm2ProcessFileName: process.json
+            - ${{ if parameters.AppDeploy }}:
+              - template: pipeline/deploy.yml@devopsTemplates
+                parameters: 
+                  ${{ if or(eq(var.key, 'dev'), eq(var.key, 'tran')) }}:
+                    serviceConnection: $(devServiceConnection)
+                  ${{ elseif eq(var.key, 'pr') }}:
+                    serviceConnection: $(prodServiceConnection)
+                  ${{ else }}:
+                    serviceConnection: $(testServiceConnection)
+                  environmentName: ${{var.key}}
+                  applicationFullName: ${{variables.applicationFullName}}
+                  applicationShortName: ${{variables.applicationShortName}}
+                  releaseArtifactName: ${{variables.applicationShortName}}-${{var.key}}-$(Build.BuildId)-release
+                  InfrDeploy: ${{parameters.InfrDeploy}}
+                  deploymentLocation: ${{location}}
+                  runtimeStack: NODE|18-lts
+                  pm2ProcessFileName: process.json
     
