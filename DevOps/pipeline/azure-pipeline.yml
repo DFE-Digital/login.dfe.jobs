@@ -113,7 +113,7 @@ stages:
   - ${{ if in(loc.key, 'primRegion','SecRegion') }}:
     - ${{ if not(eq(loc.value, 'null')) }}:
       # Code Scans & Build the artifact for deployment
-      - stage: scanBuildApp
+      - stage: scanBuildApp_${{loc.value}}
         displayName: "Scan tools & Build [${{loc.value}}]"
         jobs:
           # Code scaning tools
@@ -153,10 +153,10 @@ stages:
       - ${{ each var in variables }}:
         - ${{ if in(var.key, 'tran','dev','test','pp','pr') }}:
           - ${{ if eq(var.value, 'true') }}:
-            - stage: Deployment_${{var.Key}}
+            - stage: Deployment_${{var.Key}}_${{loc.value}}
               displayName: "Deployment [${{var.Key}}] ${{loc.value}}"
               dependsOn: 
-              - scanBuildApp
+              - scanBuildApp_${{loc.value}}
               condition: in(dependencies.scanBuildApp.result, 'Succeeded', 'Skipped')
               variables:
               - group: dsi-${{var.key}}-kv
