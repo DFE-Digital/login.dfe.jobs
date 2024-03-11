@@ -75,12 +75,12 @@ variables:
   ${{ else }}:
     value: false
 - name: dev
-  ${{ if and(or(eq(parameters.dev, 'true'), contains(variables['Build.SourceBranch'],'feature')), containsValue(parameters.location, 'westeurope')) }}:
+  ${{ if or(eq(parameters.dev, 'true'), contains(variables['Build.SourceBranch'],'feature')) }}:
     value: true
   ${{ else }}:
     value: false
 - name: test
-  ${{ if and(or(eq(parameters.dev, 'true'), contains(variables['Build.SourceBranch'],'develop')), containsValue(parameters.location, 'westeurope')) }}:
+  ${{ if or(eq(parameters.dev, 'true'), contains(variables['Build.SourceBranch'],'develop')) }}:
     value: true
   ${{ else }}:
     value: false
@@ -136,7 +136,7 @@ stages:
   - ${{ each location in parameters.location }}:
     - ${{ each var in variables }}:
       - ${{ if in(var.key, 'tran','dev','test','pp','pr') }}:
-        - ${{ if eq(var.value, 'true') }}:
+        - ${{ if and(and(eq(var.value, 'true'),eq(location,'northeurope')),not(or(eq(variables.dev, 'true'),eq(variables.test, 'true')))) }}:
           - stage: Deployment_${{var.Key}}_${{location}}
             displayName: "Deployment [${{var.Key}}] ${{location}}"
             dependsOn: 
