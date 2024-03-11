@@ -30,8 +30,8 @@ parameters:
   type: object
   displayName: 'Deployment locations'
   default:
-    westeurope
-    northeurope
+    - westeurope
+    - northeurope
 - name: AppDeploy
   type: boolean
   displayName: 'App Deployment only'
