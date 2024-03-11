@@ -157,7 +157,6 @@ stages:
                   environmentName: ${{var.key}}
                   applicationShortName: ${{variables.applicationShortName}}
                   applicationFullName: ${{variables.applicationFullName}}
-                  releaseArtifactName: ${{variables.applicationShortName}}-${{var.key}}-$(Build.BuildId)-release
                   ${{ if eq(var.key, 'pr') }}:
                     certificateName: signin-generic
                   ${{ else }}:
