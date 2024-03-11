@@ -136,7 +136,7 @@ stages:
   - ${{ each location in parameters.location }}:
     - ${{ each var in variables }}:
       - ${{ if in(var.key, 'tran','dev','test','pp','pr') }}:
-        - ${{ if not(eq(var.value, 'null')) }}:
+        - ${{ if not(eq(var.value, 'true')) }}:
           - stage: Deployment_${{var.Key}}_${{location}}
             displayName: "Deployment [${{var.Key}}] ${{location}}"
             dependsOn: 
