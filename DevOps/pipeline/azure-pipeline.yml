@@ -111,7 +111,7 @@ variables:
 stages:
 - ${{ each loc in variables }}:
   - ${{ if in(loc.key, 'primRegion','SecRegion') }}:
-    - ${{ if not(eq(loc.value, 'null') }}:
+    - ${{ if not(eq(loc.value, 'null')) }}:
       # Code Scans & Build the artifact for deployment
       - stage: scanBuildApp
         displayName: "Scan tools & Build [${{loc.value}}]"
