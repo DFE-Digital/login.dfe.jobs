@@ -28,7 +28,7 @@ pr:
 parameters:
 - name: location
   type: object
-  displayName: 'Deployment locations'
+  displayName: 'Deployment locations (- westeurope & - northeurope)'
   default:
     - westeurope
     - northeurope
