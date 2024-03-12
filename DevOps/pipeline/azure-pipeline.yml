@@ -177,7 +177,7 @@ stages:
                     applicationFullName: ${{variables.applicationFullName}}
                     AppDeploy: ${{parameters.AppDeploy}}
                     deploymentLocation: ${{location}}
-                    runtimeStack: ${{parameters.runtimeStack}}
+                    runtimeStack: NODE|18-lts
 
 
               - ${{ if parameters.AppDeploy }}:
