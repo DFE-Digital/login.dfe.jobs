@@ -137,7 +137,7 @@ stages:
     - ${{ each var in variables }}:
       - ${{ if in(var.key, 'tran','dev','test','pp','pr') }}:
         - ${{ if eq(var.value, 'true') }}:
-          - ${{ if or(and(in(parameter.key, 'tran','pp','pr'),eq(location, 'northeurope')),and(in(parameter.key, 'tran','dev','test','pp','pr'),eq(location, 'westeurope'))) }}:
+          - ${{ if or(and(in(var.key, 'tran','pp','pr'),eq(location, 'northeurope')),and(in(var.key, 'tran','dev','test','pp','pr'),eq(location, 'westeurope'))) }}:
             - stage: Deployment_${{var.key}}_${{location}}
               displayName: "Deployment [${{var.key}}] ${{location}}"
               ${{ if eq(location,'westeurope') }}:
