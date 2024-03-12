@@ -116,7 +116,7 @@ stages:
 
     - template: pipeline/build.yml@devopsTemplates
       parameters:
-        applicationName: ${{variables.applicationShortName}}
+        applicationName: ${{variables.applicationFullName}}
         custRegAuth: $(custRegAuth)
         environmentNames:
           - ${{ if eq(variables.tran, 'true') }}:
