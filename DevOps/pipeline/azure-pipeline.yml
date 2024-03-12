@@ -170,5 +170,5 @@ stages:
                 runtimeStack: NODE|18-lts
                 AppDeploy: ${{parameters.AppDeploy}}
                 InfrDeploy: ${{parameters.InfrDeploy}}
-                westDeployment: eq(${{length(parameters.location)}}, 2)
+                westDeployment: ${{eq(length(parameters.location), 2)}}
     
