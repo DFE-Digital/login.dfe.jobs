@@ -11,7 +11,7 @@ resources:
       type: github
       endpoint: DfE-Digital
       name: DFE-Digital/login.dfe.dsi-config
-      ref: tech/remove-obsolete-config-from-jobs
+      ref: main
 
 trigger:
   branches:
