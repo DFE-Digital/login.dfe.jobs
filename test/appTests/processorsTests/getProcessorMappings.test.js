@@ -1,4 +1,3 @@
-jest.mock('login.dfe.migration.admin.job');
 jest.mock('login.dfe.notification.jobs',()=>({}));
 jest.mock('login.dfe.service-notifications.jobs');
 
@@ -12,26 +11,10 @@ const logger = {
 };
 
 describe('when getting processor mappings', () => {
-  let migrationAdminRegister;
   let notificationsRegister;
   let serviceNotificationsRegister;
 
   beforeEach(() => {
-    migrationAdminRegister = jest.fn().mockReturnValue([
-      {
-        type: 'migrationAdmin1',
-        processor: () => {
-        }
-      },
-      {
-        type: 'migrationAdmin2',
-        processor: () => {
-        }
-      },
-    ]);
-    const migrationAdmin = require('login.dfe.migration.admin.job');
-    migrationAdmin.register = migrationAdminRegister;
-
     notificationsRegister = jest.fn().mockReturnValue([
       {
         type: 'notifications1',
@@ -75,16 +58,6 @@ describe('when getting processor mappings', () => {
     const actual = await getProcessorMappings(config, logger);
 
     expect(actual.find((x) => x.type === 'test')).toBeDefined();
-  });
-
-  it('then it should register migration admin processors', async () => {
-    const actual = await getProcessorMappings(config, logger);
-
-    expect(migrationAdminRegister.mock.calls.length).toBe(1);
-    expect(migrationAdminRegister.mock.calls[0][0]).toBe(config);
-    expect(migrationAdminRegister.mock.calls[0][1]).toBe(logger);
-    expect(actual.find((x) => x.type === 'migrationAdmin1')).toBeDefined();
-    expect(actual.find((x) => x.type === 'migrationAdmin2')).toBeDefined();
   });
 
   it('then it should register notification processors', async () => {

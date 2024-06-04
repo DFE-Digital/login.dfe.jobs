@@ -1,4 +1,3 @@
-const migrationAdmin = require('login.dfe.migration.admin.job');
 const notifications = require('login.dfe.notification.jobs');
 const publicApi = require('login.dfe.public-api.jobs');
 const serviceNotifications = require('login.dfe.service-notifications.jobs');
@@ -23,7 +22,6 @@ const getProcessorMappings = async (config, logger) => {
   });
   logger.info('Added test processor');
 
-  await registerExternalJobs(migrationAdmin, mappings, config, logger);
   await registerExternalJobs(notifications, mappings, config, logger);
   await registerExternalJobs(publicApi, mappings, config, logger);
   await registerExternalJobs(serviceNotifications, mappings, config, logger);
