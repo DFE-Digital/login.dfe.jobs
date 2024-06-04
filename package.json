@@ -35,7 +35,7 @@
     "login.dfe.kue": "github:DFE-Digital/login.dfe.kue#v0.12.0",
     "login.dfe.notification.jobs": "github:DFE-Digital/login.dfe.notifications.jobs#POC/DSI-6905_Entra_OTP_confirmation_email",
     "login.dfe.public-api.jobs": "github:DFE-Digital/login.dfe.public-api.jobs#v2.1.1",
-    "login.dfe.service-notifications.jobs": "github:DFE-Digital/login.dfe.service-notifications.jobs#tech/update-dependencies",
+    "login.dfe.service-notifications.jobs": "github:DFE-Digital/login.dfe.service-notifications.jobs#develop",
     "login.dfe.winston-appinsights": "github:DFE-Digital/login.dfe.winston-appinsights#v5.0.1",
     "morgan": "^1.10.0",
     "node-cron": "^3.0.0",
