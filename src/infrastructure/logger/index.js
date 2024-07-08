@@ -1,9 +1,13 @@
-'use strict';
+const {
+  createLogger, format, transports, addColors,
+} = require('winston');
 
-const { createLogger, format, transports } = require('winston');
-const config = require('./../config');
+const {
+  combine, prettyPrint, errors, simple, colorize,
+} = format;
 const appInsights = require('applicationinsights');
 const AppInsightsTransport = require('login.dfe.winston-appinsights');
+const config = require('../config');
 
 const logLevel = (config && config.loggerSettings && config.loggerSettings.logLevel) ? config.loggerSettings.logLevel : 'info';
 
@@ -18,33 +22,38 @@ const levelsAndColor = {
     silly: 6,
   },
   colors: {
-    info: 'yellow',
-    ok: 'green',
-    error: 'red',
     audit: 'magenta',
+    error: 'red',
+    warn: 'yellow',
+    info: 'blue',
+    verbose: 'cyan',
+    debug: 'green',
+    silly: 'cyan',
   },
 };
 
+addColors(levelsAndColor.colors);
+// Formatter to hide audit records from other loggers.
+const hideAudit = format((info) => ((info.level.toLowerCase() === 'audit') ? false : info));
+
 const loggerConfig = {
   levels: levelsAndColor.levels,
-  colorize: true,
-  format: format.combine(
-    format.simple(),
-  ),
   transports: [],
 };
 
 loggerConfig.transports.push(new transports.Console({
-  level: logLevel,
-  colorize: true,
-  format: format.combine(
-    format.simple(),
+  format: combine(
+    hideAudit(),
+    colorize({ all: true }),
+    simple(),
   ),
+  level: logLevel,
 }));
 
 if (config.hostingEnvironment.applicationInsights) {
   appInsights.setup(config.hostingEnvironment.applicationInsights).setAutoCollectConsole(false, false).start();
   loggerConfig.transports.push(new AppInsightsTransport({
+    format: combine(hideAudit(), format.json()),
     client: appInsights.defaultClient,
     applicationName: config.loggerSettings.applicationName || 'Jobs',
     type: 'event',
@@ -52,7 +61,15 @@ if (config.hostingEnvironment.applicationInsights) {
   }));
 }
 
-const logger = createLogger(loggerConfig);
+const logger = createLogger({
+  format: combine(
+    simple(),
+    errors({ stack: true }),
+    prettyPrint(),
+  ),
+  transports: loggerConfig.transports,
+  levels: loggerConfig.levels,
+});
 
 process.on('unhandledRejection', (reason, p) => {
   logger.error('Unhandled Rejection at:', p, 'reason: ', reason);
