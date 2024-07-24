@@ -11,7 +11,7 @@
           "program": "${workspaceFolder}/src/index.js",
           "outputCapture": "std",
           "env": {
-              "settings": "config/login.dfe.jobs.local.json",
+              "settings": "config/local-config.json",
               "NODE_TLS_REJECT_UNAUTHORIZED": "0"
           }     
       }
