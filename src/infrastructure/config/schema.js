@@ -69,6 +69,14 @@ const serviceNotificationsSchema = new SimpleSchema({
   directories: schemas.apiClient,
 });
 
+const entraSchema = new SimpleSchema({
+  enableEntraSignIn: {
+    type: Boolean,
+    optional: true,
+    defaultValue: false,
+  },
+});
+
 const schema = new SimpleSchema({
   loggerSettings: schemas.loggerSettings,
   hostingEnvironment: schemas.hostingEnvironment,
@@ -84,6 +92,7 @@ const schema = new SimpleSchema({
     blackbox: true,
   },
   adapter: adapterSchema,
+  entra: entraSchema,
 });
 
 module.exports.validate = () => {
