@@ -41,15 +41,6 @@ const notificationsSchema = new SimpleSchema({
     type: Object,
     blackbox: true,
   },
-  sms: Object,
-  'sms.type': {
-    type: String,
-    allowedValues: ['disk', 'GovNotify']
-  },
-  'sms.params': {
-    type: Object,
-    blackbox: true,
-  },
   slackWebHookUrl: String,
   envName: String
 });
