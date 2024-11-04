@@ -1,5 +1,5 @@
 jest.mock('../../../src/handlers/notifications',()=>({}));
-jest.mock('login.dfe.service-notifications.jobs');
+jest.mock('../../../src/handlers/serviceNotifications');
 
 const { getProcessorMappings } = require('../../../src/handlers');
 
@@ -42,7 +42,7 @@ describe('when getting processor mappings', () => {
         }
       },
     ]);
-    const serviceNotifications = require('login.dfe.service-notifications.jobs');
+    const serviceNotifications = require('../../../src/handlers/serviceNotifications');
     serviceNotifications.register = serviceNotificationsRegister;
   });
 

@@ -38,16 +38,19 @@
     "login.dfe.healthcheck": "github:DFE-Digital/login.dfe.healthcheck#v3.0.1",
     "login.dfe.jwt-strategies": "github:DFE-Digital/login.dfe.jwt-strategies#v4.1.0",
     "login.dfe.kue": "github:DFE-Digital/login.dfe.kue#v0.12.0",
-    "login.dfe.service-notifications.jobs": "github:DFE-Digital/login.dfe.service-notifications.jobs#v2.4.1",
     "login.dfe.winston-appinsights": "github:DFE-Digital/login.dfe.winston-appinsights#v5.0.1",
     "marked": "^12.0.2",
     "morgan": "^1.10.0",
     "node-cron": "^3.0.0",
     "nodemon": "^3.0.1",
     "pm2": "^5.2.0",
+    "sequelize": "^6.18.0",
     "simpl-schema": "^3.4.1",
+    "tedious": "^18.2.1",
     "uuid": "^8.3.2",
-    "winston": "^3.7.2"
+    "winston": "^3.7.2",
+    "xml-escape": "^1.1.0",
+    "xml2js": "^0.5.0"
   },
   "devDependencies": {
     "eslint": "^8.13.0",

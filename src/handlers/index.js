@@ -1,6 +1,6 @@
 const notifications = require('./notifications');
 const publicApi = require('./publicApi');
-const serviceNotifications = require('login.dfe.service-notifications.jobs');
+const serviceNotifications = require('./serviceNotifications');
 
 const registerExternalJobs = async (externalJobs, mappings, config, logger) => {
   const processors = await externalJobs.register(config, logger);

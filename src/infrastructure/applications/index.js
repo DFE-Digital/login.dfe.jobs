@@ -5,6 +5,10 @@ class ApplicationsClient extends ApiClient {
     super(opts, correlationId);
   }
 
+  async listApplications(page, pageSize) {
+    return this._callApi(`/services?page=${page}&pageSize=${pageSize}`);
+  }
+
   async getApplication(idOrClientId) {
     return this._callApi(`/services/${idOrClientId}`);
   }
