@@ -1,4 +1,4 @@
-const notifications = require('login.dfe.notification.jobs');
+const notifications = require('./notifications');
 const publicApi = require('login.dfe.public-api.jobs');
 const serviceNotifications = require('login.dfe.service-notifications.jobs');
 

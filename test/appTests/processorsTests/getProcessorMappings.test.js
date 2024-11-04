@@ -1,7 +1,7 @@
-jest.mock('login.dfe.notification.jobs',()=>({}));
+jest.mock('../../../src/handlers/notifications',()=>({}));
 jest.mock('login.dfe.service-notifications.jobs');
 
-const { getProcessorMappings } = require('./../../../src/app/processors');
+const { getProcessorMappings } = require('../../../src/handlers');
 
 const config = {
   key: 'value'
@@ -27,7 +27,7 @@ describe('when getting processor mappings', () => {
         }
       },
     ]);
-    const notifications = require('login.dfe.notification.jobs');
+    const notifications = require('../../../src/handlers/notifications');
     notifications.register = notificationsRegister;
 
     serviceNotificationsRegister = jest.fn().mockReturnValue([

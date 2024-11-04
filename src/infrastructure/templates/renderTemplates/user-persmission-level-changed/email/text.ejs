@@ -1,0 +1,40 @@
+Dear <%=firstName%> <%=lastName%>
+
+<%
+    const permissionLowercase = permission.name.toLowerCase();
+    const oldPermissionLowercase = permission.oldName.toLowerCase();
+%>
+The permission level of your DfE Sign-in account for <%=orgName%> has changed from <%=oldPermissionLowercase%> to <%=permissionLowercase%>.
+
+This change has happened because an approver in your organisation has
+<% if (permission.id === 10000) { %>
+made you an <%=permissionLowercase%>.
+<% } else { %>
+reduced your permission level. If you have received this email and were not expecting it, contact the DfE Sign-in team. <%=contactUsUrl%>
+<% } %>
+
+<% if (permission.id === 10000) { %>
+As an <%=permissionLowercase%> you are responsible for several tasks at your organisation, including:
+
+- managing the permission levels of other users
+- giving access to services and forms
+- maintaining security over who can and cannot access certain information
+
+Find out what you can do as an <%=permissionLowercase%> <%=helpApproverUrl%>
+<% } %>
+
+Your account details
+
+Organisation: <%=orgName%>
+Permission level: <%=permission.name%>
+
+Go to your DfE Sign-in account <%=signInUrl%>
+
+Kind regards,
+
+The Department for Education Sign-in Team
+
+Need support? Visit DfE Sign-in Help <%=helpUrl%>
+
+This is an automatically generated email, do not reply.
+Received this email in error? No action is necessary.

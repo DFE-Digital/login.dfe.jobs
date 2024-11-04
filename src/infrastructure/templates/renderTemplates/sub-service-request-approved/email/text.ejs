@@ -1,0 +1,41 @@
+Dear <%=firstName%> <%=lastName%>,
+
+<% if (isMultipleSubServicesReq) { %>
+  Your request to change sub-services access has been approved.
+<% } else { %>
+  Your request to change sub-service access has been approved.
+<% } %>
+
+Account details
+
+Organisation: <%=orgName%>
+<% if (permission.id !== undefined) { %>
+Permission level: <%=permission.name%>
+<% } %>
+Service: <%=serviceName%>
+<% if (isMultipleSubServicesReq) { %>
+  Sub-services
+<% } else { %>
+  Sub-service
+<% } %>: <% if (requestedSubServices.length > 0) { %>
+                <% for (let x = 0; x < requestedSubServices.length; x++) { %>
+                    <%= requestedSubServices[x] %>
+                <% } %>
+            <% } else { %>
+              No roles selected
+            <% } %>
+Status: Approved
+<% if (isMultipleSubServicesReq) { %>
+To access this sub-services, sign into your DfE Sign-in account at <%=signInUrl%>. Or, you can select the button below to sign into your account.
+<% } else { %>
+To access this sub-service, sign into your DfE Sign-in account at <%=signInUrl%>. Or, you can select the button below to sign into your account.
+<% } %>
+Go to DfE Sign-in <%=signInUrl%>
+
+
+Kind regards
+DfE Sign-in
+
+
+This is an automatically generated email, do not reply
+Received this email in error? No action is necessary

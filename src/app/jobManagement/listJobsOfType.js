@@ -1,4 +1,4 @@
-const { getQueryIntValueOrDefault } = require('./../../utils');
+const { getQueryIntValueOrDefault } = require('../../utils');
 
 const listJobsOfType = async (req, res) => {
   const pageNumber = getQueryIntValueOrDefault(req, 'page', 1);

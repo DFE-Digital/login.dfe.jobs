@@ -1,0 +1,44 @@
+Dear <%=approverName%>,
+
+
+<%=senderName%> at <%=orgName%> has requested changes to their sub-service access.
+
+You need to review this request and either approve or reject this request within 5 days.
+
+Request details
+
+Name: <%=senderName%>
+Organisation: <%=orgName%>
+Service: <%=serviceName%>
+Sub-service requests: <% if (requestedSubServices.length > 0) { %>
+                <% for (let x = 0; x < requestedSubServices.length; x++) { %>
+                    <%= requestedSubServices[x] %> <br>
+                <% } %>
+            <% } else { %>
+              No roles selected.
+            <% } %>
+To approve this request:
+1. Click the 'approve' button below.
+2. Either edit the user's selections or approve their request.
+3. The user will receive a 'Sub-services access changed' email.
+<%=approveUrl%>
+
+To reject this request:
+1. Click the 'reject' button below.
+2. Give a reason for rejection and reject the request.
+3. The user will receive a 'Sub-service requests rejected' email.
+<%=rejectUrl%>
+
+Why am I receiving this email?
+
+You are receiving this email, and others like it, because you are registered as an approver for <%=orgName%>.
+
+<%=helpUrl%>
+
+
+Thank you,
+
+DfE Sign-in
+
+This is an automatically generated email, do not reply.
+Received this email in error? No action is necessary

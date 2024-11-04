@@ -1,5 +1,5 @@
 const express = require('express');
-const logger = require('./../../infrastructure/logger');
+const logger = require('../../infrastructure/logger');
 const { asyncWrapper } = require('login.dfe.express-error-handling');
 
 const router = express.Router();

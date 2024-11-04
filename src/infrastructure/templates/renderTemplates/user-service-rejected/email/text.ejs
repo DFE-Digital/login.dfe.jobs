@@ -1,0 +1,27 @@
+Dear <%=firstName%> <%=lastName%>
+
+Your service request has been rejected.
+
+Request details
+
+Organisation: <%=orgName%>
+Service: <%=serviceName%>
+Sub-service: <% if (requestedSubServices.length > 0) { %>
+                <% for (let x = 0; x < requestedSubServices.length; x++) { %>
+                    <%= requestedSubServices[x] %> <br>
+                <% } %>
+            <% } else { %>
+              No roles selected
+            <% } %>
+Status: REJECTED
+
+Rejection reason
+<%=reason%>
+
+If you believe this request was rejected in error, either re-raise your request by signing in below, or contact your approver.
+
+Go to your DfE Sign-in account <%=signInUrl%>
+
+Thank you,
+
+DfE Sign-in
