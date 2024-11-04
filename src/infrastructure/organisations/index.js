@@ -16,6 +16,14 @@ class OrganisatonsClient extends ApiClient {
   async getOrganisationById(organisationId) {
     return this._callApi(`/organisations/v2/${organisationId}`);
   }
+
+  async addOrganisationToInvitation(invitationId, organisationId, roleId) {
+    return this._callApi(`/organisations/${organisationId}/invitations/${invitationId}`, 'PUT', { roleId });
+  }
+
+  async addOrganisationToUser(userId, organisationId, roleId) {
+    return this._callApi(`/organisations/${organisationId}/users/${userId}`, 'PUT', { roleId });
+  }
 }
 
 module.exports = OrganisatonsClient;

@@ -14,6 +14,24 @@ class DirectoriesClient extends ApiClient {
   async getById(id) {
     return this._callApi(`/users/${id}`)
   }
+
+  async getUserByEmail(email) {
+    return this._callApi(`/users/${email}`);
+  }
+
+  async getInvitationByEmail(email) {
+    return this._callApi(`/invitations/by-email/${email}`);
+  }
+
+  async createInvitation(invitation) {
+    return this._callApi('/invitations', 'POST', invitation);
+  }
+
+  async updateInvitation(invitation) {
+    return this._callApi(`/invitations/${invitation.id}`, 'PATCH', {
+      callbacks: invitation.callbacks,
+    });
+  }
 }
 
 module.exports = DirectoriesClient;
