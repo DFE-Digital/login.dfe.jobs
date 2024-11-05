@@ -1,4 +1,3 @@
-const union = require('lodash/union');
 const users = require('./users');
 const roles = require('./roles');
 const organisations = require('./organisations');
@@ -10,7 +9,11 @@ const register = async (config, logger) => {
   const roleHandlers = await roles.register(config, logger, correlationId);
   const organisationHandlers = await organisations.register(config, logger, correlationId);
 
-  return union(userHandlers, roleHandlers, organisationHandlers);
+  return [
+    ...userHandlers,
+    ...roleHandlers,
+    ...organisationHandlers,
+  ];
 };
 
 module.exports = {

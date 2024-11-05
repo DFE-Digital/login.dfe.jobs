@@ -1,4 +1,3 @@
-const { take, tail } = require('lodash');
 const { getEmailAdapter } = require('../../../infrastructure/email');
 
 const process = async (config, logger, data) => {
@@ -11,7 +10,7 @@ const process = async (config, logger, data) => {
   let skip =0;
 
   while(moreData) {
-    bccRecipients =  take(emails.slice(skip),49);
+    bccRecipients =  emails.slice(skip, skip + 49);
     if(bccRecipients && bccRecipients.length > 0 ) {
       await email.send(bccRecipients[0], 'approver-access-request-email', {
         orgName: data.orgName,
@@ -19,7 +18,7 @@ const process = async (config, logger, data) => {
         email: data.userEmail,
         returnUrl:`${config.notifications.servicesUrl}/access-requests/organisation-requests/${data.requestId}`,
         helpUrl: `${config.notifications.helpUrl}/contact`,
-      }, `DfE Sign-in access request for ${data.orgName}`, tail(bccRecipients));
+      }, `DfE Sign-in access request for ${data.orgName}`, bccRecipients.slice(1));
       skip = skip + 49;
     } else {
       moreData = false;

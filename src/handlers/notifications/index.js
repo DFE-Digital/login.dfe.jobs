@@ -1,4 +1,3 @@
-const { union } = require('lodash');
 const invite = require('./invite');
 const passwordReset = require('./passwordReset');
 const support = require('./support');
@@ -34,24 +33,24 @@ const register = (config, logger) => {
   const subServiceRequestedHandler = subServiceRequested.register(config, logger);
   const subServiceRequestActionedHandler = subServiceRequestActioned.register(config,logger);
 
-  return union(
-    inviteHandlers,
-    passwordResetHandlers,
-    supportHandlers,
-    registrationHandlers,
-    confirmMigratedEmailHandlers,
-    changeProfileHandlers,
-    accessRequestHandler,
-    unmigratedSaUserHandler,
-    newServiceAddedHandler,
-    userOrganisationHandler,
-    changeUserPermissionHandler,
-    serviceRemovedHandler,
-    serviceRequestedHandler,
-    serviceRequestRejectedHandler,
-    subServiceRequestedHandler,
-    subServiceRequestActionedHandler
-  );
+  return [
+    ...inviteHandlers,
+    ...passwordResetHandlers,
+    ...supportHandlers,
+    ...registrationHandlers,
+    ...confirmMigratedEmailHandlers,
+    ...changeProfileHandlers,
+    ...accessRequestHandler,
+    ...unmigratedSaUserHandler,
+    ...newServiceAddedHandler,
+    ...userOrganisationHandler,
+    ...changeUserPermissionHandler,
+    ...serviceRemovedHandler,
+    ...serviceRequestedHandler,
+    ...serviceRequestRejectedHandler,
+    ...subServiceRequestedHandler,
+    ...subServiceRequestActionedHandler,
+  ];
 };
 
 module.exports = {
