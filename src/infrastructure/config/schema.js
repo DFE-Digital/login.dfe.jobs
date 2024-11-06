@@ -23,6 +23,18 @@ const adapterSchema = new SimpleSchema({
   },
 });
 
+const govNotifyEmailTemplatesSchema = new SimpleSchema({
+});
+
+const govNotifyTemplatesSchema = new SimpleSchema({
+  email: govNotifyEmailTemplatesSchema,
+});
+
+const govNotifySchema = new SimpleSchema({
+  apiKey: String,
+  templates: govNotifyTemplatesSchema,
+});
+
 const notificationsSchema = new SimpleSchema({
   interactionsUrl: patterns.url,
   profileUrl: patterns.url,
@@ -41,6 +53,7 @@ const notificationsSchema = new SimpleSchema({
     type: Object,
     blackbox: true,
   },
+  govNotify: govNotifySchema,
   slackWebHookUrl: String,
   envName: String
 });

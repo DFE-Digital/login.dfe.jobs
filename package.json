@@ -41,6 +41,7 @@
     "morgan": "^1.10.0",
     "node-cron": "^3.0.0",
     "nodemon": "^3.0.1",
+    "notifications-node-client": "^8.2.1",
     "pm2": "^5.2.0",
     "sequelize": "^6.18.0",
     "simpl-schema": "^3.4.1",
