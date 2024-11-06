@@ -1,5 +1,4 @@
 var pm2 = require('pm2');
-var _ = require('lodash');
 const cron = require("node-cron");
 var SlackService = require('./services/slackService');
 const config = require('./infrastructure/config');
@@ -48,10 +47,7 @@ pm2.connect(function (err) {
 
     function reloadCluster() {
         pm2.list((err, list) => {
-            let instances = _.filter(list, (x) => {
-                return x.name == APP_NAME;
-            });
-
+            const instances = list.filter(x => x.name === APP_NAME);
             if (instances.length <= 1) {
                 scaleUp();
             }

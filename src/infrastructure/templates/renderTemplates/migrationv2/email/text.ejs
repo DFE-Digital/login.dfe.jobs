@@ -1,0 +1,43 @@
+Dear <%=firstName%> <%=lastName%>
+
+<% if (overrides && overrides.textBody) { %>
+    <%- overrides.textBody %>
+<% } else { %>
+You've received this email because you've been invited to join <%=serviceName%>.
+<% } %>
+
+What do I have to do?
+
+We have created a DfE Sign-in account for you, in preparation for this change.
+
+We have also copied your roles and permissions across.
+
+Your username is your email address: <%=email%>
+
+You just need to verify your email and set your password.
+
+Your verification code is:
+<%=code%>
+
+To verify your email address and set up your account, please follow the link below:
+<%=returnUrl%>
+
+
+What happens next?
+
+Continue accessing your service in the normal way until 2 March.
+
+From 2 March you must access the Manage Your Education and Skills Funding service through DfE Sign-in, using your email address and the password you have created.
+
+Kind Regards,
+
+The Department for Education Sign-in Team
+
+Need support? Contact us on accesschange.dfesignin@education.gov.uk
+
+<% if (feConnectUrl) { %>
+<%=feConnectUrl%>
+<% } %>
+
+This is an automatically generated email; do not reply.
+Received this email in error? No action is necessary.

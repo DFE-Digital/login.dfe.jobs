@@ -1,0 +1,457 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org=
+/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="telephone=no" name="format-detection" />
+    <meta name="viewport" content="width=device-width" />
+
+    <title>GOVUK</title>
+
+    <style>
+        @media only screen and (min-device-width: 581px) {
+            .content {
+                width: 580px !important;
+            }
+        }
+
+        body {
+            margin: 0 !important;
+        }
+
+        div[style*="margin: 16px 0"] {
+            margin: 0 !important;
+        }
+
+        .button-link {
+            padding: 8px 10px 7px;
+            border: 2px solid transparent;
+            border-radius: 0;
+            color: #fff !important;
+            background-color: #00703c;
+            position: relative;
+            box-shadow: 0 2px 0 #002d18;
+            text-align: center;
+            vertical-align: top;
+            cursor: pointer;
+            display: inline-block;
+            text-decoration: none;
+            font-weight: 400;
+            font-size: 1.1875rem;
+            line-height: 1;
+            margin-bottom: 32px;
+        }
+
+        .button-link a[href] {
+            color: #FFFFFF !important;
+        }
+
+        .button-link:link,
+        .button-link:focus:link,
+        .button-link:hover,
+        .button-link:focus,
+        .button-link:visited {
+            color: #fff;
+        }
+
+        .govuk-summary-list {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            margin-bottom: 30px;
+            font-size: 1.1875rem;
+            line-height: 1.31579;
+            color: #0b0c0c;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .govuk-summary-list__row {
+            display: table-row;
+        }
+
+        .govuk-summary-list__key {
+            width: 30%;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .govuk-summary-list__key,
+        .govuk-summary-list__value,
+        .govuk-summary-list__actions {
+            display: table-cell;
+            padding-top: 10px;
+            padding-right: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #b1b4b6;
+        }
+
+        .govuk-summary-list__key,
+        .govuk-summary-list__value {
+            overflow-wrap: break-word;
+        }
+
+        .govuk-summary-list__key,
+        .govuk-summary-list__value,
+        .govuk-summary-list__actions {
+            margin: 0;
+        }
+
+        .govuk-list,
+        .app-prose-scope ul,
+        .app-prose-scope ol {
+            margin-bottom: 20px;
+            font-size: 1.1875rem;
+            line-height: 1.31579;
+            font-weight: 400;
+            list-style-type: none;
+            margin-top: 0;
+            padding-left: 0;
+        }
+
+        .govuk-link:link,
+        .app-prose-scope a:link {
+            color: #1d70b8;
+        }
+
+        .govuk-link,
+        .app-prose-scope a {
+            text-decoration: underline;
+        }
+
+        .govuk-link:hover,
+        .app-prose-scope a:hover {
+            color: #003078;
+        }
+
+        .govuk-link:focus,
+        .app-prose-scope a:focus {
+            outline: 3px solid transparent;
+            background-color: #fd0;
+            box-shadow: 0 -2px #fd0, 0 4px #0b0c0c;
+            text-decoration: none;
+        }
+
+        .govuk-link:active,
+        .app-prose-scope a:active {
+            color: #0b0c0c;
+        }
+    </style>
+
+    <!--[if gte mso 9]>
+    <style>
+        @media only screen and (min-device-width: 581px) {
+            .content {
+                width: 580px !important;
+            }
+        }
+
+        body {
+            margin: 0 !important;
+        }
+
+        div[style*="margin: 16px 0"] {
+            margin: 0 !important;
+        }
+
+        .button-link {
+            padding: 8px 10px 7px;
+            border: 2px solid transparent;
+            border-radius: 0;
+            color: #fff !important;
+            background-color: #00703c;
+            position: relative;
+            box-shadow: 0 2px 0 #002d18;
+            text-align: center;
+            vertical-align: top;
+            cursor: pointer;
+            display: inline-block;
+            text-decoration: none;
+            font-weight: 400;
+            font-size: 1.1875rem;
+            line-height: 1;
+            margin-bottom: 32px;
+        }
+
+        .button-link a[href] {
+            color: #FFFFFF !important;
+        }
+
+        .button-link:link,
+        .button-link:focus:link,
+        .button-link:hover,
+        .button-link:focus,
+        .button-link:visited {
+            color: #fff;
+        }
+
+        .govuk-summary-list {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            margin-bottom: 30px;
+            font-size: 1.1875rem;
+            line-height: 1.31579;
+            color: #0b0c0c;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .govuk-summary-list__row {
+            display: table-row;
+        }
+
+        .govuk-summary-list__key {
+            width: 30%;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .govuk-summary-list__key,
+        .govuk-summary-list__value,
+        .govuk-summary-list__actions {
+            display: table-cell;
+            padding-top: 10px;
+            padding-right: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #b1b4b6;
+        }
+
+        .govuk-summary-list__key,
+        .govuk-summary-list__value {
+            overflow-wrap: break-word;
+        }
+
+        .govuk-summary-list__key,
+        .govuk-summary-list__value,
+        .govuk-summary-list__actions {
+            margin: 0;
+        }
+
+        .govuk-list,
+        .app-prose-scope ul,
+        .app-prose-scope ol {
+            margin-bottom: 20px;
+            font-size: 1.1875rem;
+            line-height: 1.31579;
+            font-weight: 400;
+            list-style-type: none;
+            margin-top: 0;
+            padding-left: 0;
+        }
+
+        .govuk-link:link,
+        .app-prose-scope a:link {
+            color: #1d70b8;
+        }
+
+        .govuk-link,
+        .app-prose-scope a {
+            text-decoration: underline;
+        }
+
+        .govuk-link:hover,
+        .app-prose-scope a:hover {
+            color: #003078;
+        }
+
+        .govuk-link:focus,
+        .app-prose-scope a:focus {
+            outline: 3px solid transparent;
+            background-color: #fd0;
+            box-shadow: 0 -2px #fd0, 0 4px #0b0c0c;
+            text-decoration: none;
+        }
+
+        .govuk-link:active,
+        .app-prose-scope a:active {
+            color: #0b0c0c;
+        }
+    </style>
+    <![endif]-->
+
+</head>
+
+<body style="font-family: Helvetica, Arial, sans-serif;font-size: 16px;margin: 0;color:#0b0c0c;">
+    <table role="presentation" width="100%" style="min-width: 100%;width: 100% !important;" cellpadding="0"
+        cellspacing="0" border="0">
+        <tr>
+            <td width="100%" height="53" bgcolor="#0b0c0c">
+                <!--[if (gte mso 9)|(IE)]>
+            <table role="presentation" width="580" align="center" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td>
+            <![endif]-->
+                <table role="presentation" width="100%" style="max-width: 580px;" cellpadding="0" cellspacing="0"
+                    border="0" align="center">
+                    <tr>
+                        <td width="70" bgcolor="#0b0c0c" valign="middle">
+                            <a href="https://www.gov.uk" style="text-decoration: none;">
+                                <img src="https://static.notifications.service.gov.uk/images/gov.uk_logotype_crown.png"
+                                    alt="" height="32" border="0" style="margin-top: 4px; margin-left: 10px;"></a>
+                        </td>
+                        <td width="100%" bgcolor="#0b0c0c" valign="middle" align="left">
+                            <span style="padding-left: 5px;"><a href="https://www.gov.uk" style="
+                          font-family: Helvetica, Arial, sans-serif;
+                          font-size: 28px;
+                          line-height: 1.315789474;
+                          font-weight: 700;
+                          color: #ffffff;
+                          text-decoration: none;">GOV.UK</a></span>
+                        </td>
+                    </tr>
+                </table>
+                <!--[if (gte mso 9)|(IE)]>
+            </td>
+            </tr>
+            </table>
+            <![endif]-->
+            </td>
+        </tr>
+    </table>
+    <table role="presentation" class="content" align="center" cellpadding="0" cellspacing="0" border="0"
+        style="max-width: 580px; width: 100% !important;" width="100%">
+        <tr>
+            <td width="10" height="10" valign="middle"></td>
+            <td>
+                <!--[if (gte mso 9)|(IE)]>
+            <table role="presentation" width="580" align="center" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td height="10">
+            <![endif]-->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <td bgcolor="#005EA5" width="100%" height="10"></td>
+                    </tr>
+                </table>
+                <!--[if (gte mso 9)|(IE)]>
+            </td>
+            </tr>
+            </table>
+            <![endif]-->
+            </td>
+            <td width="10" valign="middle" height="10"></td>
+        </tr>
+    </table>
+    <table role="presentation" class="content" align="center" cellpadding="0" cellspacing="0" border="0"
+        style="max-width: 580px; width: 100% !important;" width="100%">
+        <tr>
+            <td height="30">&nbsp;</td>
+        </tr>
+        <tr>
+            <td width="10" valign="middle">&nbsp;</td>
+            <td
+                style="font-family: Helvetica, Arial, sans-serif; font-size: 19px; line-height: 1.315789474; max-width: 560px;">
+                <!--[if (gte mso 9)|(IE)]>
+            <table role="presentation" width="560" align="center" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td style="font-family: Helvetica, Arial, sans-serif; font-size: 19px; line-height: 1.315789474;">
+            <![endif]-->
+
+                <p>Dear <%=firstName%> <%=lastName%>,</p>
+
+                <p>A new service has been added to your DfE Sign-in account.</p>
+
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Your account details
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Organisation
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            <%=orgName%>
+                        </dd>
+                    </div>
+                    <% if (permission.id !== undefined) { %>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Permission level
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            <%=permission.name%>
+                        </dd>
+                    </div>
+                    <% } %>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Service
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            <%=serviceName%>
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Sub-service
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            <% if (requestedSubServices.length > 0) { %>
+                                <% for (let x = 0; x < requestedSubServices.length; x++) { %>
+                                    <%=requestedSubServices[x]%><br>
+                                <% } %>
+                            <% } else { %>
+                                No roles selected
+                            <% } %>
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Status
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            Approved
+                        </dd>
+                    </div>
+                </dl>
+                <%
+                    if (permission.id === 10000) {
+                        const permissionCapitalise = permission.name.replace(/^./, x => x.toUpperCase());
+                        const permissionLowercase =  permission.name.toLowerCase();
+                %>
+                
+                <p>You have an <%=permissionLowercase%> account. <%=permissionCapitalise%>s can manage other users at their organisation and add services to their account.</p>
+
+                <p><a href="<%=helpApproverUrl%>">Find out what you can do as a DfE <%=permissionLowercase%></a></p>
+                <% } %>
+
+                <p>To access this service, sign in to your DfE Sign-in account using this link <a href="<%=signInUrl%>">services.sign-in</a>. Sign in as you normally would and select the new service from the list on your services page.</p>
+                
+                <p>Alternatively, select the button below to sign in to your account.</p>
+
+                <p>
+                <a class="button-link" href="<%=signInUrl%>">Go to your DfE Sign-in account</a>
+                </p>
+
+                <p>
+                    Kind regards,
+                    <br>The Department for Education Sign-in Team
+                    <br><strong>Need support?</strong> <a href="<%=helpUrl%>">Visit DfE Sign-in Help</a>
+                </p>
+
+                <p>
+                    This is an automatically generated email, do not reply
+                    <br>Received this email in error? No action is necessary
+                </p>
+
+                <!--[if (gte mso 9)|(IE)]>
+            </td>
+            </tr>
+            </table>
+            <![endif]-->
+            </td>
+            <td width="10" valign="middle">&nbsp;</td>
+        </tr>
+        <tr>
+            <td height="30">&nbsp;</td>
+        </tr>
+    </table>
+</body>
+
+</html>

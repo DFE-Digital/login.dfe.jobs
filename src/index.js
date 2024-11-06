@@ -1,6 +1,6 @@
 const config = require('./infrastructure/config');
 const logger = require('./infrastructure/logger');
-const { getProcessorMappings } = require('./app/processors');
+const { getProcessorMappings } = require('./handlers');
 const http = require('http');
 const https = require('https');
 const express = require('express');

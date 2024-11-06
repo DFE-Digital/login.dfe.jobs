@@ -69,3 +69,4 @@ access.log
 \.idea/markdown-navigator/profiles_settings\.xml
 
 .npmrc
+.DS_Store

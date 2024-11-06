@@ -1,0 +1,32 @@
+Dear <%=name%>
+
+<% if (approved) { %>
+Your request to join <%=orgName%> has been approved.
+Your account has been updated to reflect this change.
+
+What should I do next?
+You will now need to request access to services for this organisation.
+Sign in to your account to get started.
+
+Sign-in to DfE account <%=servicesUrl%>
+
+<%} else { %>
+Your request to join <%=orgName%> has been rejected.
+    <% if (reason) { %>
+    The reason given is: <%=reason%>
+    <% } %>
+
+What should I do next?
+Submit an amended request taking any actions suggested in the rejection reason, or request access to a different organisation.
+If submitting an amended request, we recommend including information that will help identify you, such as your role.
+
+Sign-in to DfE account <%=servicesUrl%>
+<% } %>
+
+Kind regards
+The Department for Education Sign-in Team
+
+Need support? Visit <%=helpUrl%>
+
+This is an automatically generated email; do not reply.
+Received this email in error? No action is necessary.
