@@ -24,6 +24,7 @@ const adapterSchema = new SimpleSchema({
 });
 
 const govNotifyEmailTemplatesSchema = new SimpleSchema({
+  verifyChangeEmailAddress: String,
 });
 
 const govNotifyTemplatesSchema = new SimpleSchema({

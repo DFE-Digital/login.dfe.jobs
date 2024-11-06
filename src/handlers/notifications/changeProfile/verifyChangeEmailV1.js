@@ -1,20 +1,19 @@
-const { getEmailAdapter } = require('../../../infrastructure/email');
+const { getNotifyAdapter } = require('../../../infrastructure/notify');
 
 const process = async (config, logger, data) => {
-  let returnUrl = `${config.notifications.profileUrl}/change-email/verify`;
-  if (data.uid) {
-    returnUrl = `${config.notifications.profileUrl}/change-email/${data.uid}/verify`;
-  }
-
-  const email = getEmailAdapter(config, logger);
-  await email.send(data.email, 'verify-change-email', {
-    firstName: data.firstName,
-    lastName: data.lastName,
-    email: data.email,
-    code: data.code,
-    returnUrl,
-    helpUrl: config.notifications.helpUrl,
-  }, 'Verify your new DfE Sign-in email address');
+  const notify = getNotifyAdapter(config);
+  await notify.sendEmail('verifyChangeEmailAddress', data.email, {
+    personalisation: {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      code: data.code,
+      returnUrl: !!data.uid
+        ? `${config.notifications.profileUrl}/change-email/${data.uid}/verify`
+        : `${config.notifications.profileUrl}/change-email/verify`,
+      helpUrl: config.notifications.helpUrl,
+    },
+  });
 };
 
 const getHandler = (config, logger) => {
