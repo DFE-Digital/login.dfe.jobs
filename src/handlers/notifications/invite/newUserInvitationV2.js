@@ -47,7 +47,7 @@ const process = async (config, logger, data) => {
     if (config.entra?.enableEntraSignIn === true) {
       template = 'invitation-entra-registration';
     } else {
-      template = data.isMigrationInvite ? 'migrationv2' : 'invitation';
+      template = 'invitation';
       if (data.isChaserEmail) {
         template = 'invitation-chaser-email';
         subject = `You must take action to keep accessing the ${serviceName}`;
