@@ -1,77 +1,64 @@
-const { marked } = require('marked');
-const { getEmailAdapter } = require('../../../infrastructure/email');
-
-// Its possible that 'marked' will HTML encode strings. For example, the word [You've] will be
-// encoded as [You&#39;ve]. decodeHtmlEntities attempts to resolve this.
-const decodeHtmlEntities = (str) => {
-  const htmlEntities = {
-    '&amp;': '&',
-    '&lt;': '<',
-    '&gt;': '>',
-    '&quot;': '"',
-    '&#39;': "'",
-    '&#x27;': "'",
-    '&#x2F;': '/',
-    '&#x5C;': '\\',
-    '&#96;': '`',
-  };
-
-  return str.replace(/&[#A-Za-z0-9]+;/g, (entity) => htmlEntities[entity] || entity);
-};
-
-const convertMarkdownToHtml = (content) => marked.parse(content).trim();
-
-const convertMarkdownToText = (content) => {
-  const html = convertMarkdownToHtml(content);
-  return decodeHtmlEntities(html.replace(/<[^>]+?>/g, ''));
-};
+const { getNotifyAdapter } = require('../../../infrastructure/notify');
 
 const process = async (config, logger, data) => {
   try {
-    const { serviceName } = data;
-    const source = data.source || undefined;
-    let subject = data.selfInvoked
-      ? `${data.code} is your DfE Sign-in verification code`
-      : 'You’ve been invited to join DfE Sign-in';
-    const overrides = { ...data.overrides || {} };
+    const notify = getNotifyAdapter(config);
 
-    if (overrides.subject) {
-      subject = data.overrides.subject;
-    }
-    if (overrides.body) {
-      overrides.textBody = convertMarkdownToText(overrides.body).trim();
-      overrides.htmlBody = convertMarkdownToHtml(overrides.body);
-    }
-
-    let template;
-    if (config.entra?.enableEntraSignIn === true) {
-      template = 'invitation-entra-registration';
-    } else {
-      template = 'invitation';
-    }
-    let bccEmail = 'NoReply.PireanMigration@education.gov.uk';
-    if (process && process.env && process.env.INV_BCC_EMAIL) {
-      bccEmail = process.env.INV_BCC_EMAIL;
-    }
-    const email = getEmailAdapter(config, logger);
-    await email.send(data.email, template, {
+    const commonPersonalisation = {
       firstName: data.firstName,
       lastName: data.lastName,
-      serviceName,
-      selfInvoked: data.selfInvoked,
-      code: data.code,
-      returnUrl: `${config.notifications.profileUrl}/register/${data.invitationId}?id=email`,
-      helpUrl: `${config.notifications.helpUrl}/contact-us`,
-      getmoreinfoUrl: `${config.notifications.helpUrl}/moving-to-DfE-Sign-in`,
-      overrides,
       email: data.email,
-      approverEmail: data.approverEmail,
-      orgName: data.orgName,
-      isApprover: data.isApprover,
-      source,
-    }, subject, bccEmail);
+      customMessage: data.overrides?.body ?? '',
+      isApprover: !!data.isApprover,
+      returnUrl: `${config.notifications.profileUrl}/register/${data.invitationId}?id=email`,
+      helpUrl: config.notifications.helpUrl,
+    };
+
+    let reason = '';
+    if (!!data.approverEmail && !!data.orgName) {
+      reason = ` by ${data.approverEmail} at ${data.orgName}`;
+    }
+    else if (!!data.orgName) {
+      reason = ` for ${data.orgName}`;
+    }
+
+    if (!!config.entra?.enableEntraSignIn) {
+      if (!data.selfInvoked) {
+        await notify.sendEmail('inviteNewUserEntra', data.email, {
+          personalisation: {
+            ...commonPersonalisation,
+            reason,
+            subject: !!data.overrides?.subject
+              ? data.overrides.subject
+              : 'You’ve been invited to join DfE Sign-in',
+          },
+        });
+      }
+    }
+    else {
+      if (!!data.selfInvoked) {
+        await notify.sendEmail('selfRegisterNewAccount', data.email, {
+          personalisation: {
+            ...commonPersonalisation,
+            serviceName: data.serviceName,
+            code: data.code,
+          },
+        });
+      }
+      else {
+        await notify.sendEmail('inviteNewUser', data.email, {
+          personalisation: {
+            ...commonPersonalisation,
+            code: data.code,
+            reason,
+            subject: !!data.overrides?.subject
+              ? data.overrides.subject
+              : 'You’ve been invited to join DfE Sign-in',
+          },
+        });
+      }
+    }
   } catch (e) {
-    console.log(`bcc-email invitation_v2 :${JSON.stringify(e)}`);
     logger.error(`Failed to process and send the email for type invitation_v2- ${JSON.stringify(e)}`);
     throw new Error(`Failed to process and send the email for type invitation_v2 - ${JSON.stringify(e)}`);
   }
