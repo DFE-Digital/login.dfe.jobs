@@ -13,8 +13,6 @@ const config = {
   notifications: {
     profileUrl: 'https://profile.test/reg',
     helpUrl: 'https://help.test',
-    feConnectUrl: 'https://feconnect.com',
-    getmoreinfoUrl: 'https://help.test/moving-to-DfE-Sign-in',
   },
 };
 
@@ -35,7 +33,6 @@ describe('when sending v2 user invitation', () => {
       lastName: 'Strange',
       serviceName: 'Unit Test',
       selfInvoked: false,
-      getmoreinfoUrl: `${config.notifications.helpUrl}/moving-to-DfE-Sign-in`,
       code: 'ABC123',
       isApprover: false,
       orgName: 'Test Org',
@@ -129,14 +126,12 @@ describe('when sending v2 user invitation', () => {
       serviceName: data.serviceName,
       selfInvoked: data.selfInvoked,
       code: data.code,
-      getmoreinfoUrl: 'https://help.test/moving-to-DfE-Sign-in',
       helpUrl: `${config.notifications.helpUrl}/contact-us`,
       isApprover: data.isApprover,
       orgName: data.orgName,
       returnUrl: `${config.notifications.profileUrl}/register/${data.invitationId}?id=email`,
       overrides: {},
       email: 'stephen.strange@new-avengers.test',
-      feConnectUrl: 'https://feconnect.com',
       source: data.source,
     });
   });

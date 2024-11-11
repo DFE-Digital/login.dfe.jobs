@@ -63,7 +63,6 @@ const process = async (config, logger, data) => {
       returnUrl: `${config.notifications.profileUrl}/register/${data.invitationId}?id=email`,
       helpUrl: `${config.notifications.helpUrl}/contact-us`,
       getmoreinfoUrl: `${config.notifications.helpUrl}/moving-to-DfE-Sign-in`,
-      feConnectUrl: `${config.notifications.feConnectUrl}` || null,
       overrides,
       email: data.email,
       approverEmail: data.approverEmail,

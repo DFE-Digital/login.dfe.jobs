@@ -41,7 +41,6 @@ const notificationsSchema = new SimpleSchema({
   profileUrl: patterns.url,
   servicesUrl: patterns.url,
   helpUrl: patterns.url,
-  feConnectUrl: patterns.url,
   supportEmailAddress: String,
   organisations: schemas.apiClient,
   directories: schemas.apiClient,
