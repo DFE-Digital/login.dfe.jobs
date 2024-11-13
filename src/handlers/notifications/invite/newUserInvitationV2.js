@@ -47,15 +47,7 @@ const process = async (config, logger, data) => {
     if (config.entra?.enableEntraSignIn === true) {
       template = 'invitation-entra-registration';
     } else {
-      template = data.isMigrationInvite ? 'migrationv2' : 'invitation';
-      if (data.isChaserEmail) {
-        template = 'invitation-chaser-email';
-        subject = `You must take action to keep accessing the ${serviceName}`;
-      }
-      if (data.isServiceActivationChaserEmail) {
-        template = 'invitation-serviceactivation-chaser-email';
-        subject = `You must take action to keep accessing the ${serviceName}`;
-      }
+      template = 'invitation';
     }
     let bccEmail = 'NoReply.PireanMigration@education.gov.uk';
     if (process && process.env && process.env.INV_BCC_EMAIL) {
