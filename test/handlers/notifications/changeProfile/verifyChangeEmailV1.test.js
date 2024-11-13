@@ -25,7 +25,7 @@ describe('When handling verifychangeemail_v1 job', () => {
     getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
 
-  it('then it should return a handler with a processor', () => {
+  it('should return a handler with a processor', () => {
     const handler = getHandler(config);
 
     expect(handler).not.toBeNull();
@@ -34,7 +34,7 @@ describe('When handling verifychangeemail_v1 job', () => {
     expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('then it should get email adapter with supplied config', async () => {
+  it('should get email adapter with supplied config', async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -43,7 +43,7 @@ describe('When handling verifychangeemail_v1 job', () => {
     expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('then it should send email with expected template', async () => {
+  it('should send email with expected template', async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -56,7 +56,7 @@ describe('When handling verifychangeemail_v1 job', () => {
     );
   });
 
-  it('then it should send email to users email address', async () => {
+  it('should send email to users email address', async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -69,7 +69,7 @@ describe('When handling verifychangeemail_v1 job', () => {
     );
   });
 
-  it('then it should send email using request data as model', async () => {
+  it('should send email using request data as model', async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -90,7 +90,7 @@ describe('When handling verifychangeemail_v1 job', () => {
     );
   });
 
-  it('then it should use return url including uid if present in data', async () => {
+  it('should use return url including uid if present in data', async () => {
     jobData.uid = 'user1';
 
     const handler = getHandler(config);
