@@ -72,7 +72,7 @@ describe('when sending v2 user invitation with Entra feature flag turned on', ()
             lastName: 'One',
             email: 'user.one@unit.tests',
             isApprover: true,
-            returnUrl: 'https://profile.test/reg/register',
+            returnUrl: 'https://profile.test/reg/register/59205751-c229-4924-8acb-61a7d5edfa33?id=email',
             helpUrl: 'https://help.test',
           }),
         }),

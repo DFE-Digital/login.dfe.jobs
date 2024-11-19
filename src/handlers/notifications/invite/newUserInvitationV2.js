@@ -10,6 +10,7 @@ const process = async (config, logger, data) => {
       email: data.email,
       customMessage: data.overrides?.body ?? '',
       isApprover: !!data.isApprover,
+      returnUrl: `${config.notifications.profileUrl}/register/${data.invitationId}?id=email`,
       helpUrl: config.notifications.helpUrl,
     };
 
@@ -22,12 +23,10 @@ const process = async (config, logger, data) => {
     }
 
     if (!!config.entra?.enableEntraSignIn) {
-      const returnUrl = `${config.notifications.profileUrl}/register`;
       if (!data.selfInvoked) {
         await notify.sendEmail('inviteNewUserEntra', data.email, {
           personalisation: {
             ...commonPersonalisation,
-            returnUrl,
             reason,
             subject: !!data.overrides?.subject
               ? data.overrides.subject
@@ -37,12 +36,10 @@ const process = async (config, logger, data) => {
       }
     }
     else {
-      const returnUrl = `${config.notifications.profileUrl}/register/${data.invitationId}?id=email`;
       if (!!data.selfInvoked) {
         await notify.sendEmail('selfRegisterNewAccount', data.email, {
           personalisation: {
             ...commonPersonalisation,
-            returnUrl,
             serviceName: data.serviceName,
             code: data.code,
           },
@@ -52,7 +49,6 @@ const process = async (config, logger, data) => {
         await notify.sendEmail('inviteNewUser', data.email, {
           personalisation: {
             ...commonPersonalisation,
-            returnUrl,
             code: data.code,
             reason,
             subject: !!data.overrides?.subject
