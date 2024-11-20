@@ -24,6 +24,9 @@ const adapterSchema = new SimpleSchema({
 });
 
 const govNotifyEmailTemplatesSchema = new SimpleSchema({
+  inviteNewUser: String,
+  inviteNewUserEntra: String,
+  selfRegisterNewAccount: String,
   verifyChangeEmailAddress: String,
 });
 
@@ -41,7 +44,6 @@ const notificationsSchema = new SimpleSchema({
   profileUrl: patterns.url,
   servicesUrl: patterns.url,
   helpUrl: patterns.url,
-  feConnectUrl: patterns.url,
   supportEmailAddress: String,
   organisations: schemas.apiClient,
   directories: schemas.apiClient,
