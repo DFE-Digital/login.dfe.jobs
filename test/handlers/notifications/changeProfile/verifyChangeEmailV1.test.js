@@ -6,6 +6,7 @@ const { getHandler } = require('../../../../src/handlers/notifications/changePro
 const config = {
   notifications: {
     profileUrl: 'https://profile.dfe.signin',
+    helpUrl: 'https://help.dfe.signin',
   },
 };
 const jobData = {
@@ -69,7 +70,7 @@ describe('When handling verifychangeemail_v1 job', () => {
     );
   });
 
-  it('should send email using request data as model', async () => {
+  it('should send email with expected personalisation data', async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -85,12 +86,13 @@ describe('When handling verifychangeemail_v1 job', () => {
           email: jobData.email,
           code: jobData.code,
           returnUrl: 'https://profile.dfe.signin/change-email/verify',
+          helpUrl: 'https://help.dfe.signin',
         }),
       }),
     );
   });
 
-  it('should use return url including uid if present in data', async () => {
+  it('should use return url including uid if present in personalisation data', async () => {
     jobData.uid = 'user1';
 
     const handler = getHandler(config);
@@ -108,6 +110,7 @@ describe('When handling verifychangeemail_v1 job', () => {
           email: jobData.email,
           code: jobData.code,
           returnUrl: 'https://profile.dfe.signin/change-email/user1/verify',
+          helpUrl: 'https://help.dfe.signin',
         }),
       }),
     );
