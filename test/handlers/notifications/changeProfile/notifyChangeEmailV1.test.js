@@ -1,15 +1,14 @@
-jest.mock('../../../../src/infrastructure/email');
+jest.mock('../../../../src/infrastructure/notify');
 
-const { getEmailAdapter } = require('../../../../src/infrastructure/email');
+const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
 const { getHandler } = require('../../../../src/handlers/notifications/changeProfile/notifyChangeEmailV1');
-const emailSend = jest.fn();
 
 const config = {
   notifications: {
     profileUrl: 'https://profile.dfe.signin',
+    helpUrl: 'https://help.dfe.signin',
   },
 };
-const logger = {};
 const jobData = {
   firstName: 'User',
   lastName: 'One',
@@ -18,15 +17,17 @@ const jobData = {
 };
 
 describe('When handling notifychangeemail_v1 job', () => {
-  beforeEach(() => {
-    emailSend.mockReset();
+  const mockSendEmail = jest.fn();
 
-    getEmailAdapter.mockReset();
-    getEmailAdapter.mockReturnValue({ send: emailSend });
+  beforeEach(() => {
+    mockSendEmail.mockReset();
+
+    getNotifyAdapter.mockReset();
+    getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
 
-  it('then it should return a handler with a processor', () => {
-    const handler = getHandler(config, logger);
+  it('should return a handler with a processor', () => {
+    const handler = getHandler(config);
 
     expect(handler).not.toBeNull();
     expect(handler.type).toBe('notifychangeemail_v1');
@@ -34,54 +35,59 @@ describe('When handling notifychangeemail_v1 job', () => {
     expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('then it should get email adapter with supplied config and logger', async () => {
-    const handler = getHandler(config, logger);
+  it('should get email adapter with supplied config', async () => {
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(getEmailAdapter.mock.calls).toHaveLength(1);
-    expect(getEmailAdapter.mock.calls[0][0]).toBe(config);
-    expect(getEmailAdapter.mock.calls[0][1]).toBe(logger);
+    expect(getNotifyAdapter).toHaveBeenCalledTimes(1);
+    expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('then it should send email to users email address', async () => {
-    const handler = getHandler(config, logger);
+  it('should send email with expected template', async () => {
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][0]).toBe(jobData.email);
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      'notifyChangeEmailAddress',
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
-  it('then it should send email using notify-change-email template', async () => {
-    const handler = getHandler(config, logger);
+  it('should send email to users email address', async () => {
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][1]).toBe('notify-change-email');
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      jobData.email,
+      expect.anything(),
+    );
   });
 
-  it('then it should send email using request data as model', async () => {
-    const handler = getHandler(config, logger);
+  it('should send email with expected personalisation data', async () => {
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][2]).toEqual({
-      firstName: jobData.firstName,
-      lastName: jobData.lastName,
-      newEmail: jobData.newEmail,
-      profileUrl: 'https://profile.dfe.signin',
-    });
-  });
-
-  it('then it should send email with subject', async () => {
-    const handler = getHandler(config, logger);
-
-    await handler.processor(jobData);
-
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][3]).toBe('Request to change your DfE Sign-in email address');
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: jobData.firstName,
+          lastName: jobData.lastName,
+          newEmail: jobData.newEmail,
+          profileUrl: 'https://profile.dfe.signin',
+          helpUrl: 'https://help.dfe.signin',
+        }),
+      }),
+    );
   });
 });
