@@ -1,18 +1,6 @@
-const config = require('./../config');
-const logger = require('./../logger');
 const kue = require('login.dfe.kue');
-
-const getProcessorConcurrency = (type) => {
-  if (!config.concurrency || !config.concurrency[type]) {
-    return 1;
-  }
-
-  const concurrency = parseInt(config.concurrency[type]);
-  if (isNaN(concurrency)) {
-    throw new Error(`Invalid concurrency for ${type} (set to ${config.concurrency[type]}). Must be a number`);
-  }
-  return concurrency;
-};
+const config = require('../config');
+const logger = require('../logger');
 
 const process = (job, processor, done) => {
   logger.info(`received job ${job.id} of type ${job.type}`);
@@ -27,76 +15,83 @@ const process = (job, processor, done) => {
     });
 };
 
-const getInactiveCount = async (queue, type) => {
-  return new Promise((resolve, reject) => {
-    const callback = (err, count) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(count);
-    };
-    if (type) {
-      queue.inactiveCount(type, callback);
-    } else {
-      queue.inactiveCount(callback);
+const getProcessorConcurrency = (type) => {
+  if (!config.concurrency || !config.concurrency[type]) {
+    return 1;
+  }
+
+  const concurrency = parseInt(config.concurrency[type], 10);
+  if (isNaN(concurrency)) {
+    throw new Error(`Invalid concurrency for ${type} (set to ${config.concurrency[type]}). Must be a number`);
+  }
+  return concurrency;
+};
+
+const getInactiveCount = async (queue, type) => new Promise((resolve, reject) => {
+  const callback = (err, count) => {
+    if (err) {
+      return reject(err);
     }
-  });
-};
-const getActiveCount = async (queue, type) => {
-  return new Promise((resolve, reject) => {
-    const callback = (err, count) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(count);
-    };
-    if (type) {
-      queue.activeCount(type, callback);
-    } else {
-      queue.activeCount(callback);
+    resolve(count);
+  };
+  if (type) {
+    queue.inactiveCount(type, callback);
+  } else {
+    queue.inactiveCount(callback);
+  }
+});
+
+const getActiveCount = async (queue, type) => new Promise((resolve, reject) => {
+  const callback = (err, count) => {
+    if (err) {
+      return reject(err);
     }
-  });
-};
-const getFailedCount = async (queue, type) => {
-  return new Promise((resolve, reject) => {
-    const callback = (err, count) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(count);
-    };
-    if (type) {
-      queue.failedCount(type, callback);
-    } else {
-      queue.failedCount(callback);
+    resolve(count);
+  };
+  if (type) {
+    queue.activeCount(type, callback);
+  } else {
+    queue.activeCount(callback);
+  }
+});
+
+const getFailedCount = async (queue, type) => new Promise((resolve, reject) => {
+  const callback = (err, count) => {
+    if (err) {
+      return reject(err);
     }
-  });
-};
-const getCompleteCount = async (queue, type) => {
-  return new Promise((resolve, reject) => {
-    const callback = (err, count) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(count);
-    };
-    if (type) {
-      queue.completeCount(type, callback);
-    } else {
-      queue.completeCount(callback);
+    resolve(count);
+  };
+  if (type) {
+    queue.failedCount(type, callback);
+  } else {
+    queue.failedCount(callback);
+  }
+});
+
+const getCompleteCount = async (queue, type) => new Promise((resolve, reject) => {
+  const callback = (err, count) => {
+    if (err) {
+      return reject(err);
     }
+    resolve(count);
+  };
+  if (type) {
+    queue.completeCount(type, callback);
+  } else {
+    queue.completeCount(callback);
+  }
+});
+
+const getRangeOfJobs = async (offset, count, sort) => new Promise((resolve, reject) => {
+  kue.Job.range(offset, count, sort, (err, jobs) => {
+    if (err) {
+      return reject(err);
+    }
+    resolve(jobs);
   });
-};
-const getRangeOfJobs = async (offset, count, sort) => {
-  return new Promise((resolve, reject) => {
-    kue.Job.range(offset, count, sort, (err, jobs) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(jobs);
-    });
-  });
-};
+});
+
 const getRangeOfJobsOfType = async (type, offset, count, sort, numberInactive, numberActive, numberFailed, numberComplete) => {
   const takeFromState = async (state, stateCount, skipped, required) => {
     const stateOffset = skipped > offset ? 0 : offset - skipped;
@@ -111,7 +106,7 @@ const getRangeOfJobsOfType = async (type, offset, count, sort, numberInactive, n
             return reject(err);
           }
           resolve(jobs);
-        })
+        });
       });
     }
     return Promise.resolve([]);
@@ -147,7 +142,7 @@ const getRangeOfJobsOfType = async (type, offset, count, sort, numberInactive, n
   return jobs;
 };
 
-class Monitor {
+class MonitorKue {
   constructor(processorMapping) {
     this.processorMapping = processorMapping;
 
@@ -159,26 +154,31 @@ class Monitor {
   }
 
   start() {
-    let connectionString = (config.queueStorage && config.queueStorage.connectionString) ? config.queueStorage.connectionString : 'redis://127.0.0.1:6379';
+    const connectionString = (config.queueStorage && config.queueStorage.connectionString) ? config.queueStorage.connectionString : 'redis://127.0.0.1:6379';
+
     this.queue = kue.createQueue({
-      redis: connectionString
+      redis: connectionString,
     });
+
     this.queue.on('error', (e) => {
-      logger.warn(`An error occured in the monitor queue - ${e.message}`, e);
+      logger.warn('MonitorKue: An error occured in queue.on', { message: e.message, stack: e.stack });
     });
+
     this.queue.watchStuckJobs(10000);
 
     this.processorMapping.forEach((mapping) => {
       const concurrency = getProcessorConcurrency(mapping.type);
       if (concurrency > 0) {
-        logger.info(`start monitoring ${mapping.type} with concurrency of ${concurrency}`);
+        logger.debug(`MonitorKue: start monitoring ${mapping.type} with concurrency of ${concurrency}`);
+
         this.queue.process(mapping.type, concurrency, (job, done) => {
           process(job, mapping.processor, done);
         });
       } else {
-        logger.info(`No starting monitoring ${mapping.type} as concurrency is ${concurrency} (disabled)`);
+        logger.info(`MonitorKue: No starting monitoring ${mapping.type} as concurrency is ${concurrency} (disabled)`);
       }
     });
+
     this.status = 'started';
   }
 
@@ -190,6 +190,7 @@ class Monitor {
             reject(err);
           } else {
             this.status = 'stopped';
+            logger.info('MonitorKue: stopped');
             resolve();
           }
         });
@@ -200,7 +201,7 @@ class Monitor {
   }
 
   getJobTypes() {
-    return this.processorMapping.map(mapping => mapping.type);
+    return this.processorMapping.map((mapping) => mapping.type);
   }
 
   async getJobs(page, pageSize, type = undefined) {
@@ -242,4 +243,4 @@ class Monitor {
   }
 }
 
-module.exports = Monitor;
+module.exports = MonitorKue;
