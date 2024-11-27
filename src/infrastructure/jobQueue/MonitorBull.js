@@ -2,15 +2,14 @@ const { Worker } = require('bullmq');
 const config = require('../config');
 const logger = require('../logger');
 
-const process = async (job, processor, done) => {
+const process = async (job, processor) => {
   try {
     logger.info(`MonitorBull: received job ${job.id} of type ${job.name}`);
-    processor(job.data);
+    await processor(job.data);
     logger.info(`MonitorBull: processed job ${job.id}`);
-    done();
   } catch (err) {
-    logger.error(`Error processing job ${job.id}`, { job: { name: job.name, id: job.id }, error: { message: err.message, stack: err.stack } });
-    done(err);
+    logger.error(`MonitorBull: Error processing job ${job.id}`, { job: { name: job.name, id: job.id }, error: { message: err.message, stack: err.stack } });
+    await job.moveToFailed({ message: err.message, stack: err.stack }, false);
   }
 };
 
