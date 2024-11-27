@@ -3,14 +3,14 @@ const config = require('../config');
 const logger = require('../logger');
 
 const process = (job, processor, done) => {
-  logger.info(`received job ${job.id} of type ${job.type}`);
+  logger.info(`MonitorKue: received job ${job.id} of type ${job.type}`);
   processor(job.data)
     .then(() => {
-      logger.info(`successfully processed job ${job.id}`);
+      logger.info(`MonitorKue: successfully processed job ${job.id}`);
       done();
     })
     .catch((err) => {
-      logger.error(`Error processing job ${job.id} - ${err.message}`);
+      logger.error(`MonitorKue: Error processing job ${job.id} - ${err.message}`);
       done(err);
     });
 };
@@ -22,7 +22,7 @@ const getProcessorConcurrency = (type) => {
 
   const concurrency = parseInt(config.concurrency[type], 10);
   if (isNaN(concurrency)) {
-    throw new Error(`Invalid concurrency for ${type} (set to ${config.concurrency[type]}). Must be a number`);
+    throw new Error(`MonitorKue: Invalid concurrency for ${type} (set to ${config.concurrency[type]}). Must be a number`);
   }
   return concurrency;
 };
