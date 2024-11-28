@@ -1,46 +1,41 @@
 const { directories } = require('login.dfe.dao');
-const { getEmailAdapter } = require('../../../infrastructure/email');
+const { getNotifyAdapter } = require('../../../infrastructure/notify');
 const OrganisatonsClient = require('../../../infrastructure/organisations');
 const DirectoriesClient = require('../../../infrastructure/directories');
 
 const execute = async (config, logger, data) => {
-  try {
-    const organisationsClient = new OrganisatonsClient(config.notifications.organisations)
-    const directoriesClient = new DirectoriesClient(config.notifications.directories)
-    let subject = 'A user has requested access to a service'
-    const envName = config.notifications.envName
-    if(envName !== 'pr') {
-      subject = `(${envName}) ${subject}`
-    }
-    const email = getEmailAdapter(config, logger);
+  const organisationsClient = new OrganisatonsClient(config.notifications.organisations)
+  const directoriesClient = new DirectoriesClient(config.notifications.directories)
+  const notify = getNotifyAdapter(config);
 
-    const approversForOrg = await organisationsClient.getApproversForOrganisation(data.orgId);
-    const activeApprovers = await directories.getAllActiveUsersFromList(approversForOrg);
-    const activeApproverIds = activeApprovers.map((entity) => entity.sub);
+  const approversForOrg = await organisationsClient.getApproversForOrganisation(data.orgId);
+  const activeApprovers = await directories.getAllActiveUsersFromList(approversForOrg);
 
-    if (activeApproverIds.length > 0) {
-      const approvers = await directoriesClient.getUsersByIds(activeApproverIds);
+  if (activeApprovers.length === 0) {
+    return;
+  }
 
-      for (let i=0; i < approvers.length; i++) {
-        const name = `${approvers[i].given_name} ${approvers[i].family_name}`;
-        const approverEmail = approvers[i].email;
+  const activeApproverIds = activeApprovers.map((entity) => entity.sub);
+  const approvers = await directoriesClient.getUsersByIds(activeApproverIds);
 
-        await email.send(approverEmail, 'service-request-to-approvers', {
-          approverName: name,
-          senderName: data.senderName,
-          senderEmail: data.senderEmail,
-          orgName: data.orgName,
-          approveServiceUrl: data.approveServiceUrl,
-          rejectServiceUrl: data.rejectServiceUrl,
-          helpUrl: data.helpUrl,
-          requestedServiceName: data.requestedServiceName,
-          requestedSubServices: data.requestedSubServices
-        }, subject )
+  for (let approver of approvers) {
+    await notify.sendEmail('userRequestToApproverForServiceAccess', approver.email, {
+      personalisation: {
+        firstName: approver.given_name,
+        lastName: approver.family_name,
+        orgName: data.orgName,
+        senderName: data.senderName,
+        senderEmail: data.senderEmail,
+        requestedServiceName: data.requestedServiceName,
+        requestedSubServices: (data.requestedSubServices?.length > 0)
+            ? data.requestedSubServices
+            : [ 'No roles selected.' ]
+            ,
+        approveServiceUrl: data.approveServiceUrl,
+        rejectServiceUrl: data.rejectServiceUrl,
+        helpUrl: data.helpUrl,
       }
-    }
-  } catch (e) {
-    logger.error(`Failed to process and send the email for type servicerequest_to_approvers_v2 - ${JSON.stringify(e)}`);
-    throw new Error(`Failed to process and send the email for type servicerequest_to_approvers_v2 - ${JSON.stringify(e)}`);
+    });
   }
 };
 

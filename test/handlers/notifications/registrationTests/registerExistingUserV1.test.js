@@ -1,73 +1,94 @@
-jest.mock('../../../../src/infrastructure/email');
+jest.mock('../../../../src/infrastructure/notify');
 
-const { getEmailAdapter } = require('../../../../src/infrastructure/email');
+const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
 const { getHandler } = require('../../../../src/handlers/notifications/registration/registerExistingUserV1');
 
-const send = jest.fn();
-const logger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-};
 const config = {
   notifications: {
-    migrationUrl: 'https://profile.test/reg',
+    helpUrl: 'https://help.url',
   },
+};
+const jobData = {
+  firstName: 'First',
+  lastName: 'Last',
+  email: 'first.last@example.com',
+  serviceName: 'Unit Test',
+  returnUrl: 'https://profile.test/register/complete?outcome=account_exists',
 };
 
 describe('when sending v1 existing user registration', () => {
-  let data;
-  let handler;
+  const mockSendEmail = jest.fn();
 
   beforeEach(() => {
-    send.mockReset();
-    getEmailAdapter.mockReset().mockReturnValue({
-      send,
-    });
+    mockSendEmail.mockReset();
 
-    data = {
-      email: 'stephen.strange@new-avengers.test',
-      firstName: 'Stephen',
-      lastName: 'Strange',
-      serviceName: 'Unit Test',
-      returnUrl: 'https://some.service.test/register/complete?outcome=acount_exists'
-    };
-
-    handler = getHandler(config, logger);
+    getNotifyAdapter.mockReset();
+    getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
 
-  it('then it should send email using registerexistinguser template', async () => {
-    await handler.processor(data);
+  it('should return a handler with a processor', () => {
+    const handler = getHandler(config);
 
-    expect(send.mock.calls).toHaveLength(1);
-    expect(send.mock.calls[0][1]).toBe('registerexistinguser');
+    expect(handler).not.toBeNull();
+    expect(handler.type).toBe('registerexistinguser_v1');
+    expect(handler.processor).not.toBeNull();
+    expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('then it should send email to email address in data', async () => {
-    await handler.processor(data);
+  it('should get email adapter with supplied config', async () => {
+    const handler = getHandler(config);
 
-    expect(send.mock.calls).toHaveLength(1);
-    expect(send.mock.calls[0][0]).toBe(data.email);
+    await handler.processor(jobData);
+
+    expect(getNotifyAdapter).toHaveBeenCalledTimes(1);
+    expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
+  it('should send email with expected template', async () => {
+    const handler = getHandler(config);
 
-  it('then it should use register subject line', async () => {
-    await handler.processor(data);
+    await handler.processor(jobData);
 
-    expect(send.mock.calls).toHaveLength(1);
-    expect(send.mock.calls[0][3]).toBe(`You’ve registered to join ${data.serviceName}`);
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      'notifyExistingUserWhenAttemptingToRegisterAgain',
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
-  it('then it should send email using template data', async () => {
-    await handler.processor(data);
+  it('should send email to users email address', async () => {
+    const handler = getHandler(config);
 
-    expect(send.mock.calls).toHaveLength(1);
-    expect(send.mock.calls[0][2]).toEqual({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      serviceName: data.serviceName,
-      returnUrl: data.returnUrl,
-    });
+    await handler.processor(jobData);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      jobData.email,
+      expect.anything(),
+    );
+  });
+
+  it('should send email with expected personalisation data', async () => {
+    const handler = getHandler(config);
+
+    await handler.processor(jobData);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: jobData.firstName,
+          lastName: jobData.lastName,
+          email: jobData.email,
+          serviceName: jobData.serviceName,
+          returnUrl: 'https://profile.test/register/complete?outcome=account_exists',
+          helpUrl: 'https://help.url/contact-us',
+        }),
+      }),
+    );
   });
 });

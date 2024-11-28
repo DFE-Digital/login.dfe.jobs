@@ -1,21 +1,17 @@
-const { getEmailAdapter } = require('../../../infrastructure/email');
+const { getNotifyAdapter } = require('../../../infrastructure/notify');
 
 const process = async (config, logger, data) => {
-  try {
-    const serviceName = data.serviceName || 'DfE Sign-in';
-
-    const email = getEmailAdapter(config, logger);
-    await email.send(data.email, 'registerexistinguser', {
+  const notify = getNotifyAdapter(config);
+  await notify.sendEmail('notifyExistingUserWhenAttemptingToRegisterAgain', data.email, {
+    personalisation: {
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
-      serviceName,
+      serviceName: data.serviceName || 'DfE Sign-in',
       returnUrl: data.returnUrl,
-    }, `You’ve registered to join ${serviceName}`);
-  } catch (e) {
-    logger.error(`Failed to process and send the email for type registerexistinguser_v1 - ${JSON.stringify(e)}`);
-    throw new Error(`Failed to process and send the email for type registerexistinguser_v1 - ${JSON.stringify(e)}`);
-  }
+      helpUrl: `${config.notifications.helpUrl}/contact-us`,
+    },
+  });
 };
 
 const getHandler = (config, logger) => {
