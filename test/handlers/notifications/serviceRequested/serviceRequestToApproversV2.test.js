@@ -1,6 +1,6 @@
 jest.mock('../../../../src/infrastructure/organisations');
 jest.mock('../../../../src/infrastructure/directories');
-jest.mock('../../../../src/infrastructure/email');
+jest.mock('../../../../src/infrastructure/notify');
 jest.mock('../../../../src/handlers/notifications/utils');
 
 jest.mock('login.dfe.dao',()=>({
@@ -11,43 +11,38 @@ jest.mock('login.dfe.dao',()=>({
   }
 }));
 
-
-
 const OrganisationsClient = require('../../../../src/infrastructure/organisations');
 const DirectoriesClient = require('../../../../src/infrastructure/directories');
+const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
+const { getHandler } = require('../../../../src/handlers/notifications/serviceRequested/serviceRequestToApproversV2');
 
-const { getDefaultConfig, getLoggerMock, getOrganisationsClientMock, getDirectoriesClientMock } = require('../../../utils');
+const { getOrganisationsClientMock, getDirectoriesClientMock } = require('../../../utils');
 
-const config = getDefaultConfig();
-const logger = getLoggerMock();
-
-const organisatonsClient = getOrganisationsClientMock();
-const directoriesClient = getDirectoriesClientMock();
-
-const data = {
+const config = {
+  notifications: {},
+};
+const jobData = {
   senderName: "TestUser",
   senderEmail: "testuser1@test.com",
   orgId: "ABCDEFGH-XXXX-1234-BFCC-7D9CB120577A",
   orgName: "DSI TEST",
   requestedServiceName: "Subservice Test",
   requestedSubServices: ["RAISE Training Anon"],
-  rejectServiceUrl: "https://dfe-test.com/reject",
-  approveServiceUrl: "https://dfe-test.com/approve"
+  rejectServiceUrl: "https://example.com/reject",
+  approveServiceUrl: "https://example.com/approve",
+  helpUrl: 'https://help.example.com',
 };
 
 describe('when processing a servicerequest_to_approvers_v2 job', () => {
-  let emailSend;
-  let email;
-  let handler;
+  const mockSendEmail = jest.fn();
+  const organisatonsClient = getOrganisationsClientMock();
+  const directoriesClient = getDirectoriesClientMock();
 
   beforeEach(() => {
-    emailSend = jest.fn();
-    email = require('../../../../src/infrastructure/email');
-    email.getEmailAdapter = jest.fn().mockImplementation(() => {
-      return {
-        send: emailSend,
-      };
-    });
+    mockSendEmail.mockReset();
+
+    getNotifyAdapter.mockReset();
+    getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
 
     organisatonsClient.mockResetAll();
     organisatonsClient.getOrgRequestById.mockReturnValue(
@@ -55,52 +50,143 @@ describe('when processing a servicerequest_to_approvers_v2 job', () => {
         id: 'requestId',
         user_id: 'user1',
         org_id: 'org1',
-        reason: 'I need access pls'
+        reason: 'I need access pls',
       },
     );
     organisatonsClient.getApproversForOrganisation.mockReturnValue(['appover1']);
     OrganisationsClient.mockImplementation(() => organisatonsClient);
 
     directoriesClient.mockResetAll();
-    directoriesClient.getUsersByIds.mockReturnValue([{
-      id: 'approver1',
-      email: 'approver@email.com',
-      given_name: 'Test',
-      family_name: 'User'
-    }]);
+    directoriesClient.getUsersByIds.mockReturnValue([
+      {
+        id: 'approver1',
+        email: 'approver1@email.com',
+        given_name: 'Test1',
+        family_name: 'User1',
+      },
+      {
+        id: 'approver2',
+        email: 'approver2@email.com',
+        given_name: 'Test2',
+        family_name: 'User2',
+      },
+    ]);
     DirectoriesClient.mockImplementation(() => directoriesClient);
-    handler = require('../../../../src/handlers/notifications/serviceRequested/serviceRequestToApproversV2').getHandler(config, logger);
   });
 
-  it('then it should get email adapter with config and logger', async () => {
-    await handler.processor(data);
+  it('should return a handler with a processor', () => {
+    const handler = getHandler(config);
 
-    expect(organisatonsClient.getApproversForOrganisation).toHaveBeenCalledTimes(1);
-    expect(organisatonsClient.getApproversForOrganisation.mock.calls[0][0]).toBe(data.orgId);
-
-    expect(directoriesClient.getUsersByIds).toHaveBeenCalledTimes(1);
-
-    expect(email.getEmailAdapter.mock.calls.length).toBe(1);
-    expect(email.getEmailAdapter.mock.calls[0][0]).toBe(config);
-    expect(email.getEmailAdapter.mock.calls[0][1]).toBe(logger);
+    expect(handler).not.toBeNull();
+    expect(handler.type).toBe('servicerequest_to_approvers_v2');
+    expect(handler.processor).not.toBeNull();
+    expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('then it should send an email using the service-request-to-approvers template', async () => {
-    await handler.processor(data);
+  it('should get email adapter with supplied config', async () => {
+    const handler = getHandler(config);
 
-    expect(emailSend.mock.calls.length).toBe(1);
-    expect(emailSend.mock.calls[0][1]).toBe('service-request-to-approvers');
+    await handler.processor(jobData);
+
+    expect(getNotifyAdapter).toHaveBeenCalledTimes(1);
+    expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('then it should send an email to the approver', async () => {
-    await handler.processor(data);
+  it('should send email with expected template for each approver', async () => {
+    const handler = getHandler(config);
 
-    expect(emailSend.mock.calls[0][0]).toBe("approver@email.com");
+    await handler.processor(jobData);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(2);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      'userRequestToApproverForServiceAccess',
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
-  it('then it should include a subject', async () =>{
-    await handler.processor(data);
-    expect(emailSend.mock.calls[0][3]).toBe('(unitTestEnv) A user has requested access to a service');
+  it('should send email to each approver email address', async () => {
+    const handler = getHandler(config);
+
+    await handler.processor(jobData);
+
+    expect(mockSendEmail).toHaveBeenNthCalledWith(1,
+      expect.anything(),
+      'approver1@email.com',
+      expect.anything(),
+    );
+    expect(mockSendEmail).toHaveBeenNthCalledWith(2,
+      expect.anything(),
+      'approver2@email.com',
+      expect.anything(),
+    );
+  });
+
+  it('should send email to each approver with expected personalisation data', async () => {
+    const handler = getHandler(config);
+
+    await handler.processor(jobData);
+
+    expect(mockSendEmail).toHaveBeenNthCalledWith(1,
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: 'Test1',
+          lastName: 'User1',
+          orgName: 'DSI TEST',
+          senderName: 'TestUser',
+          senderEmail: 'testuser1@test.com',
+          requestedServiceName: 'Subservice Test',
+          requestedSubServices: [
+            "RAISE Training Anon"
+          ],
+          approveServiceUrl: 'https://example.com/approve',
+          rejectServiceUrl: 'https://example.com/reject',
+          helpUrl: 'https://help.example.com',
+        }),
+      }),
+    );
+    expect(mockSendEmail).toHaveBeenNthCalledWith(2,
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: 'Test2',
+          lastName: 'User2',
+          orgName: 'DSI TEST',
+          senderName: 'TestUser',
+          senderEmail: 'testuser1@test.com',
+          requestedServiceName: 'Subservice Test',
+          requestedSubServices: [
+            "RAISE Training Anon"
+          ],
+          approveServiceUrl: 'https://example.com/approve',
+          rejectServiceUrl: 'https://example.com/reject',
+          helpUrl: 'https://help.example.com',
+        }),
+      }),
+    );
+  });
+
+  it('should personalises email correctly when no sub services have been selected', async () => {
+    const handler = getHandler(config);
+
+    await handler.processor({
+      ...jobData,
+      requestedSubServices: [],
+    });
+
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          requestedSubServices: [
+            'No roles selected.'
+          ],
+        }),
+      }),
+    );
   });
 });
-
