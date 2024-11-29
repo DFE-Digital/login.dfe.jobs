@@ -1,136 +1,151 @@
-jest.mock('../../../../src/infrastructure/email');
+jest.mock('../../../../src/infrastructure/notify');
+const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
+const { getHandler } = require('../../../../src/handlers/notifications/serviceAdded/newServiceAddedV2');
 
 const config = {
   notifications: {
-    type: 'disk',
-    servicesUrl: 'https://sign-in.test',
-    helpUrl: 'https://help.test',
+    servicesUrl: 'https://services.dfe.signin',
+    helpUrl: 'https://help.dfe.signin',
   },
 };
 
-const logger = {
-  info: jest.fn(),
-  error: jest.fn(),
-};
 const data = {
   email: 'user.one@unit.test',
-  firstName: 'test',
-  lastName: 'testing',
-  orgName: 'org name',
-  permission: {
-    id: 0,
-    name: 'End user',
-  },
-  serviceName: 'Unit Test',
-  requestedSubServices: ['role1'],
-  signInUrl: 'https://sign-in.test/my-services',
-  helpUrl: 'https://help.test/contact',
-  helpApproverUrl: 'https://help.test/approvers',
+  firstName: 'mock-firstName',
+  lastName: 'mock-lastName',
+  orgName: 'mock-orgName',
+  serviceName: 'mock-serviceName',
+  requestedSubServices: ['mock-requestedSubServices-role1'],
+  signInUrl: 'https://services.dfe.signin/my-services',
 };
 
+const endUserData = { ...data, ...{ email: 'mock-end-user-data-email', permission: { id: 0, name: 'End user' } } };
+const approverUserData = { ...data, ...{ email: 'mock-approver-user-data-email', permission: { id: 10000, name: 'Approver' } } };
+
 describe('when processing a userserviceadded_v2 job', () => {
-  let emailSend;
-  let email;
-  let handler;
+  const mockSendEmail = jest.fn();
 
   beforeEach(() => {
-    emailSend = jest.fn();
-    email = require('../../../../src/infrastructure/email');
-    email.getEmailAdapter = jest.fn().mockImplementation(() => ({
-      send: emailSend,
-    }));
+    mockSendEmail.mockReset();
 
-    handler = require('../../../../src/handlers/notifications/serviceAdded/newServiceAddedV2').getHandler(config, logger);
+    getNotifyAdapter.mockReset();
+    getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
 
-  it('then it should get email adapter with config and logger', async () => {
-    await handler.processor(data);
+  it('should return a handler with a processor', async () => {
+    const handler = getHandler(config);
 
-    expect(email.getEmailAdapter.mock.calls.length).toBe(1);
-    expect(email.getEmailAdapter.mock.calls[0][0]).toBe(config);
-    expect(email.getEmailAdapter.mock.calls[0][1]).toBe(logger);
+    expect(handler).not.toBeNull();
+    expect(handler.type).toBe('userserviceadded_v2');
+    expect(handler.processor).not.toBeNull();
+    expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('then it should send an email using the user-service-added-v2 template', async () => {
-    await handler.processor(data);
+  it('should get email adapter with supplied config', async () => {
+    const handler = getHandler(config);
 
-    expect(emailSend.mock.calls.length).toBe(1);
-    expect(emailSend.mock.calls[0][1]).toBe('user-service-added-v2');
+    await handler.processor(endUserData);
+
+    expect(getNotifyAdapter).toHaveBeenCalledTimes(1);
+    expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('then it should send an email to the user', async () => {
-    await handler.processor(data);
+  it('should send email with expected template', async () => {
+    const handler = getHandler(config);
 
-    expect(emailSend.mock.calls[0][0]).toBe(data.email);
+    await handler.processor(endUserData);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      'userRequestForServiceApprovedV2',
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
-  it('then it should include the first name in the email data', async () => {
-    await handler.processor(data);
+  it('should send email to users email address', async () => {
+    const handler = getHandler(config);
 
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      firstName: data.firstName,
-    });
+    await handler.processor(endUserData);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      endUserData.email,
+      expect.anything(),
+    );
   });
 
-  it('then it should include the last name in the email data', async () => {
-    await handler.processor(data);
+  it('should send email with expected personalisation data where permissions is provided (end-user)', async () => {
+    const handler = getHandler(config);
 
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      lastName: data.lastName,
-    });
+    await handler.processor(endUserData);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      endUserData.email,
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: endUserData.firstName,
+          lastName: endUserData.lastName,
+          orgName: endUserData.orgName,
+          permissionName: 'End user',
+          serviceName: endUserData.serviceName,
+          subServices: endUserData.requestedSubServices,
+          isApprover: false,
+          signInUrl: `${config.notifications.servicesUrl}/my-services`,
+        }),
+      }),
+    );
   });
 
-  it('then it should include the organisation name in the email data', async () => {
-    await handler.processor(data);
+  it('should send email with expected personalisation data where permissions is provided (approver)', async () => {
+    const handler = getHandler(config);
 
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      orgName: data.orgName,
-    });
+    await handler.processor(approverUserData);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      approverUserData.email,
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: approverUserData.firstName,
+          lastName: approverUserData.lastName,
+          orgName: approverUserData.orgName,
+          permissionName: 'Approver',
+          serviceName: approverUserData.serviceName,
+          subServices: approverUserData.requestedSubServices,
+          isApprover: true,
+          signInUrl: `${config.notifications.servicesUrl}/my-services`,
+        }),
+      }),
+    );
   });
 
-  it('then it should include the permission level in the email data', async () => {
+  it('should send email with expected personalisation data where permissions is not provided', async () => {
+    const handler = getHandler(config);
+
     await handler.processor(data);
 
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      permission: data.permission,
-    });
-  });
-
-  it('then it should include the requested sub services in the email data', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      requestedSubServices: data.requestedSubServices,
-    });
-  });
-
-  it('then it should include the sign in URL in the email data', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      signInUrl: data.signInUrl,
-    });
-  });
-
-  it('then it should include the help URL in the email data', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      helpUrl: data.helpUrl,
-    });
-  });
-
-  it('then it should include the help URL for approvers in the email data', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      helpApproverUrl: data.helpApproverUrl,
-    });
-  });
-
-  it('then it should include a subject', async () =>{
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][3]).toBe('New service added to your DfE Sign-in account');
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: approverUserData.firstName,
+          lastName: approverUserData.lastName,
+          orgName: approverUserData.orgName,
+          permissionName: 'n/a',
+          serviceName: approverUserData.serviceName,
+          subServices: approverUserData.requestedSubServices,
+          isApprover: false,
+          signInUrl: `${config.notifications.servicesUrl}/my-services`,
+          helpUrl: `${config.notifications.helpUrl}/contact`,
+        }),
+      }),
+    );
   });
 });
