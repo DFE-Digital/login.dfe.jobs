@@ -9,7 +9,7 @@ const config = {
     helpUrl: 'https://help.test',
   },
   entra: {
-    enableEntraSignIn: false,
+    useEntraForAccountRegistration: false,
   },
 };
 const commonJobData = {
