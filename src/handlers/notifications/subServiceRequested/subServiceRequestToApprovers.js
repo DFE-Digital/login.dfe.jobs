@@ -1,61 +1,47 @@
 const { directories } = require('login.dfe.dao');
-const { getEmailAdapter } = require('../../../infrastructure/email');
+const { getNotifyAdapter } = require('../../../infrastructure/notify');
 const OrganisatonsClient = require('../../../infrastructure/organisations');
 const DirectoriesClient = require('../../../infrastructure/directories');
 
-const jobType = 'sub_service_request_to_approvers';
 
 const execute = async (config, logger, data) => {
-  try {
-    const organisationsClient = new OrganisatonsClient(config.notifications.organisations);
-    const directoriesClient = new DirectoriesClient(config.notifications.directories);
+  const organisationsClient = new OrganisatonsClient(config.notifications.organisations);
+  const directoriesClient = new DirectoriesClient(config.notifications.directories);
 
-    const isMultipleSubServicesReq = data.requestedSubServices.length > 1;
-    let subject = 'Request to change sub-service access.';
+  const approversForOrg = await organisationsClient.getApproversForOrganisation(data.orgId);
+  const activeApprovers = await directories.getAllActiveUsersFromList(approversForOrg);
+  const activeApproverIds = activeApprovers.map((entity) => entity.sub);
 
-    const { envName } = config.notifications;
-    if (envName !== 'pr') {
-      subject = `(${envName}) ${subject}`;
-    }
-    const emailAdapter = getEmailAdapter(config, logger);
-    const templateName = 'sub-service-request-to-approvers';
+  if (activeApproverIds.length === 0) {
+    return;
+  }
 
-    const approversForOrg = await organisationsClient.getApproversForOrganisation(data.orgId);
-    const activeApprovers = await directories.getAllActiveUsersFromList(approversForOrg);
-    const activeApproverIds = activeApprovers.map((entity) => entity.sub);
+  const notify = getNotifyAdapter(config);
+  const approvers = await directoriesClient.getUsersByIds(activeApproverIds);
+  const senderName = `${data.senderFirstName} ${data.senderLastName}`;
 
-    if (activeApproverIds.length > 0) {
-      const approvers = await directoriesClient.getUsersByIds(activeApproverIds);
-
-      for (let i = 0; i < approvers.length; i += 1) {
-        const approverName = `${approvers[i].given_name} ${approvers[i].family_name}`;
-        const approverEmail = approvers[i].email;
-        const senderName = `${data.senderFirstName} ${data.senderLastName}`;
-
-        const emailData = {
-          approverName,
-          senderName,
-          senderEmail: data.senderEmail,
-          orgName: data.orgName,
-          approveUrl: data.approveUrl,
-          rejectUrl: data.rejectUrl,
-          helpUrl: data.helpUrl,
-          serviceName: data.serviceName,
-          requestedSubServices: data.requestedSubServices,
-          isMultipleSubServicesReq,
-        };
-
-        emailAdapter.send(approverEmail, templateName, emailData, subject);
-      }
-    }
-  } catch (e) {
-    logger.error(`Failed to process and send the email for type ${jobType} - ${JSON.stringify(e)}`);
-    throw new Error(`Failed to process and send the email for type ${jobType} - ${JSON.stringify(e)}`);
+  for (let approver of approvers) {
+    await notify.sendEmail('userRequestToApproverForSubServiceAccess', approver.email, {
+      personalisation: {
+        firstName: approver.given_name,
+        lastName: approver.family_name,
+        senderName,
+        orgName: data.orgName,
+        approveUrl: data.approveUrl,
+        serviceName: data.serviceName,
+        rejectUrl: data.rejectUrl,
+        requestedSubServices: (data.requestedSubServices?.length > 0) 
+          ? data.requestedSubServices 
+          : [ 'No roles selected.' ]
+          ,
+        helpUrl: data.helpUrl,
+      },
+    });
   }
 };
 
 const getHandler = (config, logger) => ({
-  type: jobType,
+  type: 'sub_service_request_to_approvers',
   processor: async (data) => {
     await execute(config, logger, data);
   },
