@@ -18,7 +18,9 @@ const { getHandler } = require('../../../../src/handlers/notifications/subServic
 const { getOrganisationsClientMock, getDirectoriesClientMock } = require('../../../utils');
 
 const config = {
-  notifications: {},
+  notifications: {
+    helpUrl: 'https://help.dfe.com',
+  },
 };
 
 const data = {
@@ -146,6 +148,7 @@ describe('when processing a sub_service_request_to_approvers job', () => {
           approveUrl: 'https://example.com/approve',
           rejectUrl: 'https://example.com/reject',
           helpUrl: 'https://help.example.com',
+          contactUsUrl: `${config.notifications.helpUrl}/contact-us`,
         }),
       }),
     );
@@ -167,6 +170,7 @@ describe('when processing a sub_service_request_to_approvers job', () => {
           approveUrl: 'https://example.com/approve',
           rejectUrl: 'https://example.com/reject',
           helpUrl: 'https://help.example.com',
+          contactUsUrl: `${config.notifications.helpUrl}/contact-us`,
         }),
       }),
     );

@@ -35,6 +35,7 @@ const execute = async (config, logger, data) => {
           : [ 'No roles selected.' ]
           ,
         helpUrl: data.helpUrl,
+        contactUsUrl: `${config.notifications.helpUrl}/contact-us`,
       },
     });
   }
