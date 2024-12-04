@@ -1,17 +1,28 @@
-const { getEmailAdapter } = require('../../../infrastructure/email');
+const { getNotifyAdapter } = require('../../../infrastructure/notify');
 
 const process = async (config, logger, data) => {
-  const email = getEmailAdapter(config, logger);
-  await email.send(data.email, 'user-persmission-level-changed', {
-    firstName: data.firstName,
-    lastName: data.lastName,
-    orgName: data.orgName,
-    permission: data.permission,
-    signInUrl: `${config.notifications.servicesUrl}`,
-    helpUrl: `${config.notifications.helpUrl}/contact`,
-    contactUsUrl: `${config.notifications.helpUrl}/contact-us`,
-    helpApproverUrl: `${config.notifications.helpUrl}/approvers`,
-  }, `Your DfE Sign-in permission level has changed for ${data.orgName}`);
+  const notify = getNotifyAdapter(config);
+  const oldPermissionLowercase = data.permission.oldName.toLowerCase();
+  const permissionLowercase = data.permission.name.toLowerCase();
+  const isNowApprover = data.permission.id === 10000;
+  const isReduced = !isNowApprover;
+
+  await notify.sendEmail('userPermissionLevelChanged', data.email, {
+    personalisation: {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      orgName: data.orgName,
+      oldPermissionLowercase,
+      permissionLowercase,
+      isNowApprover,
+      isReduced,
+      contactUsUrl: `${config.notifications.helpUrl}/contact-us`,
+      permissionName: data.permission.name,
+      signInUrl: config.notifications.servicesUrl,
+      helpUrl: `${config.notifications.helpUrl}/contact`,
+      helpApproverUrl: `${config.notifications.helpUrl}/approvers`,
+    },
+  });
 };
 
 const getHandler = (config, logger) => ({
