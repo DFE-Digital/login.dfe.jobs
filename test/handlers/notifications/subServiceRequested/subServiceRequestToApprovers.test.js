@@ -1,6 +1,6 @@
 jest.mock('../../../../src/infrastructure/organisations');
 jest.mock('../../../../src/infrastructure/directories');
-jest.mock('../../../../src/infrastructure/email');
+jest.mock('../../../../src/infrastructure/notify');
 jest.mock('../../../../src/handlers/notifications/utils');
 jest.mock('login.dfe.dao', () => ({
   directories: {
@@ -12,46 +12,49 @@ jest.mock('login.dfe.dao', () => ({
 
 const OrganisationsClient = require('../../../../src/infrastructure/organisations');
 const DirectoriesClient = require('../../../../src/infrastructure/directories');
+const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
+const { getHandler } = require('../../../../src/handlers/notifications/subServiceRequested/subServiceRequestToApprovers');
 
-const {
-  getDefaultConfig,
-  getLoggerMock,
-  getOrganisationsClientMock,
-  getDirectoriesClientMock,
-} = require('../../../utils');
+const { getOrganisationsClientMock, getDirectoriesClientMock } = require('../../../utils');
 
-const config = getDefaultConfig();
-const logger = getLoggerMock();
+const config = {
+  notifications: {
+    helpUrl: 'https://help.dfe.com',
+  },
+};
 
-const organisatonsClient = getOrganisationsClientMock();
-const directoriesClient = getDirectoriesClientMock();
-
-let data = {
+const data = {
   senderFirstName: 'Jane',
   senderLastName: 'Doe',
-  senderEmail: 'jane.doe@unit.test',
   orgId: 'OrgansiationID-123456',
   orgName: 'Test Organisation',
   serviceName: 'Test ServiceName',
   requestedSubServices: ['test-sub-service'],
-  rejectUrl: 'https://rejectUrl',
-  approveUrl: 'https://approveUrl',
-  helpUrl: 'https://help.com',
+  rejectUrl: 'https://example.com/reject',
+  approveUrl: 'https://example.com/approve',
+  helpUrl: 'https://help.example.com',
 };
 
 describe('when processing a sub_service_request_to_approvers job', () => {
-  let emailSend;
-  let email;
-  let handler;
+  const mockSendEmail = jest.fn();
+  const organisatonsClient = getOrganisationsClientMock();
+  const directoriesClient = getDirectoriesClientMock();
 
   beforeEach(() => {
-    emailSend = jest.fn();
-    email = require('../../../../src/infrastructure/email');
-    email.getEmailAdapter = jest.fn().mockImplementation(() => ({
-      send: emailSend,
-    }));
+    mockSendEmail.mockReset();
+
+    getNotifyAdapter.mockReset();
+    getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
 
     organisatonsClient.mockResetAll();
+    organisatonsClient.getOrgRequestById.mockReturnValue(
+      {
+        id: 'requestId',
+        user_id: 'user1',
+        org_id: 'org1',
+        reason: 'I need access pls',
+      },
+    );
     organisatonsClient.getApproversForOrganisation.mockReturnValue(['appover1']);
     OrganisationsClient.mockImplementation(() => organisatonsClient);
 
@@ -59,83 +62,138 @@ describe('when processing a sub_service_request_to_approvers job', () => {
     directoriesClient.getUsersByIds.mockReturnValue([
       {
         id: 'approver1',
-        email: 'approver@email.com',
-        given_name: 'Test',
-        family_name: 'User',
+        email: 'approver1@email.com',
+        given_name: 'Test1',
+        family_name: 'User1',
+      },
+      {
+        id: 'approver2',
+        email: 'approver2@email.com',
+        given_name: 'Test2',
+        family_name: 'User2',
       },
     ]);
     DirectoriesClient.mockImplementation(() => directoriesClient);
-    handler = require('../../../../src/handlers/notifications/subServiceRequested/subServiceRequestToApprovers').getHandler(
-      config,
-      logger,
+  });
+
+  it('should return a handler with a processor', () => {
+    const handler = getHandler(config);
+
+    expect(handler).not.toBeNull();
+    expect(handler.type).toBe('sub_service_request_to_approvers');
+    expect(handler.processor).not.toBeNull();
+    expect(handler.processor).toBeInstanceOf(Function);
+  });
+
+  it('should get email adapter with supplied config', async () => {
+    const handler = getHandler(config);
+
+    await handler.processor(data);
+
+    expect(getNotifyAdapter).toHaveBeenCalledTimes(1);
+    expect(getNotifyAdapter).toHaveBeenCalledWith(config);
+  });
+
+  it('should send email with expected template for each approver', async () => {
+    const handler = getHandler(config);
+
+    await handler.processor(data);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(2);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      'userRequestToApproverForSubServiceAccess',
+      expect.anything(),
+      expect.anything(),
     );
   });
 
-  it('then it should get email adapter with config and logger', async () => {
+  it('should send email to each approver email address', async () => {
+    const handler = getHandler(config);
+
     await handler.processor(data);
 
-    expect(organisatonsClient.getApproversForOrganisation).toHaveBeenCalledTimes(1);
-    expect(organisatonsClient.getApproversForOrganisation.mock.calls[0][0]).toBe(data.orgId);
-    expect(directoriesClient.getUsersByIds).toHaveBeenCalledTimes(1);
-
-    expect(email.getEmailAdapter.mock.calls.length).toBe(1);
-    expect(email.getEmailAdapter.mock.calls[0][0]).toBe(config);
-    expect(email.getEmailAdapter.mock.calls[0][1]).toBe(logger);
+    expect(mockSendEmail).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      'approver1@email.com',
+      expect.anything(),
+    );
+    expect(mockSendEmail).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      'approver2@email.com',
+      expect.anything(),
+    );
   });
 
-  it('then it should send an email using the sub-service-request-to-approvers template', async () => {
+  it('should send email to each approver with expected personalisation data', async () => {
+    const handler = getHandler(config);
+
     await handler.processor(data);
 
-    expect(emailSend.mock.calls.length).toBe(1);
-    expect(emailSend.mock.calls[0][1]).toBe('sub-service-request-to-approvers');
+    expect(mockSendEmail).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: 'Test1',
+          lastName: 'User1',
+          orgName: 'Test Organisation',
+          senderName: 'Jane Doe',
+          serviceName: 'Test ServiceName',
+          requestedSubServices: [
+            'test-sub-service',
+          ],
+          approveUrl: 'https://example.com/approve',
+          rejectUrl: 'https://example.com/reject',
+          helpUrl: 'https://help.example.com',
+          contactUsUrl: `${config.notifications.helpUrl}/contact-us`,
+        }),
+      }),
+    );
+
+    expect(mockSendEmail).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: 'Test2',
+          lastName: 'User2',
+          orgName: 'Test Organisation',
+          senderName: 'Jane Doe',
+          serviceName: 'Test ServiceName',
+          requestedSubServices: [
+            'test-sub-service',
+          ],
+          approveUrl: 'https://example.com/approve',
+          rejectUrl: 'https://example.com/reject',
+          helpUrl: 'https://help.example.com',
+          contactUsUrl: `${config.notifications.helpUrl}/contact-us`,
+        }),
+      }),
+    );
   });
 
-  it('then it should send an email including the rquest data', async () => {
-    await handler.processor(data);
+  it('should personalises email correctly when no sub services have been selected', async () => {
+    const handler = getHandler(config);
 
-    expect(emailSend.mock.calls.length).toBe(1);
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      approverName: 'Test User',
-      senderName: 'Jane Doe',
-      senderEmail: 'jane.doe@unit.test',
-      orgName: 'Test Organisation',
-      approveUrl: 'https://approveUrl',
-      rejectUrl: 'https://rejectUrl',
-      helpUrl: 'https://help.com',
-      serviceName: 'Test ServiceName',
-      requestedSubServices: ['test-sub-service'],
+    await handler.processor({
+      ...data,
+      requestedSubServices: [],
     });
-  });
 
-  it('then it should send an email to the approver', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][0]).toBe('approver@email.com');
-  });
-
-  it('then it should include a subject prefixed by the env name if env not PROD', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][3]).toBe('(unitTestEnv) Request to change sub-service access.');
-  });
-
-  it('then it should include a subject without a prefix if env is PROD', async () => {
-    config.notifications.envName = 'pr';
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][3]).toBe('Request to change sub-service access.');
-  });
-  it('then it shoud log the error message and throw an error if there is an Error', async () => {
-    data = undefined;
-    try {
-      await handler.processor(data);
-    } catch (e) {
-      expect(logger.error.mock.calls[0][0]).toBe(
-        `Failed to process and send the email for type sub_service_request_to_approvers - ${JSON.stringify(e)}`,
-      );
-      expect(e.message).toBe(
-        `Failed to process and send the email for type sub_service_request_to_approvers - ${JSON.stringify(e)}`,
-      );
-    }
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          requestedSubServices: [
+            'No roles selected.',
+          ],
+        }),
+      }),
+    );
   });
 });
