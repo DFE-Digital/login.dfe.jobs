@@ -1,23 +1,21 @@
-const { getEmailAdapter } = require('../../../infrastructure/email');
+const { getNotifyAdapter } = require('../../../infrastructure/notify');
 
 const process = async (config, logger, data) => {
-  const email = getEmailAdapter(config, logger);
+  const notify = getNotifyAdapter(config);
 
-  let bccEmail = 'NoReply.PireanMigration@education.gov.uk';
-  if(process && process.env && process.env.INV_BCC_EMAIL){
-    bccEmail = process.env.INV_BCC_EMAIL;
-  }
-  await email.send(data.email, 'user-service-added-v2', {
-    firstName: data.firstName,
-    lastName: data.lastName,
-    orgName: data.orgName,
-    permission: data.permission,
-    serviceName: data.serviceName,
-    requestedSubServices: data.requestedSubServices,
-    signInUrl: `${config.notifications.servicesUrl}/my-services`,
-    helpUrl: `${config.notifications.helpUrl}/contact`,
-    helpApproverUrl: `${config.notifications.helpUrl}/approvers`,
-  }, 'New service added to your DfE Sign-in account', bccEmail);
+  await notify.sendEmail('userRequestForServiceApprovedV2', data.email, {
+    personalisation: {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      orgName: data.orgName,
+      permissionName: (data.permission?.name ? data.permission.name : 'n/a'),
+      serviceName: data.serviceName,
+      subServices: data.requestedSubServices,
+      isApprover: data.permission?.id === 10000,
+      signInUrl: `${config.notifications.servicesUrl}/my-services`,
+      helpUrl: `${config.notifications.helpUrl}/contact`,
+    },
+  });
 };
 
 const getHandler = (config, logger) => ({
