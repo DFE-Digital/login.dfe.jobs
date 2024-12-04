@@ -1,34 +1,34 @@
-jest.mock('../../../../src/infrastructure/email');
-
-const { getEmailAdapter } = require('../../../../src/infrastructure/email');
+jest.mock('../../../../src/infrastructure/notify');
+const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
 const { getHandler } = require('../../../../src/handlers/notifications/accessRequest/accessRequestV1');
-const emailSend = jest.fn();
 
 const config = {
   notifications: {
-    profileUrl: 'https://profile.dfe.signin',
-    helpUrl: 'https://help.test',
-    servicesUrl: 'https://services.test',
+    servicesUrl: 'https://services.dfe.signin',
+    helpUrl: 'https://help.dfe.signin',
   },
 };
-const logger = {};
+
 const jobData = {
+  email: 'mock-email',
   orgName: 'Test Organisation',
-  name: 'Test One',
-  approved: 'true',
-  reason: 'test',
+  name: 'mock-name',
+  approved: true,
+  reason: undefined,
 };
 
-describe('When handling accessRequest_v1 job', () => {
-  beforeEach(() => {
-    emailSend.mockReset();
+describe('when processing a accessRequest_v1 job', () => {
+  const mockSendEmail = jest.fn();
 
-    getEmailAdapter.mockReset();
-    getEmailAdapter.mockReturnValue({ send: emailSend });
+  beforeEach(() => {
+    mockSendEmail.mockReset();
+
+    getNotifyAdapter.mockReset();
+    getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
 
-  it('then it should return a handler with a processor', () => {
-    const handler = getHandler(config, logger);
+  it('should return a handler with a processor', async () => {
+    const handler = getHandler(config);
 
     expect(handler).not.toBeNull();
     expect(handler.type).toBe('accessrequest_v1');
@@ -36,56 +36,98 @@ describe('When handling accessRequest_v1 job', () => {
     expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('then it should get email adapter with supplied config and logger', async () => {
-    const handler = getHandler(config, logger);
+  it('should get email adapter with supplied config', async () => {
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(getEmailAdapter.mock.calls).toHaveLength(1);
-    expect(getEmailAdapter.mock.calls[0][0]).toBe(config);
-    expect(getEmailAdapter.mock.calls[0][1]).toBe(logger);
+    expect(getNotifyAdapter).toHaveBeenCalledTimes(1);
+    expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('then it should send email to users email address', async () => {
-    const handler = getHandler(config, logger);
+  it('should send email with expected template, when the request is approved', async () => {
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][0]).toBe(jobData.email);
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      'userRequestForOrganisationAccessApproved',
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
-  it('then it should send email using access-request-email template', async () => {
-    const handler = getHandler(config, logger);
+  it('should send email with expected template, when the request is not approved', async () => {
+    const handler = getHandler(config);
 
-    await handler.processor(jobData);
+    const data = { ...jobData, ...{ approved: false } };
+    await handler.processor(data);
 
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][1]).toBe('access-request-email');
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      'userRequestForOrganisationAccessRejected',
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
-  it('then it should send email using request data as model', async () => {
-    const handler = getHandler(config, logger);
+  it('should send email to users email address', async () => {
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][2]).toEqual({
-      approved: jobData.approved,
-      reason: jobData.reason,
-      name: jobData.name,
-      orgName: jobData.orgName,
-      helpUrl: 'https://help.test/contact',
-      servicesUrl: 'https://services.test',
-    });
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      jobData.email,
+      expect.anything(),
+    );
   });
 
-  it('then it should send email with subject', async () => {
-    const handler = getHandler(config, logger);
+  it('should send email with expected personalisation data when the request is approved', async () => {
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][3]).toBe(`DfE Sign-in - Request to access ${jobData.orgName}`);
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          name: jobData.name,
+          orgName: jobData.orgName,
+          showReasonHeader: false,
+          reason: '',
+          servicesUrl: config.notifications.servicesUrl,
+        }),
+      }),
+    );
+  });
+
+  it.each([
+    [true, null, '', false], [true, undefined, '', false], [true, '', '', false], [true, ' ', '', false],
+    [false, null, '', false], [false, undefined, '', false], [false, '', '', false], [false, ' ', '', false],
+  ])('should send an email with expected personalisation data, when the request approval is %s and the reason is "%s"', async (approved, reasonText, expectedReasonText, expectedShowReasonHeader) => {
+    const handler = getHandler(config);
+    const data = { ...jobData, ...{ approved, reasonText } };
+    await handler.processor(data);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          name: jobData.name,
+          orgName: jobData.orgName,
+          showReasonHeader: expectedShowReasonHeader,
+          reason: expectedReasonText,
+          servicesUrl: config.notifications.servicesUrl,
+          helpUrl: `${config.notifications.helpUrl}/contact-us`,
+        }),
+      }),
+    );
   });
 });
