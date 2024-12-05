@@ -19,7 +19,7 @@ const process = async (config, logger, data) => {
       contactUsUrl: `${config.notifications.helpUrl}/contact-us`,
       permissionName: data.permission.name,
       signInUrl: config.notifications.servicesUrl,
-      helpUrl: `${config.notifications.helpUrl}/contact`,
+      helpUrl: `${config.notifications.helpUrl}/contact-us`,
       helpApproverUrl: `${config.notifications.helpUrl}/approvers`,
     },
   });
