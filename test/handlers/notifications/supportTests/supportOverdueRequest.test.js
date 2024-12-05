@@ -83,7 +83,7 @@ describe('When handling supportoverduerequest job', () => {
         personalisation: expect.objectContaining({
           name: jobData.name,
           requestsCount: jobData.requestsCount,
-          helpUrl: `${config.notifications.helpUrl}/contact`,
+          helpUrl: `${config.notifications.helpUrl}/contact-us`,
           servicesUrl: `${config.notifications.servicesUrl}/access-requests`,
         }),
       }),

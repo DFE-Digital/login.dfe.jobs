@@ -7,7 +7,7 @@ const process = async (config, logger, data) => {
     personalisation: {
       name: data.name,
       requestsCount: data.requestsCount,
-      helpUrl: `${config.notifications.helpUrl}/contact`,
+      helpUrl: `${config.notifications.helpUrl}/contact-us`,
       servicesUrl: `${config.notifications.servicesUrl}/access-requests`,
     },
   });

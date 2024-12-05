@@ -83,7 +83,7 @@ describe('when processing a userserviceadded_v1 job', () => {
           firstName: data.firstName,
           lastName: data.lastName,
           signInUrl: config.notifications.servicesUrl,
-          helpUrl: `${config.notifications.helpUrl}/contact`,
+          helpUrl: `${config.notifications.helpUrl}/contact-us`,
         }),
       }),
     );

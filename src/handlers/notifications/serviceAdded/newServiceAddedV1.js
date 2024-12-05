@@ -8,7 +8,7 @@ const process = async (config, logger, data) => {
       firstName: data.firstName,
       lastName: data.lastName,
       signInUrl: `${config.notifications.servicesUrl}`,
-      helpUrl: `${config.notifications.helpUrl}/contact`,
+      helpUrl: `${config.notifications.helpUrl}/contact-us`,
     },
   });
 };
