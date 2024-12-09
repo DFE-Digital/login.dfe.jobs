@@ -22,7 +22,7 @@ const process = async (config, logger, data) => {
       reason = ` for ${data.orgName}`;
     }
 
-    if (!!config.entra?.enableEntraSignIn) {
+    if (!!config.entra?.useEntraForAccountRegistration) {
       if (!data.selfInvoked) {
         await notify.sendEmail('inviteNewUserEntra', data.email, {
           personalisation: {
