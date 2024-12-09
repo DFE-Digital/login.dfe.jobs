@@ -1,6 +1,6 @@
 const express = require('express');
-const logger = require('../../infrastructure/logger');
 const { asyncWrapper } = require('login.dfe.express-error-handling');
+const logger = require('../../infrastructure/logger');
 
 const router = express.Router();
 
@@ -8,6 +8,7 @@ const area = () => {
   router.get('/', asyncWrapper(async (req, res) => {
     res.json({ status: req.monitor.currentStatus });
   }));
+
   router.patch('/', asyncWrapper(async (req, res) => {
     const requestedState = req.body.state;
     if (requestedState === 'stopped') {
@@ -18,7 +19,9 @@ const area = () => {
       logger.info('Stopping monitor based on api request');
       await req.monitor.stop();
       return res.send();
-    } else if (requestedState === 'started') {
+    }
+
+    if (requestedState === 'started') {
       if (req.monitor.currentStatus === 'started') {
         return res.status(304).send();
       }
@@ -27,6 +30,7 @@ const area = () => {
       await req.monitor.start();
       return res.send();
     }
+
     res.json({ status: req.monitor.currentStatus });
   }));
   return router;
