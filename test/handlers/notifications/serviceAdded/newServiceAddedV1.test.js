@@ -1,89 +1,91 @@
-jest.mock('../../../../src/infrastructure/email');
+jest.mock('../../../../src/infrastructure/notify');
+const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
+const { getHandler } = require('../../../../src/handlers/notifications/serviceAdded/newServiceAddedV1');
 
 const config = {
   notifications: {
-    type: 'disk',
-    helpUrl: 'https://help.test',
+    servicesUrl: 'https://services.dfe.signin',
+    helpUrl: 'https://help.dfe.signin',
   },
 };
 
-const logger = {
-  info: jest.fn(),
-  error: jest.fn(),
-};
 const data = {
-  email: 'user.one@unit.test',
-  firstName: 'test',
-  lastName: 'testing',
-  serviceName: 'Unit Test',
-  orgName: 'org name'
+  email: 'mock-email',
+  firstName: 'mock-firstName',
+  lastName: 'mock-lastName',
 };
 
 describe('when processing a userserviceadded_v1 job', () => {
-  let emailSend;
-  let email;
-  let handler;
+  const mockSendEmail = jest.fn();
 
   beforeEach(() => {
-    emailSend = jest.fn();
-    email = require('../../../../src/infrastructure/email');
-    email.getEmailAdapter = jest.fn().mockImplementation(() => {
-      return {
-        send: emailSend,
-      };
-    });
+    mockSendEmail.mockReset();
 
-    handler = require('../../../../src/handlers/notifications/serviceAdded/newServiceAddedV1').getHandler(config, logger);
+    getNotifyAdapter.mockReset();
+    getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
 
-  it('then it should get email adapter with config and logger', async () => {
-    await handler.processor(data);
+  it('should return a handler with a processor', async () => {
+    const handler = getHandler(config);
 
-    expect(email.getEmailAdapter.mock.calls.length).toBe(1);
-    expect(email.getEmailAdapter.mock.calls[0][0]).toBe(config);
-    expect(email.getEmailAdapter.mock.calls[0][1]).toBe(logger);
+    expect(handler).not.toBeNull();
+    expect(handler.type).toBe('userserviceadded_v1');
+    expect(handler.processor).not.toBeNull();
+    expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('then it should send an email using the user-service-added template', async () => {
+  it('should get email adapter with supplied config', async () => {
+    const handler = getHandler(config);
+
     await handler.processor(data);
 
-    expect(emailSend.mock.calls.length).toBe(1);
-    expect(emailSend.mock.calls[0][1]).toBe('user-service-added');
+    expect(getNotifyAdapter).toHaveBeenCalledTimes(1);
+    expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('then it should send an email to the user', async () => {
+  it('should send email with expected template', async () => {
+    const handler = getHandler(config);
+
     await handler.processor(data);
 
-    expect(emailSend.mock.calls[0][0]).toBe(data.email);
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      'userRequestForServiceApprovedV1',
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
-  it('then it should include the first name in the email data', async () => {
+  it('should send email to users email address', async () => {
+    const handler = getHandler(config);
+
     await handler.processor(data);
 
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      firstName: data.firstName,
-    });
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      data.email,
+      expect.anything(),
+    );
   });
 
-  it('then it should include the last name in the email data', async () => {
+  it('should send email with expected personalisation data', async () => {
+    const handler = getHandler(config);
+
     await handler.processor(data);
 
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      lastName: data.lastName,
-    });
-  });
-
-  it('then it should include a link to help in the email data', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      helpUrl: 'https://help.test/contact',
-    });
-  });
-
-  it('then it should include a subject', async () =>{
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][3]).toBe('DfE Sign-in - Access to new services granted');
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          signInUrl: config.notifications.servicesUrl,
+          helpUrl: `${config.notifications.helpUrl}/contact-us`,
+        }),
+      }),
+    );
   });
 });

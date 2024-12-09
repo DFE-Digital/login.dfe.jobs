@@ -1,15 +1,16 @@
-const { getEmailAdapter } = require('../../../infrastructure/email');
+const { getNotifyAdapter } = require('../../../infrastructure/notify');
 
 const process = async (config, logger, data) => {
-  const email = getEmailAdapter(config, logger);
-const emailSubject = `Action needed: ${data.requestsCount} outstanding request${data.requestsCount === 1 ? '' : 's'} awaiting approval on DfE Sign-in`;
+  const notify = getNotifyAdapter(config);
 
-  await email.send(data.email, 'support-overdue-request', {
-    name: data.name,
-    requestsCount: data.requestsCount,
-    helpUrl: `${config.notifications.helpUrl}/contact`,
-    servicesUrl:`${config.notifications.servicesUrl}/access-requests`,
-  }, emailSubject);
+  await notify.sendEmail('supportRequestOverdue', data.email, {
+    personalisation: {
+      name: data.name,
+      requestsCount: data.requestsCount,
+      helpUrl: `${config.notifications.helpUrl}/contact-us`,
+      servicesUrl: `${config.notifications.servicesUrl}/access-requests`,
+    },
+  });
 };
 
 const getHandler = (config, logger) => {

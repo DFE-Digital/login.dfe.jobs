@@ -1,15 +1,21 @@
-const { getEmailAdapter } = require('../../../infrastructure/email');
+const { getNotifyAdapter } = require('../../../infrastructure/notify');
 
 const process = async (config, logger, data) => {
-  const email = getEmailAdapter(config, logger);
-  await email.send(data.email, 'access-request-email', {
-    orgName: data.orgName,
-    name: data.name,
-    approved: data.approved,
-    reason: data.reason,
-    helpUrl: `${config.notifications.helpUrl}/contact`,
-    servicesUrl:`${config.notifications.servicesUrl}`,
-  }, `DfE Sign-in - Request to access ${data.orgName}`);
+  const notify = getNotifyAdapter(config);
+  const template = data.approved === true ? 'userRequestForOrganisationAccessApproved' : 'userRequestForOrganisationAccessRejected';
+  const reason = data.approved === true ? '' : data.reason?.trim() ?? '';
+  const showReasonHeader = reason.length > 0;
+
+  await notify.sendEmail(template, data.email, {
+    personalisation: {
+      orgName: data.orgName,
+      name: data.name,
+      showReasonHeader,
+      reason,
+      servicesUrl: config.notifications.servicesUrl,
+      helpUrl: `${config.notifications.helpUrl}/contact-us`,
+    },
+  });
 };
 
 const getHandler = (config, logger) => {

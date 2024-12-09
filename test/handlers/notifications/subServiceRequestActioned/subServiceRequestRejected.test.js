@@ -1,132 +1,101 @@
+jest.mock('../../../../src/infrastructure/notify');
+const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
+const { getHandler } = require('../../../../src/handlers/notifications/subServiceRequestActioned/subServiceRequestRejected');
+
 const config = {
   notifications: {
-    type: 'disk',
-    helpUrl: 'https://help.test',
-    servicesUrl: 'https://services',
+    servicesUrl: 'https://services.dfe.signin',
+    helpUrl: 'https://help.dfe.signin',
   },
 };
 
-const logger = {
-  info: jest.fn(),
-  error: jest.fn(),
-};
-let data = {
-  email: 'john.doe@unit.test',
-  firstName: 'John',
-  lastName: 'Doe',
-  orgName: 'Organisation name',
-  serviceName: 'Service name',
-  requestedSubServices: ['Sub-service1'],
-  reason: 'Rejection reason message',
-  signInUrl: `${config.notifications.servicesUrl}/my-services`,
+const data = {
+  email: 'mock-email',
+  firstName: 'mock-firstName',
+  lastName: 'mock-lastName',
+  orgName: 'mock-organisation-name',
+  serviceName: 'mock-service-name',
+  requestedSubServices: ['mock-sub-service1'],
+  reason: 'mock-rejection-reason-message',
 };
 
 describe('When processing a sub_service_request_rejected job', () => {
-  let emailSend;
-  let email;
-  let handler;
+  const mockSendEmail = jest.fn();
 
   beforeEach(() => {
-    emailSend = jest.fn();
-    email = require('../../../../src/infrastructure/email');
-    email.getEmailAdapter = jest.fn().mockImplementation(() => {
-      return {
-        send: emailSend,
-      };
-    });
+    mockSendEmail.mockReset();
 
-    handler = require('../../../../src/handlers/notifications/subServiceRequestActioned/subServiceRequestRejected').getHandler(
-      config,
-      logger,
+    getNotifyAdapter.mockReset();
+    getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
+  });
+
+  it('should return a handler with a processor', async () => {
+    const handler = getHandler(config);
+
+    expect(handler).not.toBeNull();
+    expect(handler.type).toBe('sub_service_request_rejected');
+    expect(handler.processor).not.toBeNull();
+    expect(handler.processor).toBeInstanceOf(Function);
+  });
+
+  it('should get email adapter with supplied config', async () => {
+    const handler = getHandler(config);
+
+    await handler.processor(data);
+
+    expect(getNotifyAdapter).toHaveBeenCalledTimes(1);
+    expect(getNotifyAdapter).toHaveBeenCalledWith(config);
+  });
+
+  it('should send email with expected template', async () => {
+    const handler = getHandler(config);
+
+    await handler.processor(data);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      'userRequestsForSubServicesRejected',
+      expect.anything(),
+      expect.anything(),
     );
   });
 
-  it('then it should get email adapter with config and logger', async () => {
+  it('should send email to users email address', async () => {
+    const handler = getHandler(config);
+
     await handler.processor(data);
 
-    expect(email.getEmailAdapter.mock.calls.length).toBe(1);
-    expect(email.getEmailAdapter.mock.calls[0][0]).toBe(config);
-    expect(email.getEmailAdapter.mock.calls[0][1]).toBe(logger);
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      data.email,
+      expect.anything(),
+    );
   });
 
-  it('then it should send an email using the sub-service-request-rejected template', async () => {
-    await handler.processor(data);
+  it.each([
+    [null, '', false], [undefined, '', false], ['', '', false], [' ', '', false], [data.reason, data.reason, true],
+  ])('should send an email with expected personalisation data, when the reason is "%s" it should be "%s" and the header should be visible %s', async (reasonText, expectedReasonText, expectedShowReasonHeader) => {
+    const handler = getHandler(config);
+    const jobData = { ...data, ...{ reason: reasonText } };
+    await handler.processor(jobData);
 
-    expect(emailSend.mock.calls.length).toBe(1);
-    expect(emailSend.mock.calls[0][1]).toBe('sub-service-request-rejected');
-  });
-
-  it('then it should send an email to the End user', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][0]).toBe(data.email);
-  });
-
-  it('then it should include the first name in the email data', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      firstName: data.firstName,
-    });
-  });
-
-  it('then it should include the last name in the email data', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      lastName: data.lastName,
-    });
-  });
-
-  it('then it should include the organisation name in the email data', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      orgName: data.orgName,
-    });
-  });
-
-  it('then it should include the requested sub services list in the email data', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      requestedSubServices: data.requestedSubServices,
-    });
-  });
-
-  it('then it should include a link to Dfe Sign-in in the email data', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      signInUrl: data.signInUrl,
-    });
-  });
-
-  it('then it should include a rejection reason the email data', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][2]).toMatchObject({
-      reason: data.reason,
-    });
-  });
-
-  it('then it should include a subject', async () => {
-    await handler.processor(data);
-
-    expect(emailSend.mock.calls[0][3]).toBe('Sub-service request rejected');
-  });
-
-  it('then it shoud log the error message and throw an error if there is an Error', async () => {
-    data = undefined;
-    try {
-      await handler.processor(data);
-    } catch (e) {
-      expect(logger.error.mock.calls[0][0]).toBe(
-        `Failed to process and send the email for job type sub_service_request_rejected  - ${JSON.stringify(e)}`,
-      );
-      expect(e.message).toBe(
-        `Failed to process and send the email for job type sub_service_request_rejected - ${JSON.stringify(e)}`,
-      );
-    }
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: jobData.firstName,
+          lastName: jobData.lastName,
+          orgName: jobData.orgName,
+          showReasonHeader: expectedShowReasonHeader,
+          requestedSubServices: jobData.requestedSubServices,
+          reason: expectedReasonText,
+          signInUrl: `${config.notifications.servicesUrl}/my-services`,
+          helpUrl: `${config.notifications.helpUrl}/contact-us`,
+        }),
+      }),
+    );
   });
 });
