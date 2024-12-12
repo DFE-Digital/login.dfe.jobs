@@ -1,16 +1,19 @@
-const config = require('./infrastructure/config');
-const logger = require('./infrastructure/logger');
-const { getProcessorMappings } = require('./handlers');
 const http = require('http');
 const https = require('https');
 const express = require('express');
 const bodyParser = require('body-parser');
 const healthCheck = require('login.dfe.healthcheck');
 const apiAuth = require('login.dfe.api.auth');
+const { getErrorHandler } = require('login.dfe.express-error-handling');
+const { getProcessorMappings } = require('./handlers');
+const logger = require('./infrastructure/logger');
+const config = require('./infrastructure/config');
 const configSchema = require('./infrastructure/config/schema');
 const registerRoutes = require('./routes');
-const { getErrorHandler } = require('login.dfe.express-error-handling');
-const Monitor = require('./infrastructure/jobQueue/Monitor');
+
+const MonitorKue = require('./infrastructure/jobQueue/MonitorKue');
+const MonitorBull = require('./infrastructure/jobQueue/MonitorBull');
+const MonitorComposite = require('./infrastructure/jobQueue/MonitorComposite');
 
 configSchema.validate();
 
@@ -19,22 +22,30 @@ logger.info('starting');
 https.globalAgent.maxSockets = http.globalAgent.maxSockets = config.hostingEnvironment.agentKeepAlive.maxSockets || 50;
 
 logger.info('Getting processor mappings');
+
 getProcessorMappings(config, logger).then((processorMapping) => {
-  const monitor = new Monitor(processorMapping);
+  const monitor = new MonitorComposite([new MonitorKue(processorMapping), new MonitorBull(processorMapping)]);
+
   monitor.start();
 
-  const stop = () => {
-    logger.info('stopping');
-    monitor.stop().then(() => {
+  async function stopMonitors() {
+    await monitor.stop();
+  }
+
+  async function handleSignal(signal) {
+    logger.info(`Recieved ${signal} signal`);
+    try {
+      await stopMonitors();
       logger.info('stopped');
       process.exit(0);
-    }).catch((e) => {
-      logger.error(`Error stopping - ${e}. Ending process anyway`);
+    } catch (e) {
+      logger.error('Error stopping, ending process anyway', { error: { message: e.message, stack: e.stack } });
       process.exit(1);
-    })
-  };
-  process.once('SIGTERM', stop);
-  process.once('SIGINT', stop);
+    }
+  }
+
+  process.once('SIGTERM', () => handleSignal('SIGTERM'));
+  process.once('SIGINT', () => handleSignal('SIGINT'));
 
   const port = process.env.PORT || 3000;
   const app = express();
@@ -62,7 +73,6 @@ getProcessorMappings(config, logger).then((processorMapping) => {
     logger.info(`Server listening on http://localhost:${port}`);
   });
 }).catch((e) => {
-  console.error(`FATAL error starting: ${e.stack}`);
+  logger.error('FATAL error starting', { error: { message: e.message, stack: e.stack } });
   process.exit(1);
 });
-
