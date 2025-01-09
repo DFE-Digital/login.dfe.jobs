@@ -1,40 +1,26 @@
-const { getEmailAdapter } = require('../../../infrastructure/email');
+const { getNotifyAdapter } = require('../../../infrastructure/notify');
 
 const process = async (config, logger, data) => {
-  const email = getEmailAdapter(config, logger);
+  const notify = await getNotifyAdapter(config);
 
-  let moreData = true;
-
-  let bccRecipients;
-  let emails = data.recipients;
-  let skip =0;
-
-  while(moreData) {
-    bccRecipients =  emails.slice(skip, skip + 49);
-    if(bccRecipients && bccRecipients.length > 0 ) {
-      await email.send(bccRecipients[0], 'approver-access-request-email', {
-        orgName: data.orgName,
-        name: data.userName,
-        email: data.userEmail,
-        returnUrl:`${config.notifications.servicesUrl}/access-requests/organisation-requests/${data.requestId}`,
-        helpUrl: `${config.notifications.helpUrl}/contact`,
-      }, `DfE Sign-in access request for ${data.orgName}`, bccRecipients.slice(1));
-      skip = skip + 49;
-    } else {
-      moreData = false;
-    }
-  }
-
+  const emailPromises = data.recipients.map((recipient) => notify.sendEmail('approverRequestAccess', recipient, {
+    personalisation: {
+      orgName: data.orgName,
+      name: data.userName,
+      email: data.userEmail,
+      returnUrl: `${config.notifications.servicesUrl}/access-requests/organisation-requests/${data.requestId}`,
+      helpUrl: `${config.notifications.helpUrl}/contact`,
+    },
+  }));
+  await Promise.all(emailPromises);
 };
 
-const getHandler = (config, logger) => {
-  return {
-    type: 'approveraccessrequest_v1',
-    processor: async (data) => {
-      await process(config, logger, data);
-    }
-  };
-};
+const getHandler = (config, logger) => ({
+  type: 'approveraccessrequest_v1',
+  processor: async (data) => {
+    await process(config, logger, data);
+  },
+});
 
 module.exports = {
   getHandler,
