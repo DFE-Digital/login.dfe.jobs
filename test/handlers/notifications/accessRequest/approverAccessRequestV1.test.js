@@ -45,7 +45,7 @@ describe('When handling approverAccessRequest_v1 job', () => {
     expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it.each(jobData.recipients)('should send email to user %s', async (recipient) => {
+  it.each(jobData.recipients)('should send email to user %s', async (approverEmail) => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -53,7 +53,7 @@ describe('When handling approverAccessRequest_v1 job', () => {
     expect(mockSendEmail).toHaveBeenCalledTimes(2);
     expect(mockSendEmail).toHaveBeenCalledWith(
       expect.anything(),
-      recipient,
+      approverEmail,
       expect.anything(),
     );
   });

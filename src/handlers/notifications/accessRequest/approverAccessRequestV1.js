@@ -3,16 +3,17 @@ const { getNotifyAdapter } = require('../../../infrastructure/notify');
 const process = async (config, logger, data) => {
   const notify = await getNotifyAdapter(config);
 
-  const emailPromises = data.recipients.map((recipient) => notify.sendEmail('approverRequestAccess', recipient, {
-    personalisation: {
-      orgName: data.orgName,
-      name: data.userName,
-      email: data.userEmail,
-      returnUrl: `${config.notifications.servicesUrl}/access-requests/organisation-requests/${data.requestId}`,
-      helpUrl: `${config.notifications.helpUrl}/contact-us`,
-    },
-  }));
-  await Promise.all(emailPromises);
+  for (let approverEmail of data.recipients) {
+    await notify.sendEmail('approverRequestAccess', approverEmail, {
+      personalisation: {
+        orgName: data.orgName,
+        name: data.userName,
+        email: data.userEmail,
+        returnUrl: `${config.notifications.servicesUrl}/access-requests/organisation-requests/${data.requestId}`,
+        helpUrl: `${config.notifications.helpUrl}/contact-us`,
+      },
+    });
+  }
 };
 
 const getHandler = (config, logger) => ({
