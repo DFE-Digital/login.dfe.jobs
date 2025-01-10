@@ -85,8 +85,9 @@ describe('When handling user removed user from organisation v1 job', () => {
           lastName: jobData.lastName,
           orgName: jobData.orgName,
           signInUrl: `${config.notifications.servicesUrl}`,
-          helpUrl: `${config.notifications.helpUrl}/contact`,
+          helpUrl: `${config.notifications.helpUrl}/contact-us`,
         }),
-      }))
+      }),
+    );
   });
 });

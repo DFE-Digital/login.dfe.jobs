@@ -87,7 +87,7 @@ describe('When handling user service removed v1 job', () => {
           serviceName: jobData.serviceName,
           orgName: jobData.orgName,
           signInUrl: `${config.notifications.servicesUrl}`,
-          helpUrl: `${config.notifications.helpUrl}/contact`,
+          helpUrl: `${config.notifications.helpUrl}/contact-us`,
         }),
       }),
     );

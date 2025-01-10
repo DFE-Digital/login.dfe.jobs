@@ -84,7 +84,7 @@ describe('When handling user added to organisation request v1 job', () => {
           lastName: jobData.lastName,
           orgName: jobData.orgName,
           signInUrl: `${config.notifications.servicesUrl}`,
-          helpUrl: `${config.notifications.helpUrl}/contact`,
+          helpUrl: `${config.notifications.helpUrl}/contact-us`,
         }),
       }))
   });

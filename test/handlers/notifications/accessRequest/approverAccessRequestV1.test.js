@@ -86,7 +86,7 @@ describe('When handling approverAccessRequest_v1 job', () => {
           orgName: jobData.orgName,
           email: jobData.userEmail,
           returnUrl: 'https://services.dfe.signin/access-requests/organisation-requests/requestId',
-          helpUrl: 'https://help.dfe.signin/contact',
+          helpUrl: 'https://help.dfe.signin/contact-us',
         }),
       }),
     );

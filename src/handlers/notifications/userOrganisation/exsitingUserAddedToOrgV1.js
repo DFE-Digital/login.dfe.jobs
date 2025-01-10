@@ -9,7 +9,7 @@ const process = async (config, logger, data) => {
       lastName: data.lastName,
       orgName: data.orgName,
       signInUrl: `${config.notifications.servicesUrl}`,
-      helpUrl: `${config.notifications.helpUrl}/contact`,
+      helpUrl: `${config.notifications.helpUrl}/contact-us`,
     },
   });
 };
