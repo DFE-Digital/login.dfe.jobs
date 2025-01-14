@@ -1,24 +1,22 @@
 jest.mock('../../../../src/infrastructure/notify');
-
 const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
-const { getHandler } = require('../../../../src/handlers/notifications/accessRequest/approverAccessRequestV1');
+const { getHandler } = require('../../../../src/handlers/notifications/userOrganisation/removedUserFromOrgV1');
 
 const config = {
   notifications: {
-    servicesUrl: 'https://services.dfe.signin',
     helpUrl: 'https://help.dfe.signin',
+    signInUrl: 'https://signInUrl.test',
   },
 };
+
 const jobData = {
-  orgName: 'Test Organisation',
-  userName: 'Test One',
-  userEmail: 'email@test.com',
-  recipients: ['test1@unit', 'test2@unit'],
-  orgId: 'org',
-  requestId: 'requestId',
+  firstName: 'name',
+  lastName: 'lastname',
+  orgName: 'mock-org',
+  email: 'user.one@unit.test',
 };
 
-describe('When handling approverAccessRequest_v1 job', () => {
+describe('When handling user removed user from organisation v1 job', () => {
   const mockSendEmail = jest.fn();
 
   beforeEach(() => {
@@ -27,11 +25,12 @@ describe('When handling approverAccessRequest_v1 job', () => {
     getNotifyAdapter.mockReset();
     getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
+
   it('should return a handler with a processor', async () => {
     const handler = getHandler(config);
 
     expect(handler).not.toBeNull();
-    expect(handler.type).toBe('approveraccessrequest_v1');
+    expect(handler.type).toBe('userremovedfromorganisationrequest_v1');
     expect(handler.processor).not.toBeNull();
     expect(handler.processor).toBeInstanceOf(Function);
   });
@@ -45,28 +44,28 @@ describe('When handling approverAccessRequest_v1 job', () => {
     expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it.each(jobData.recipients)('should send email to user %s', async (approverEmail) => {
-    const handler = getHandler(config);
-
-    await handler.processor(jobData);
-
-    expect(mockSendEmail).toHaveBeenCalledTimes(2);
-    expect(mockSendEmail).toHaveBeenCalledWith(
-      expect.anything(),
-      approverEmail,
-      expect.anything(),
-    );
-  });
-
   it('should send email with expected template', async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(mockSendEmail).toHaveBeenCalledTimes(2);
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
     expect(mockSendEmail).toHaveBeenCalledWith(
-      'approverRequestAccess',
+      'userRemovedFromOrganisation',
       expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it('should send email to users email address', async () => {
+    const handler = getHandler(config);
+
+    await handler.processor(jobData);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      jobData.email,
       expect.anything(),
     );
   });
@@ -76,17 +75,17 @@ describe('When handling approverAccessRequest_v1 job', () => {
 
     await handler.processor(jobData);
 
-    expect(mockSendEmail).toHaveBeenCalledTimes(2);
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
     expect(mockSendEmail).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
       expect.objectContaining({
         personalisation: expect.objectContaining({
-          name: jobData.userName,
+          firstName: jobData.firstName,
+          lastName: jobData.lastName,
           orgName: jobData.orgName,
-          email: jobData.userEmail,
-          returnUrl: 'https://services.dfe.signin/access-requests/organisation-requests/requestId',
-          helpUrl: 'https://help.dfe.signin/contact-us',
+          signInUrl: `${config.notifications.servicesUrl}`,
+          helpUrl: `${config.notifications.helpUrl}/contact-us`,
         }),
       }),
     );
