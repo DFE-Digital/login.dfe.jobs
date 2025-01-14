@@ -17,24 +17,24 @@ const process = async (config, logger, data) => {
     let reason = "";
     if (!!data.approverEmail && !!data.orgName) {
       reason = ` by ${data.approverEmail} at ${data.orgName}`;
-    } else if (!!data.orgName) {
+    } else if (data.orgName) {
       reason = ` for ${data.orgName}`;
     }
 
-    if (!!config.entra?.useEntraForAccountRegistration) {
+    if (config.entra?.useEntraForAccountRegistration) {
       if (!data.selfInvoked) {
         await notify.sendEmail("inviteNewUserEntra", data.email, {
           personalisation: {
             ...commonPersonalisation,
             reason,
-            subject: !!data.overrides?.subject
+            subject: data.overrides?.subject
               ? data.overrides.subject
               : "You’ve been invited to join DfE Sign-in",
           },
         });
       }
     } else {
-      if (!!data.selfInvoked) {
+      if (data.selfInvoked) {
         await notify.sendEmail("selfRegisterNewAccount", data.email, {
           personalisation: {
             ...commonPersonalisation,
@@ -48,7 +48,7 @@ const process = async (config, logger, data) => {
             ...commonPersonalisation,
             code: data.code,
             reason,
-            subject: !!data.overrides?.subject
+            subject: data.overrides?.subject
               ? data.overrides.subject
               : "You’ve been invited to join DfE Sign-in",
           },

@@ -8,7 +8,7 @@ const process = async (config, logger, data) => {
       lastName: data.lastName,
       email: data.email,
       code: data.code,
-      returnUrl: !!data.uid
+      returnUrl: data.uid
         ? `${config.notifications.profileUrl}/change-email/${data.uid}/verify`
         : `${config.notifications.profileUrl}/change-email/verify`,
       helpUrl: config.notifications.helpUrl,
