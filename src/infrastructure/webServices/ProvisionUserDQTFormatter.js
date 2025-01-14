@@ -11,9 +11,6 @@ class ProvisionUserDQTFormatter {
     emailAddress,
     organisationId,
     wsAccountStatusCode,
-    establishmentUrn,
-    localAuthorityCode,
-    groupUpdates,
   ) {
     const message = new SoapMessage(targetNamespace)
       .addNamespace(

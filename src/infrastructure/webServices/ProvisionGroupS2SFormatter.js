@@ -9,7 +9,6 @@ class ProvisionGroupS2SFormatter {
     name,
     status,
     parentId,
-    parentCode,
   ) {
     const message = new SoapMessage(targetNamespace).setBody({
       ProvisionCollectionGroup: {

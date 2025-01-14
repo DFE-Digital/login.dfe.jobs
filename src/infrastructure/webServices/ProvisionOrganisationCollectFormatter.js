@@ -15,8 +15,6 @@ class ProvisionOrganisationCollectFormatter {
     organisationName,
     organisationTypeCode,
     wsOrganisationStatusCode,
-    regionCode,
-    telephoneNumber,
   ) {
     const message = new SoapMessage(
       targetNamespace,

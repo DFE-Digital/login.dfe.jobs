@@ -1,6 +1,6 @@
 jest.mock("../../../../src/handlers/notifications/support/supportRequestV1");
 
-const processor = async (data) => {
+const processor = async () => {
   return Promise.resolve();
 };
 const config = {

@@ -5,7 +5,7 @@ class EmailAdapter {
     }
   }
 
-  async send(recipient, template, data, subject) {
+  async send() {
     return Promise.resolve({});
   }
 }

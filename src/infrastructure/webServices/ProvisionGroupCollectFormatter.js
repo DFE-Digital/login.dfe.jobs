@@ -9,7 +9,6 @@ class ProvisionGroupCollectFormatter {
     name,
     status,
     parentId,
-    parentCode,
   ) {
     const message = new SoapMessage(
       targetNamespace,

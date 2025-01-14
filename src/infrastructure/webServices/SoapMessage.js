@@ -112,7 +112,7 @@ class SoapMessage {
 
         if (this._ttl) {
           const expires = new Date(now.getTime() + this._ttl);
-          const id = uuid().replace(/\-/g, "").toUpperCase();
+          const id = uuid().replace(/-/g, "").toUpperCase();
 
           xml += `<wsu:Timestamp wsu:Id="TS-${id}">`;
           xml += `<wsu:Created>${now.toISOString()}</wsu:Created>`;
@@ -121,7 +121,7 @@ class SoapMessage {
         }
 
         if (this._username) {
-          const id = uuid().replace(/\-/g, "").toUpperCase();
+          const id = uuid().replace(/-/g, "").toUpperCase();
 
           xml += `<wsse:UsernameToken wsu:Id="UsernameToken-${id}">`;
           xml += `<wsse:Username>${xmlescape(this._username)}</wsse:Username>`;

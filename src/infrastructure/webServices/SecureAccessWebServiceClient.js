@@ -18,7 +18,7 @@ class SoapHttpClient {
     this.correlationId = correlationId;
   }
 
-  request(rurl, data, callback, exheaders, exoptions) {
+  request(rurl, data, callback, exheaders) {
     let headers;
 
     if (exheaders) {

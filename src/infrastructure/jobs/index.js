@@ -13,7 +13,9 @@ const send = async (type, data, connectionString) => {
       }
       try {
         queue.shutdown();
-      } catch (e) {}
+      } catch {
+        // Ignore error.
+      }
     });
   });
 };

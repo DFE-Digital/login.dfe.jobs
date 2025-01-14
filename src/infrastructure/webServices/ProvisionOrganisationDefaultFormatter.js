@@ -15,8 +15,6 @@ class ProvisionOrganisationDefaultFormatter {
     organisationName,
     organisationTypeCode,
     wsOrganisationStatusCode,
-    regionCode,
-    telephoneNumber,
   ) {
     let textWsOrganisationStatusCode = null;
     if (wsOrganisationStatusCode === 1) {

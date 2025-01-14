@@ -15,8 +15,6 @@ class ProvisionOrganisationDQTFormatter {
     organisationName,
     organisationTypeCode,
     wsOrganisationStatusCode,
-    regionCode,
-    telephoneNumber,
   ) {
     const message = new SoapMessage(targetNamespace)
       .addNamespace(

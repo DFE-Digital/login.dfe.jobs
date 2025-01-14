@@ -24,13 +24,13 @@ describe("when registering user organisation handlers", () => {
     exsitingUserAddedToOrgV1 = require("../../../../src/handlers/notifications/userOrganisation/exsitingUserAddedToOrgV1");
     exsitingUserAddedToOrgV1.getHandler = jest.fn().mockReturnValue({
       type: "exsitingUserAddedToOrgV1",
-      processor: async (data) => Promise.resolve(),
+      processor: async () => Promise.resolve(),
     });
 
     removedUserFromOrgV1 = require("../../../../src/handlers/notifications/userOrganisation/removedUserFromOrgV1");
     removedUserFromOrgV1.getHandler = jest.fn().mockReturnValue({
       type: "removedUserFromOrgV1",
-      processor: async (data) => Promise.resolve(),
+      processor: async () => Promise.resolve(),
     });
 
     register =

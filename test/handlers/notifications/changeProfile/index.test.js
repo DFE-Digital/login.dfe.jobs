@@ -2,7 +2,7 @@ jest.mock(
   "../../../../src/handlers/notifications/changeProfile/verifyChangeEmailV1",
 );
 
-const processor = async (data) => {
+const processor = async () => {
   return Promise.resolve();
 };
 const config = {

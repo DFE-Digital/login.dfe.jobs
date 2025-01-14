@@ -11,9 +11,6 @@ class ProvisionUserS2SFormatter {
     emailAddress,
     organisationId,
     wsAccountStatusCode,
-    establishmentUrn,
-    localAuthorityCode,
-    groupUpdates,
   ) {
     const message = new SoapMessage(targetNamespace).setBody({
       ProvisionUser: {

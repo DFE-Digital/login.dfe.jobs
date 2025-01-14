@@ -9,7 +9,7 @@ jest.mock("login.dfe.dao", () => ({
   },
 }));
 
-const processor = async (data) => Promise.resolve();
+const processor = async () => Promise.resolve();
 const config = {
   notifications: {
     type: "disk",

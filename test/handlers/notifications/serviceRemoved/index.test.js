@@ -20,7 +20,7 @@ describe("when registering user organisation handlers", () => {
     userServiceRemovedV1 = require("../../../../src/handlers/notifications/serviceRemoved/userServiceRemovedV1");
     userServiceRemovedV1.getHandler = jest.fn().mockReturnValue({
       type: "userServiceRemovedV1",
-      processor: async (data) => Promise.resolve(),
+      processor: async () => Promise.resolve(),
     });
     register =
       require("../../../../src/handlers/notifications/serviceRemoved").register;
