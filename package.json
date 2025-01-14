@@ -1,12 +1,6 @@
 {
   "name": "login.dfe.jobs",
   "version": "8.0.0",
-  "description": "",
-  "scripts": {
-    "dev": "settings='./config/login.dfe.jobs.dev.json' nodemon src/index.js",
-    "format": "prettier . --write",
-    "test": "jest --coverage"
-  },
   "engines": {
     "node": "18.x.x"
   },
@@ -16,10 +10,16 @@
   },
   "author": "",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/DFE-Digital/login.dfe.node-boilerplate/issues"
+  "scripts": {
+    "dev": "settings='./config/login.dfe.jobs.dev.json' nodemon src/index.js",
+    "format": "prettier . --write",
+    "test": "jest --coverage"
   },
-  "homepage": "https://github.com/DFE-Digital/login.dfe.node-boilerplate#readme",
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverage": false,
+    "clearMocks": true
+  },
   "dependencies": {
     "@slack/webhook": "^7.0.0",
     "agentkeepalive": "^4.2.1",
@@ -61,10 +61,5 @@
     "jest-cli": "^29.6.3",
     "node-mocks-http": "^1.11.0",
     "prettier": "^3.4.2"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "collectCoverage": false,
-    "clearMocks": true
   }
 }
