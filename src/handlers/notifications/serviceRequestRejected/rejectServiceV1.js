@@ -1,10 +1,10 @@
-const { getNotifyAdapter } = require('../../../infrastructure/notify');
+const { getNotifyAdapter } = require("../../../infrastructure/notify");
 
 const process = async (config, logger, data) => {
   const notify = getNotifyAdapter(config);
-  const reason = data.reason?.trim() ?? '';
+  const reason = data.reason?.trim() ?? "";
   const showReasonHeader = reason.length > 0;
-  await notify.sendEmail('userRequestForServiceRejected', data.email, {
+  await notify.sendEmail("userRequestForServiceRejected", data.email, {
     personalisation: {
       firstName: data.firstName,
       lastName: data.lastName,
@@ -21,11 +21,11 @@ const process = async (config, logger, data) => {
 
 const getHandler = (config, logger) => {
   return {
-    type: 'userservicerejected_v1',
+    type: "userservicerejected_v1",
     processor: async (data) => {
       await process(config, logger, data);
-    }
-  }
+    },
+  };
 };
 
 module.exports = {

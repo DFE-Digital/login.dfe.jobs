@@ -1,9 +1,9 @@
-const { getNotifyAdapter } = require('../../../infrastructure/notify');
-const {v4: uuid} = require('uuid');
+const { getNotifyAdapter } = require("../../../infrastructure/notify");
+const { v4: uuid } = require("uuid");
 
 const process = async (config, logger, data) => {
   const notify = getNotifyAdapter(config);
-  await notify.sendEmail('verifyPasswordResetRequest', data.email, {
+  await notify.sendEmail("verifyPasswordResetRequest", data.email, {
     personalisation: {
       firstName: data.firstName,
       lastName: data.lastName,
@@ -16,10 +16,10 @@ const process = async (config, logger, data) => {
 
 const getHandler = (config, logger) => {
   return {
-    type: 'passwordreset_v1',
+    type: "passwordreset_v1",
     processor: async (data) => {
       await process(config, logger, data);
-    }
+    },
   };
 };
 

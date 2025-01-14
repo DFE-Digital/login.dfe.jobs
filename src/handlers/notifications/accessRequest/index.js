@@ -1,6 +1,6 @@
-const accessRequestV1 = require('./accessRequestV1');
-const approverAccessRequestV1 = require('./approverAccessRequestV1');
-const organisationRequestHandlerV1 = require('./organisationRequestHanderV1');
+const accessRequestV1 = require("./accessRequestV1");
+const approverAccessRequestV1 = require("./approverAccessRequestV1");
+const organisationRequestHandlerV1 = require("./organisationRequestHanderV1");
 
 const register = (config, logger) => {
   return [

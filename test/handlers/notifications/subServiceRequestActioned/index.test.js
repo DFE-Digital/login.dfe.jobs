@@ -3,8 +3,8 @@ const processor = async (data) => {
 };
 const config = {
   notifications: {
-    type: 'disk',
-    helpUrl: 'https://help.com',
+    type: "disk",
+    helpUrl: "https://help.com",
   },
 };
 const logger = {
@@ -12,30 +12,33 @@ const logger = {
   error: jest.fn(),
 };
 
-describe('when registering subServiceRequestActioned handlers', () => {
+describe("when registering subServiceRequestActioned handlers", () => {
   let subServiceRequestApproved;
   let subServiceRequestRejected;
   let register;
 
   beforeAll(() => {
-    subServiceRequestApproved = require('../../../../src/handlers/notifications/subServiceRequestActioned/subServiceRequestApproved');
+    subServiceRequestApproved = require("../../../../src/handlers/notifications/subServiceRequestActioned/subServiceRequestApproved");
     subServiceRequestApproved.getHandler = jest.fn().mockReturnValue({
-      type: 'sub_service_request_approved',
+      type: "sub_service_request_approved",
       processor,
     });
 
-    subServiceRequestRejected = require('../../../../src/handlers/notifications/subServiceRequestActioned/subServiceRequestRejected');
+    subServiceRequestRejected = require("../../../../src/handlers/notifications/subServiceRequestActioned/subServiceRequestRejected");
     subServiceRequestRejected.getHandler = jest.fn().mockReturnValue({
-      type: 'sub_service_request_rejected',
+      type: "sub_service_request_rejected",
       processor,
     });
 
-    register = require('../../../../src/handlers/notifications/subServiceRequestActioned').register;
+    register =
+      require("../../../../src/handlers/notifications/subServiceRequestActioned").register;
   });
 
-  it('then it should register the sub_service_request_approved handler', async () => {
+  it("then it should register the sub_service_request_approved handler", async () => {
     const actual = await register(config, logger);
-    const handler = actual.find((x) => x.type === 'sub_service_request_approved');
+    const handler = actual.find(
+      (x) => x.type === "sub_service_request_approved",
+    );
 
     expect(subServiceRequestApproved.getHandler.mock.calls.length).toBe(1);
     expect(subServiceRequestApproved.getHandler.mock.calls[0][0]).toBe(config);
@@ -44,9 +47,11 @@ describe('when registering subServiceRequestActioned handlers', () => {
     expect(handler).toBeDefined();
   });
 
-  it('then it should register the sub_service_request_rejected handler', async () => {
+  it("then it should register the sub_service_request_rejected handler", async () => {
     const actual = await register(config, logger);
-    const handler = actual.find((x) => x.type === 'sub_service_request_rejected');
+    const handler = actual.find(
+      (x) => x.type === "sub_service_request_rejected",
+    );
 
     expect(subServiceRequestRejected.getHandler.mock.calls.length).toBe(1);
     expect(subServiceRequestRejected.getHandler.mock.calls[0][0]).toBe(config);

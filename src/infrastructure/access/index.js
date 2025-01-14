@@ -1,4 +1,4 @@
-const ApiClient = require('./../ApiClient');
+const ApiClient = require("./../ApiClient");
 
 class AccessClient extends ApiClient {
   constructor(opts, correlationId) {

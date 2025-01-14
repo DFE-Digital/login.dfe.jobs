@@ -1,7 +1,16 @@
-const SoapMessage = require('./SoapMessage');
+const SoapMessage = require("./SoapMessage");
 
 class ProvisionGroupDefaultFormatter {
-  getProvisionGroupSoapMessage(targetNamespace, action, id, code, name, status, parentId, parentCode) {
+  getProvisionGroupSoapMessage(
+    targetNamespace,
+    action,
+    id,
+    code,
+    name,
+    status,
+    parentId,
+    parentCode,
+  ) {
     return new SoapMessage(targetNamespace).setBody({
       ProvisionGroup: {
         pgr: {

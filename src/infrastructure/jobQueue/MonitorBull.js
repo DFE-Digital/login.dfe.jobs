@@ -1,6 +1,6 @@
-const { Worker } = require('bullmq');
-const config = require('../config');
-const logger = require('../logger');
+const { Worker } = require("bullmq");
+const config = require("../config");
+const logger = require("../logger");
 
 const process = async (job, processor) => {
   try {
@@ -8,7 +8,10 @@ const process = async (job, processor) => {
     await processor(job.data);
     logger.info(`MonitorBull: processed job ${job.id}`);
   } catch (err) {
-    logger.error(`MonitorBull: Error processing job ${job.id}`, { job: { name: job.name, id: job.id }, error: { message: err.message, stack: err.stack } });
+    logger.error(`MonitorBull: Error processing job ${job.id}`, {
+      job: { name: job.name, id: job.id },
+      error: { message: err.message, stack: err.stack },
+    });
     await job.moveToFailed({ message: err.message, stack: err.stack }, false);
   }
 };
@@ -17,7 +20,7 @@ class MonitorBull {
   constructor(processorMapping) {
     this.processorMapping = processorMapping;
     this.workers = [];
-    this.status = 'stopped';
+    this.status = "stopped";
   }
 
   get currentStatus() {
@@ -25,16 +28,25 @@ class MonitorBull {
   }
 
   start() {
-    const connectionString = (config.queueStorage && config.queueStorage.connectionString) ? config.queueStorage.connectionString : 'redis://127.0.0.1:6379';
+    const connectionString =
+      config.queueStorage && config.queueStorage.connectionString
+        ? config.queueStorage.connectionString
+        : "redis://127.0.0.1:6379";
 
     // Closely matches Kue which "creates" a worker per "mapping.type"
     this.processorMapping.forEach((mapping) => {
       logger.debug(`MonitorBull: start monitoring ${mapping.type}`);
-      const worker = new Worker(mapping.type, async (job) => { process(job, mapping.processor); }, { connection: { url: connectionString } });
+      const worker = new Worker(
+        mapping.type,
+        async (job) => {
+          process(job, mapping.processor);
+        },
+        { connection: { url: connectionString } },
+      );
       this.workers.push(worker);
     });
 
-    this.status = 'started';
+    this.status = "started";
   }
 
   // Stop all registered workers https://docs.bullmq.io/guide/workers/graceful-shutdown
@@ -42,10 +54,12 @@ class MonitorBull {
     try {
       const stoppers = this.workers.map((worker) => worker.close());
       await Promise.all(stoppers);
-      this.status = 'stopped';
-      logger.info('MonitorBull: stopped');
+      this.status = "stopped";
+      logger.info("MonitorBull: stopped");
     } catch (err) {
-      logger.error('MonitorBull: failed stop signal', { error: { message: err.message, stack: err.stack } });
+      logger.error("MonitorBull: failed stop signal", {
+        error: { message: err.message, stack: err.stack },
+      });
     }
   }
 }

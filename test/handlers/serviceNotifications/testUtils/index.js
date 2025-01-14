@@ -1,24 +1,23 @@
 const getDefaultConfig = () => {
   return {
     queueStorage: {
-      connectionString: 'redis://test:6379',
+      connectionString: "redis://test:6379",
     },
-    persistentStorage: {
-    },
+    persistentStorage: {},
     serviceNotifications: {
       access: {
         service: {
-          url: 'https://access.unit.tests',
+          url: "https://access.unit.tests",
         },
       },
       organisations: {
         service: {
-          url: 'https://organisations.unit.tests',
+          url: "https://organisations.unit.tests",
         },
       },
       applications: {
         service: {
-          url: 'https://organisations.unit.tests',
+          url: "https://organisations.unit.tests",
         },
       },
     },
@@ -30,7 +29,7 @@ const getLoggerMock = () => {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
-    mockResetAll: function() {
+    mockResetAll: function () {
       this.info.mockReset();
       this.warn.mockReset();
       this.error.mockReset();
@@ -72,23 +71,23 @@ const mockEntity = () => {
     upsert: jest.fn(),
     create: jest.fn(),
     destroy: jest.fn(),
-    mockResetAll: function() {
+    mockResetAll: function () {
       this.findOne.mockReset();
       this.findAll.mockReset();
       this.upsert.mockReset();
       this.create.mockReset();
       this.destroy.mockReset();
-    }
+    },
   };
 };
 const getRepositoryMock = () => {
   return {
     userState: mockEntity(),
     userRoleState: mockEntity(),
-    mockResetAll: function() {
+    mockResetAll: function () {
       this.userState.mockResetAll();
       this.userRoleState.mockResetAll();
-    }
+    },
   };
 };
 

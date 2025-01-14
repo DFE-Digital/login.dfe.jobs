@@ -1,16 +1,32 @@
-const SoapMessage = require('./SoapMessage');
+const SoapMessage = require("./SoapMessage");
 
 class ProvisionOrganisationDefaultFormatter {
-  getProvisionOrganisationSoapMessage(targetNamespace, action, establishmentDfeNumber, establishmentUrn, establishmentNumber, groupUid, localAuthorityCode, localAuthorityName, orgEdubaseTypeCode, organisationId, organisationName, organisationTypeCode, wsOrganisationStatusCode, regionCode, telephoneNumber) {
+  getProvisionOrganisationSoapMessage(
+    targetNamespace,
+    action,
+    establishmentDfeNumber,
+    establishmentUrn,
+    establishmentNumber,
+    groupUid,
+    localAuthorityCode,
+    localAuthorityName,
+    orgEdubaseTypeCode,
+    organisationId,
+    organisationName,
+    organisationTypeCode,
+    wsOrganisationStatusCode,
+    regionCode,
+    telephoneNumber,
+  ) {
     let textWsOrganisationStatusCode = null;
     if (wsOrganisationStatusCode === 1) {
-      textWsOrganisationStatusCode = 'OPEN';
+      textWsOrganisationStatusCode = "OPEN";
     } else if (wsOrganisationStatusCode === 2) {
-      textWsOrganisationStatusCode = 'CLOSED';
+      textWsOrganisationStatusCode = "CLOSED";
     } else if (wsOrganisationStatusCode === 3) {
-      textWsOrganisationStatusCode = 'CLOSED_BUT_ACTIVE';
+      textWsOrganisationStatusCode = "CLOSED_BUT_ACTIVE";
     } else if (wsOrganisationStatusCode === 4) {
-      textWsOrganisationStatusCode = 'PROPOSED_TO_OPEN';
+      textWsOrganisationStatusCode = "PROPOSED_TO_OPEN";
     }
     return new SoapMessage(targetNamespace).setBody({
       ProvisionOrganisation: {

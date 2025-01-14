@@ -1,22 +1,27 @@
-jest.mock('../../../../src/infrastructure/organisations');
-jest.mock('../../../../src/infrastructure/directories');
-jest.mock('../../../../src/infrastructure/notify');
-jest.mock('../../../../src/handlers/notifications/utils');
+jest.mock("../../../../src/infrastructure/organisations");
+jest.mock("../../../../src/infrastructure/directories");
+jest.mock("../../../../src/infrastructure/notify");
+jest.mock("../../../../src/handlers/notifications/utils");
 
-jest.mock('login.dfe.dao',()=>({
-  directories:{
-    getAllActiveUsersFromList(){
-      return [1]
-    }
-  }
+jest.mock("login.dfe.dao", () => ({
+  directories: {
+    getAllActiveUsersFromList() {
+      return [1];
+    },
+  },
 }));
 
-const OrganisationsClient = require('../../../../src/infrastructure/organisations');
-const DirectoriesClient = require('../../../../src/infrastructure/directories');
-const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
-const { getHandler } = require('../../../../src/handlers/notifications/serviceRequested/serviceRequestToApproversV2');
+const OrganisationsClient = require("../../../../src/infrastructure/organisations");
+const DirectoriesClient = require("../../../../src/infrastructure/directories");
+const { getNotifyAdapter } = require("../../../../src/infrastructure/notify");
+const {
+  getHandler,
+} = require("../../../../src/handlers/notifications/serviceRequested/serviceRequestToApproversV2");
 
-const { getOrganisationsClientMock, getDirectoriesClientMock } = require('../../../utils');
+const {
+  getOrganisationsClientMock,
+  getDirectoriesClientMock,
+} = require("../../../utils");
 
 const config = {
   notifications: {},
@@ -30,10 +35,10 @@ const jobData = {
   requestedSubServices: ["RAISE Training Anon"],
   rejectServiceUrl: "https://example.com/reject",
   approveServiceUrl: "https://example.com/approve",
-  helpUrl: 'https://help.example.com',
+  helpUrl: "https://help.example.com",
 };
 
-describe('when processing a servicerequest_to_approvers_v2 job', () => {
+describe("when processing a servicerequest_to_approvers_v2 job", () => {
   const mockSendEmail = jest.fn();
   const organisatonsClient = getOrganisationsClientMock();
   const directoriesClient = getDirectoriesClientMock();
@@ -45,45 +50,45 @@ describe('when processing a servicerequest_to_approvers_v2 job', () => {
     getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
 
     organisatonsClient.mockResetAll();
-    organisatonsClient.getOrgRequestById.mockReturnValue(
-      {
-        id: 'requestId',
-        user_id: 'user1',
-        org_id: 'org1',
-        reason: 'I need access pls',
-      },
-    );
-    organisatonsClient.getApproversForOrganisation.mockReturnValue(['appover1']);
+    organisatonsClient.getOrgRequestById.mockReturnValue({
+      id: "requestId",
+      user_id: "user1",
+      org_id: "org1",
+      reason: "I need access pls",
+    });
+    organisatonsClient.getApproversForOrganisation.mockReturnValue([
+      "appover1",
+    ]);
     OrganisationsClient.mockImplementation(() => organisatonsClient);
 
     directoriesClient.mockResetAll();
     directoriesClient.getUsersByIds.mockReturnValue([
       {
-        id: 'approver1',
-        email: 'approver1@email.com',
-        given_name: 'Test1',
-        family_name: 'User1',
+        id: "approver1",
+        email: "approver1@email.com",
+        given_name: "Test1",
+        family_name: "User1",
       },
       {
-        id: 'approver2',
-        email: 'approver2@email.com',
-        given_name: 'Test2',
-        family_name: 'User2',
+        id: "approver2",
+        email: "approver2@email.com",
+        given_name: "Test2",
+        family_name: "User2",
       },
     ]);
     DirectoriesClient.mockImplementation(() => directoriesClient);
   });
 
-  it('should return a handler with a processor', () => {
+  it("should return a handler with a processor", () => {
     const handler = getHandler(config);
 
     expect(handler).not.toBeNull();
-    expect(handler.type).toBe('servicerequest_to_approvers_v2');
+    expect(handler.type).toBe("servicerequest_to_approvers_v2");
     expect(handler.processor).not.toBeNull();
     expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('should get email adapter with supplied config', async () => {
+  it("should get email adapter with supplied config", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -92,84 +97,84 @@ describe('when processing a servicerequest_to_approvers_v2 job', () => {
     expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('should send email with expected template for each approver', async () => {
+  it("should send email with expected template for each approver", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
 
     expect(mockSendEmail).toHaveBeenCalledTimes(2);
     expect(mockSendEmail).toHaveBeenCalledWith(
-      'userRequestToApproverForServiceAccess',
+      "userRequestToApproverForServiceAccess",
       expect.anything(),
       expect.anything(),
     );
   });
 
-  it('should send email to each approver email address', async () => {
+  it("should send email to each approver email address", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(mockSendEmail).toHaveBeenNthCalledWith(1,
+    expect(mockSendEmail).toHaveBeenNthCalledWith(
+      1,
       expect.anything(),
-      'approver1@email.com',
+      "approver1@email.com",
       expect.anything(),
     );
-    expect(mockSendEmail).toHaveBeenNthCalledWith(2,
+    expect(mockSendEmail).toHaveBeenNthCalledWith(
+      2,
       expect.anything(),
-      'approver2@email.com',
+      "approver2@email.com",
       expect.anything(),
     );
   });
 
-  it('should send email to each approver with expected personalisation data', async () => {
+  it("should send email to each approver with expected personalisation data", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(mockSendEmail).toHaveBeenNthCalledWith(1,
+    expect(mockSendEmail).toHaveBeenNthCalledWith(
+      1,
       expect.anything(),
       expect.anything(),
       expect.objectContaining({
         personalisation: expect.objectContaining({
-          firstName: 'Test1',
-          lastName: 'User1',
-          orgName: 'DSI TEST',
-          senderName: 'TestUser',
-          senderEmail: 'testuser1@test.com',
-          requestedServiceName: 'Subservice Test',
-          requestedSubServices: [
-            "RAISE Training Anon"
-          ],
-          approveServiceUrl: 'https://example.com/approve',
-          rejectServiceUrl: 'https://example.com/reject',
-          helpUrl: 'https://help.example.com',
+          firstName: "Test1",
+          lastName: "User1",
+          orgName: "DSI TEST",
+          senderName: "TestUser",
+          senderEmail: "testuser1@test.com",
+          requestedServiceName: "Subservice Test",
+          requestedSubServices: ["RAISE Training Anon"],
+          approveServiceUrl: "https://example.com/approve",
+          rejectServiceUrl: "https://example.com/reject",
+          helpUrl: "https://help.example.com",
         }),
       }),
     );
-    expect(mockSendEmail).toHaveBeenNthCalledWith(2,
+    expect(mockSendEmail).toHaveBeenNthCalledWith(
+      2,
       expect.anything(),
       expect.anything(),
       expect.objectContaining({
         personalisation: expect.objectContaining({
-          firstName: 'Test2',
-          lastName: 'User2',
-          orgName: 'DSI TEST',
-          senderName: 'TestUser',
-          senderEmail: 'testuser1@test.com',
-          requestedServiceName: 'Subservice Test',
-          requestedSubServices: [
-            "RAISE Training Anon"
-          ],
-          approveServiceUrl: 'https://example.com/approve',
-          rejectServiceUrl: 'https://example.com/reject',
-          helpUrl: 'https://help.example.com',
+          firstName: "Test2",
+          lastName: "User2",
+          orgName: "DSI TEST",
+          senderName: "TestUser",
+          senderEmail: "testuser1@test.com",
+          requestedServiceName: "Subservice Test",
+          requestedSubServices: ["RAISE Training Anon"],
+          approveServiceUrl: "https://example.com/approve",
+          rejectServiceUrl: "https://example.com/reject",
+          helpUrl: "https://help.example.com",
         }),
       }),
     );
   });
 
-  it('should personalises email correctly when no sub services have been selected', async () => {
+  it("should personalises email correctly when no sub services have been selected", async () => {
     const handler = getHandler(config);
 
     await handler.processor({
@@ -182,9 +187,7 @@ describe('when processing a servicerequest_to_approvers_v2 job', () => {
       expect.anything(),
       expect.objectContaining({
         personalisation: expect.objectContaining({
-          requestedSubServices: [
-            'No roles selected.'
-          ],
+          requestedSubServices: ["No roles selected."],
         }),
       }),
     );
