@@ -10,8 +10,6 @@ const addContentType = (name, body, contentTypes) => {
     return;
   }
 
-  // Disable rule, as this function is expected to assign fields to "body".
-  // eslint-disable-next-line no-param-reassign
   body[name] = {
     Data: type.content,
     Charset: "UTF-8",
