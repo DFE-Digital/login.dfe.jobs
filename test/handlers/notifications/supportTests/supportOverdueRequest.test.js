@@ -1,22 +1,24 @@
-jest.mock('../../../../src/infrastructure/notify');
+jest.mock("../../../../src/infrastructure/notify");
 
-const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
-const { getHandler } = require('../../../../src/handlers/notifications/support/supportOverdueRequest');
+const { getNotifyAdapter } = require("../../../../src/infrastructure/notify");
+const {
+  getHandler,
+} = require("../../../../src/handlers/notifications/support/supportOverdueRequest");
 
 const config = {
   notifications: {
-    helpUrl: 'https://help.dfe.signin',
-    servicesUrl: 'https://services.dfe.signin',
+    helpUrl: "https://help.dfe.signin",
+    servicesUrl: "https://services.dfe.signin",
   },
 };
 
 const jobData = {
-  email: 'mock-email',
-  name: 'User One',
+  email: "mock-email",
+  name: "User One",
   requestsCount: 8,
 };
 
-describe('When handling supportoverduerequest job', () => {
+describe("When handling supportoverduerequest job", () => {
   const mockSendEmail = jest.fn();
 
   beforeEach(() => {
@@ -26,16 +28,16 @@ describe('When handling supportoverduerequest job', () => {
     getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
 
-  it('should return a handler with a processor', async () => {
+  it("should return a handler with a processor", async () => {
     const handler = getHandler(config);
 
     expect(handler).not.toBeNull();
-    expect(handler.type).toBe('supportoverduerequest');
+    expect(handler.type).toBe("supportoverduerequest");
     expect(handler.processor).not.toBeNull();
     expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('should get email adapter with supplied config', async () => {
+  it("should get email adapter with supplied config", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -44,20 +46,20 @@ describe('When handling supportoverduerequest job', () => {
     expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('should send email with expected template', async () => {
+  it("should send email with expected template", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
 
     expect(mockSendEmail).toHaveBeenCalledTimes(1);
     expect(mockSendEmail).toHaveBeenCalledWith(
-      'supportRequestOverdue',
+      "supportRequestOverdue",
       expect.anything(),
       expect.anything(),
     );
   });
 
-  it('should send email to users email address', async () => {
+  it("should send email to users email address", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -70,7 +72,7 @@ describe('When handling supportoverduerequest job', () => {
     );
   });
 
-  it('should send email with expected personalisation data', async () => {
+  it("should send email with expected personalisation data", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);

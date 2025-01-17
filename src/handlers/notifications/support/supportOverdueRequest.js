@@ -1,9 +1,9 @@
-const { getNotifyAdapter } = require('../../../infrastructure/notify');
+const { getNotifyAdapter } = require("../../../infrastructure/notify");
 
 const process = async (config, logger, data) => {
   const notify = getNotifyAdapter(config);
 
-  await notify.sendEmail('supportRequestOverdue', data.email, {
+  await notify.sendEmail("supportRequestOverdue", data.email, {
     personalisation: {
       name: data.name,
       requestsCount: data.requestsCount,
@@ -15,10 +15,10 @@ const process = async (config, logger, data) => {
 
 const getHandler = (config, logger) => {
   return {
-    type: 'supportoverduerequest',
+    type: "supportoverduerequest",
     processor: async (data) => {
       await process(config, logger, data);
-    }
+    },
   };
 };
 

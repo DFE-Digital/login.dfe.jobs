@@ -1,6 +1,6 @@
-const publicInvitationRequestV1 = require('./publicInvitationRequestV1');
-const publicInvitationCompleteV1 = require('./publicInvitationCompleteV1');
-const publicInvitationNotifyRelyingPartyV1 = require('./publicInvitationNotifyRelyingPartyV1');
+const publicInvitationRequestV1 = require("./publicInvitationRequestV1");
+const publicInvitationCompleteV1 = require("./publicInvitationCompleteV1");
+const publicInvitationNotifyRelyingPartyV1 = require("./publicInvitationNotifyRelyingPartyV1");
 
 const register = (config, logger) => {
   return [

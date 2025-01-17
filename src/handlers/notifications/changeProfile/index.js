@@ -1,5 +1,5 @@
-const verifyChangeEmailV1 = require('./verifyChangeEmailV1');
-const notifyChangeEmailV1 = require('./notifyChangeEmailV1');
+const verifyChangeEmailV1 = require("./verifyChangeEmailV1");
+const notifyChangeEmailV1 = require("./notifyChangeEmailV1");
 
 const register = (config, logger) => {
   return [

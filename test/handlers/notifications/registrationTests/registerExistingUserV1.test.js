@@ -1,22 +1,24 @@
-jest.mock('../../../../src/infrastructure/notify');
+jest.mock("../../../../src/infrastructure/notify");
 
-const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
-const { getHandler } = require('../../../../src/handlers/notifications/registration/registerExistingUserV1');
+const { getNotifyAdapter } = require("../../../../src/infrastructure/notify");
+const {
+  getHandler,
+} = require("../../../../src/handlers/notifications/registration/registerExistingUserV1");
 
 const config = {
   notifications: {
-    helpUrl: 'https://help.url',
+    helpUrl: "https://help.url",
   },
 };
 const jobData = {
-  firstName: 'First',
-  lastName: 'Last',
-  email: 'first.last@example.com',
-  serviceName: 'Unit Test',
-  returnUrl: 'https://profile.test/register/complete?outcome=account_exists',
+  firstName: "First",
+  lastName: "Last",
+  email: "first.last@example.com",
+  serviceName: "Unit Test",
+  returnUrl: "https://profile.test/register/complete?outcome=account_exists",
 };
 
-describe('when sending v1 existing user registration', () => {
+describe("when sending v1 existing user registration", () => {
   const mockSendEmail = jest.fn();
 
   beforeEach(() => {
@@ -26,16 +28,16 @@ describe('when sending v1 existing user registration', () => {
     getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
 
-  it('should return a handler with a processor', () => {
+  it("should return a handler with a processor", () => {
     const handler = getHandler(config);
 
     expect(handler).not.toBeNull();
-    expect(handler.type).toBe('registerexistinguser_v1');
+    expect(handler.type).toBe("registerexistinguser_v1");
     expect(handler.processor).not.toBeNull();
     expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('should get email adapter with supplied config', async () => {
+  it("should get email adapter with supplied config", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -44,20 +46,20 @@ describe('when sending v1 existing user registration', () => {
     expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('should send email with expected template', async () => {
+  it("should send email with expected template", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
 
     expect(mockSendEmail).toHaveBeenCalledTimes(1);
     expect(mockSendEmail).toHaveBeenCalledWith(
-      'notifyExistingUserWhenAttemptingToRegisterAgain',
+      "notifyExistingUserWhenAttemptingToRegisterAgain",
       expect.anything(),
       expect.anything(),
     );
   });
 
-  it('should send email to users email address', async () => {
+  it("should send email to users email address", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -70,7 +72,7 @@ describe('when sending v1 existing user registration', () => {
     );
   });
 
-  it('should send email with expected personalisation data', async () => {
+  it("should send email with expected personalisation data", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -85,8 +87,9 @@ describe('when sending v1 existing user registration', () => {
           lastName: jobData.lastName,
           email: jobData.email,
           serviceName: jobData.serviceName,
-          returnUrl: 'https://profile.test/register/complete?outcome=account_exists',
-          helpUrl: 'https://help.url/contact-us',
+          returnUrl:
+            "https://profile.test/register/complete?outcome=account_exists",
+          helpUrl: "https://help.url/contact-us",
         }),
       }),
     );

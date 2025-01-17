@@ -1,18 +1,18 @@
-const aws = require('aws-sdk');
-const EmailAdapter = require('./EmailAdapter');
-const emailUtils = require('./utils');
+const aws = require("aws-sdk");
+const EmailAdapter = require("./EmailAdapter");
+const emailUtils = require("./utils");
 
 const addContentType = (name, body, contentTypes) => {
-  const type = contentTypes.find((item) => item.type.toLowerCase() === name.toLowerCase());
+  const type = contentTypes.find(
+    (item) => item.type.toLowerCase() === name.toLowerCase(),
+  );
   if (!type) {
     return;
   }
 
-  // Disable rule, as this function is expected to assign fields to "body".
-  // eslint-disable-next-line no-param-reassign
   body[name] = {
     Data: type.content,
-    Charset: 'UTF-8',
+    Charset: "UTF-8",
   };
 };
 
@@ -25,20 +25,30 @@ class SESEmailAdapter extends EmailAdapter {
     this.logger = logger;
 
     const awsConfig = {};
-    if (config.notifications.email.params && config.notifications.email.params.accessKey) {
+    if (
+      config.notifications.email.params &&
+      config.notifications.email.params.accessKey
+    ) {
       awsConfig.accessKeyId = config.notifications.email.params.accessKey;
     } else {
-      this.logger.info('SESEmailAdapter- accessKeyId is missing');
+      this.logger.info("SESEmailAdapter- accessKeyId is missing");
     }
-    if (config.notifications.email.params && config.notifications.email.params.accessSecret) {
-      awsConfig.secretAccessKey = config.notifications.email.params.accessSecret;
+    if (
+      config.notifications.email.params &&
+      config.notifications.email.params.accessSecret
+    ) {
+      awsConfig.secretAccessKey =
+        config.notifications.email.params.accessSecret;
     } else {
-      this.logger.info('SESEmailAdapter- secretAccessKey is missing');
+      this.logger.info("SESEmailAdapter- secretAccessKey is missing");
     }
-    if (config.notifications.email.params && config.notifications.email.params.region) {
+    if (
+      config.notifications.email.params &&
+      config.notifications.email.params.region
+    ) {
       awsConfig.region = config.notifications.email.params.region;
     } else {
-      this.logger.info('SESEmailAdapter- region is missing');
+      this.logger.info("SESEmailAdapter- region is missing");
     }
 
     aws.config.update(awsConfig);
@@ -66,41 +76,54 @@ class SESEmailAdapter extends EmailAdapter {
         let bccAddressList = [];
         if (Array.isArray(bccRecipients)) {
           bccAddressList = bccRecipients;
-        } else if (typeof bccRecipients === 'string') {
+        } else if (typeof bccRecipients === "string") {
           bccAddressList = [bccRecipients];
         }
 
         const body = {};
-        addContentType('Html', body, contentTypes);
-        addContentType('Text', body, contentTypes);
+        addContentType("Html", body, contentTypes);
+        addContentType("Text", body, contentTypes);
 
-        ses.sendEmail({
-          Source: this.sender,
-          Destination: {
-            ToAddresses: [recipient],
-            BccAddresses: bccAddressList,
-          },
-          Message: {
-            Subject: {
-              Data: subject,
-              Charset: 'UTF-8',
+        ses.sendEmail(
+          {
+            Source: this.sender,
+            Destination: {
+              ToAddresses: [recipient],
+              BccAddresses: bccAddressList,
             },
-            Body: body,
+            Message: {
+              Subject: {
+                Data: subject,
+                Charset: "UTF-8",
+              },
+              Body: body,
+            },
+            ReturnPath: this.returnEmail,
           },
-          ReturnPath: this.returnEmail,
-        }, (err) => {
-          if (err) {
-            this.logger.error(`Error sending ses email - ${JSON.stringify(err)}`);
-            reject(err);
-          } else {
-            this.logger.info(`Sent ses email to ${emailUtils.maskEmail(recipient)}`);
-            resolve();
-          }
-        });
+          (err) => {
+            if (err) {
+              this.logger.error(
+                `Error sending ses email - ${JSON.stringify(err)}`,
+              );
+              reject(err);
+            } else {
+              this.logger.info(
+                `Sent ses email to ${emailUtils.maskEmail(recipient)}`,
+              );
+              resolve();
+            }
+          },
+        );
       });
     } catch (e) {
-      this.logger.error(`Error sending ses email- outer catch block - ${JSON.stringify(e)}`);
-      return Promise.reject(new Error(`Error sending ses email- outer catch block - ${JSON.stringify(e)}`));
+      this.logger.error(
+        `Error sending ses email- outer catch block - ${JSON.stringify(e)}`,
+      );
+      return Promise.reject(
+        new Error(
+          `Error sending ses email- outer catch block - ${JSON.stringify(e)}`,
+        ),
+      );
     }
   }
 }

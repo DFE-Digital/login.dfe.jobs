@@ -1,27 +1,29 @@
-jest.mock('../../../../src/infrastructure/email');
+jest.mock("../../../../src/infrastructure/email");
 
-const { getEmailAdapter } = require('../../../../src/infrastructure/email');
-const { getHandler } = require('../../../../src/handlers/notifications/support/supportRequestV1');
+const { getEmailAdapter } = require("../../../../src/infrastructure/email");
+const {
+  getHandler,
+} = require("../../../../src/handlers/notifications/support/supportRequestV1");
 const emailSend = jest.fn();
 
 const config = {
   notifications: {
-    supportEmailAddress: 'support@unit.tests',
+    supportEmailAddress: "support@unit.tests",
   },
 };
 const logger = {};
 const jobData = {
-  name: 'User One',
-  email: 'user.one@unit.tests',
-  orgName: 'org1',
-  urn: '1234',
-  message: 'I am having issues signing in using my new details',
-  service: 'Service Name',
-  type: 'other',
-  typeAdditionalInfo: 'type of issue',
+  name: "User One",
+  email: "user.one@unit.tests",
+  orgName: "org1",
+  urn: "1234",
+  message: "I am having issues signing in using my new details",
+  service: "Service Name",
+  type: "other",
+  typeAdditionalInfo: "type of issue",
 };
 
-describe('When handling supportrequest_v1 job', () => {
+describe("When handling supportrequest_v1 job", () => {
   beforeEach(() => {
     emailSend.mockReset();
 
@@ -29,16 +31,16 @@ describe('When handling supportrequest_v1 job', () => {
     getEmailAdapter.mockReturnValue({ send: emailSend });
   });
 
-  it('then it should return a handler with a processor', () => {
+  it("then it should return a handler with a processor", () => {
     const handler = getHandler(config, logger);
 
     expect(handler).not.toBeNull();
-    expect(handler.type).toBe('supportrequest_v1');
+    expect(handler.type).toBe("supportrequest_v1");
     expect(handler.processor).not.toBeNull();
     expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('then it should get email adapter with supplied config and logger', async () => {
+  it("then it should get email adapter with supplied config and logger", async () => {
     const handler = getHandler(config, logger);
 
     await handler.processor(jobData);
@@ -48,25 +50,27 @@ describe('When handling supportrequest_v1 job', () => {
     expect(getEmailAdapter.mock.calls[0][1]).toBe(logger);
   });
 
-  it('then it should send email to support email address', async () => {
+  it("then it should send email to support email address", async () => {
     const handler = getHandler(config, logger);
 
     await handler.processor(jobData);
 
     expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][0]).toBe(config.notifications.supportEmailAddress);
+    expect(emailSend.mock.calls[0][0]).toBe(
+      config.notifications.supportEmailAddress,
+    );
   });
 
-  it('then it should send email using support-request template', async () => {
+  it("then it should send email using support-request template", async () => {
     const handler = getHandler(config, logger);
 
     await handler.processor(jobData);
 
     expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][1]).toBe('support-request');
+    expect(emailSend.mock.calls[0][1]).toBe("support-request");
   });
 
-  it('then it should send email using request data as model', async () => {
+  it("then it should send email using request data as model", async () => {
     const handler = getHandler(config, logger);
 
     await handler.processor(jobData);
@@ -84,12 +88,12 @@ describe('When handling supportrequest_v1 job', () => {
     });
   });
 
-  it('then it should send email with subject', async () => {
+  it("then it should send email with subject", async () => {
     const handler = getHandler(config, logger);
 
     await handler.processor(jobData);
 
     expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][3]).toBe('DfE Sign-in service desk request');
+    expect(emailSend.mock.calls[0][3]).toBe("DfE Sign-in service desk request");
   });
 });

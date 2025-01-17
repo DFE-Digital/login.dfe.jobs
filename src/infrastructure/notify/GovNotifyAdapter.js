@@ -1,4 +1,4 @@
-const { NotifyClient } = require('notifications-node-client');
+const { NotifyClient } = require("notifications-node-client");
 
 class GovNotifyAdapter {
   constructor(config) {

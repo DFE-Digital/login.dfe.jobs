@@ -1,21 +1,23 @@
-jest.mock('../../../../src/infrastructure/notify');
-const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
-const { getHandler } = require('../../../../src/handlers/notifications/serviceAdded/newServiceAddedV1');
+jest.mock("../../../../src/infrastructure/notify");
+const { getNotifyAdapter } = require("../../../../src/infrastructure/notify");
+const {
+  getHandler,
+} = require("../../../../src/handlers/notifications/serviceAdded/newServiceAddedV1");
 
 const config = {
   notifications: {
-    servicesUrl: 'https://services.dfe.signin',
-    helpUrl: 'https://help.dfe.signin',
+    servicesUrl: "https://services.dfe.signin",
+    helpUrl: "https://help.dfe.signin",
   },
 };
 
 const data = {
-  email: 'mock-email',
-  firstName: 'mock-firstName',
-  lastName: 'mock-lastName',
+  email: "mock-email",
+  firstName: "mock-firstName",
+  lastName: "mock-lastName",
 };
 
-describe('when processing a userserviceadded_v1 job', () => {
+describe("when processing a userserviceadded_v1 job", () => {
   const mockSendEmail = jest.fn();
 
   beforeEach(() => {
@@ -25,16 +27,16 @@ describe('when processing a userserviceadded_v1 job', () => {
     getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
 
-  it('should return a handler with a processor', async () => {
+  it("should return a handler with a processor", async () => {
     const handler = getHandler(config);
 
     expect(handler).not.toBeNull();
-    expect(handler.type).toBe('userserviceadded_v1');
+    expect(handler.type).toBe("userserviceadded_v1");
     expect(handler.processor).not.toBeNull();
     expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('should get email adapter with supplied config', async () => {
+  it("should get email adapter with supplied config", async () => {
     const handler = getHandler(config);
 
     await handler.processor(data);
@@ -43,20 +45,20 @@ describe('when processing a userserviceadded_v1 job', () => {
     expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('should send email with expected template', async () => {
+  it("should send email with expected template", async () => {
     const handler = getHandler(config);
 
     await handler.processor(data);
 
     expect(mockSendEmail).toHaveBeenCalledTimes(1);
     expect(mockSendEmail).toHaveBeenCalledWith(
-      'userRequestForServiceApprovedV1',
+      "userRequestForServiceApprovedV1",
       expect.anything(),
       expect.anything(),
     );
   });
 
-  it('should send email to users email address', async () => {
+  it("should send email to users email address", async () => {
     const handler = getHandler(config);
 
     await handler.processor(data);
@@ -69,7 +71,7 @@ describe('when processing a userserviceadded_v1 job', () => {
     );
   });
 
-  it('should send email with expected personalisation data', async () => {
+  it("should send email with expected personalisation data", async () => {
     const handler = getHandler(config);
 
     await handler.processor(data);

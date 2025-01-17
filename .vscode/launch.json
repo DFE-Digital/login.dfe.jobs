@@ -1,19 +1,17 @@
 {
   "version": "0.2.0",
   "configurations": [
-      {
-          "type": "node",
-          "request": "launch",
-          "name": "Launch Jobs",
-          "skipFiles": [
-              "<node_internals>/**"
-          ],
-          "program": "${workspaceFolder}/src/index.js",
-          "outputCapture": "std",
-          "env": {
-              "settings": "config/local-config.json",
-              "NODE_TLS_REJECT_UNAUTHORIZED": "0"
-          }     
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Jobs",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/src/index.js",
+      "outputCapture": "std",
+      "env": {
+        "settings": "config/local-config.json",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
       }
+    }
   ]
 }

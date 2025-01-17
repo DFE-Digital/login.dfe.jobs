@@ -1,44 +1,52 @@
-jest.mock('../../../../src/infrastructure/repository');
-jest.mock('../../../../src/infrastructure/webServices/SecureAccessWebServiceClient');
+jest.mock("../../../../src/infrastructure/repository");
+jest.mock(
+  "../../../../src/infrastructure/webServices/SecureAccessWebServiceClient",
+);
 
-const { getRepository } = require('../../../../src/infrastructure/repository');
-const SecureAccessWebServiceClient = require('../../../../src/infrastructure/webServices/SecureAccessWebServiceClient');
-const { getDefaultConfig, getLoggerMock, getRepositoryMock } = require('../testUtils');
-const { v4:uuid } = require('uuid');
-const { getHandler } = require('../../../../src/handlers/serviceNotifications/users/sendWSUserUpdatedV1');
+const { getRepository } = require("../../../../src/infrastructure/repository");
+const SecureAccessWebServiceClient = require("../../../../src/infrastructure/webServices/SecureAccessWebServiceClient");
+const {
+  getDefaultConfig,
+  getLoggerMock,
+  getRepositoryMock,
+} = require("../testUtils");
+const { v4: uuid } = require("uuid");
+const {
+  getHandler,
+} = require("../../../../src/handlers/serviceNotifications/users/sendWSUserUpdatedV1");
 
 const config = getDefaultConfig();
 const logger = getLoggerMock();
 const data = {
   user: {
-    userId: 'user1',
+    userId: "user1",
     legacyUserId: 987654,
     legacyUsername: 987654,
-    firstName: 'User',
-    lastName: 'One',
-    email: 'user.one@unit.tests',
+    firstName: "User",
+    lastName: "One",
+    email: "user.one@unit.tests",
     status: 1,
     organisationId: 123,
-    organisationUrn: '987654',
-    organisationLACode: '999',
+    organisationUrn: "987654",
+    organisationLACode: "999",
     roles: [
       {
-        id: 'role1',
-        code: 'ROLE-ONE',
+        id: "role1",
+        code: "ROLE-ONE",
       },
     ],
   },
-  applicationId: 'service1',
+  applicationId: "service1",
 };
 const jobId = 1;
 const application = {
   id: data.applicationId,
   relyingParty: {
     params: {
-      receiveUserUpdates: 'true',
-      wsWsdlUrl: 'https://service.one.test/ws/wsdl',
-      wsUsername: 'userone',
-      wsPassword: 'the-password',
+      receiveUserUpdates: "true",
+      wsWsdlUrl: "https://service.one.test/ws/wsdl",
+      wsUsername: "userone",
+      wsPassword: "the-password",
     },
   },
 };
@@ -47,8 +55,7 @@ const secureAccessWebServiceClient = {
   provisionUser: jest.fn(),
 };
 
-
-describe('when handling sendwsuserupdated_v1 job', () => {
+describe("when handling sendwsuserupdated_v1 job", () => {
   beforeEach(() => {
     data.applicationId = uuid();
     application.id = data.applicationId;
@@ -71,17 +78,19 @@ describe('when handling sendwsuserupdated_v1 job', () => {
       },
     ]);
 
-    SecureAccessWebServiceClient.create.mockReset().mockImplementation(() => secureAccessWebServiceClient);
+    SecureAccessWebServiceClient.create
+      .mockReset()
+      .mockImplementation(() => secureAccessWebServiceClient);
     secureAccessWebServiceClient.provisionUser.mockReset();
   });
 
-  it('then it should register handler with application specific type', () => {
+  it("then it should register handler with application specific type", () => {
     const handler = getHandler(config, logger, application);
 
     expect(handler.type).toBe(`sendwsuserupdated_v1_${application.id}`);
   });
 
-  it('then it should get previous state for application and user', async () => {
+  it("then it should get previous state for application and user", async () => {
     const handler = getHandler(config, logger, application);
     await handler.processor(data, jobId);
 
@@ -95,33 +104,71 @@ describe('when handling sendwsuserupdated_v1 job', () => {
     });
   });
 
-  it('then it should send create message to application if no previous state stored', async () => {
+  it("then it should send create message to application if no previous state stored", async () => {
     repository.userState.findOne.mockReturnValue(undefined);
 
     const handler = getHandler(config, logger, application);
     await handler.processor(data, jobId);
 
     expect(SecureAccessWebServiceClient.create).toHaveBeenCalledTimes(1);
-    expect(SecureAccessWebServiceClient.create).toHaveBeenCalledWith('https://service.one.test/ws/wsdl', 'userone', 'the-password', false, 'senduserupdated-1');
+    expect(SecureAccessWebServiceClient.create).toHaveBeenCalledWith(
+      "https://service.one.test/ws/wsdl",
+      "userone",
+      "the-password",
+      false,
+      "senduserupdated-1",
+    );
     expect(secureAccessWebServiceClient.provisionUser).toHaveBeenCalledTimes(1);
-    expect(secureAccessWebServiceClient.provisionUser).toHaveBeenCalledWith('CREATE', data.user.legacyUserId, data.user.legacyUsername, data.user.firstName, data.user.lastName,
-      data.user.email, data.user.organisationId, 1, data.user.organisationUrn, data.user.organisationLACode, data.user.roles, data.user.organisationUid);
+    expect(secureAccessWebServiceClient.provisionUser).toHaveBeenCalledWith(
+      "CREATE",
+      data.user.legacyUserId,
+      data.user.legacyUsername,
+      data.user.firstName,
+      data.user.lastName,
+      data.user.email,
+      data.user.organisationId,
+      1,
+      data.user.organisationUrn,
+      data.user.organisationLACode,
+      data.user.roles,
+      data.user.organisationUid,
+    );
   });
 
-  it('then it should send update message to application if previous state stored', async () => {
-    repository.userState.findOne.mockReturnValue({ last_action_sent: 'UPDATE' });
+  it("then it should send update message to application if previous state stored", async () => {
+    repository.userState.findOne.mockReturnValue({
+      last_action_sent: "UPDATE",
+    });
 
     const handler = getHandler(config, logger, application);
     await handler.processor(data, jobId);
 
     expect(SecureAccessWebServiceClient.create).toHaveBeenCalledTimes(1);
-    expect(SecureAccessWebServiceClient.create).toHaveBeenCalledWith('https://service.one.test/ws/wsdl', 'userone', 'the-password', false, 'senduserupdated-1');
+    expect(SecureAccessWebServiceClient.create).toHaveBeenCalledWith(
+      "https://service.one.test/ws/wsdl",
+      "userone",
+      "the-password",
+      false,
+      "senduserupdated-1",
+    );
     expect(secureAccessWebServiceClient.provisionUser).toHaveBeenCalledTimes(1);
-    expect(secureAccessWebServiceClient.provisionUser).toHaveBeenCalledWith('UPDATE', data.user.legacyUserId, data.user.legacyUsername, data.user.firstName, data.user.lastName,
-      data.user.email, data.user.organisationId, 1, data.user.organisationUrn, data.user.organisationLACode, data.user.roles, data.user.organisationUid);
+    expect(secureAccessWebServiceClient.provisionUser).toHaveBeenCalledWith(
+      "UPDATE",
+      data.user.legacyUserId,
+      data.user.legacyUsername,
+      data.user.firstName,
+      data.user.lastName,
+      data.user.email,
+      data.user.organisationId,
+      1,
+      data.user.organisationUrn,
+      data.user.organisationLACode,
+      data.user.roles,
+      data.user.organisationUid,
+    );
   });
 
-  it('then it should store the new user state', async () => {
+  it("then it should store the new user state", async () => {
     const handler = getHandler(config, logger, application);
     await handler.processor(data, jobId);
 
@@ -130,7 +177,7 @@ describe('when handling sendwsuserupdated_v1 job', () => {
       service_id: data.applicationId,
       user_id: data.user.userId,
       organisation_id: data.user.organisationId,
-      last_action_sent: 'CREATE',
+      last_action_sent: "CREATE",
     });
   });
 });

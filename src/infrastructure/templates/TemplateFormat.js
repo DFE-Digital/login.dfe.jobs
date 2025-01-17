@@ -1,4 +1,4 @@
-const ejs = require('ejs');
+const ejs = require("ejs");
 
 class TemplateFormat {
   constructor({ type, contentTypes }) {
@@ -8,7 +8,7 @@ class TemplateFormat {
 
   render(contentType, data) {
     return ejs.render(contentType.contents, data);
-  };
+  }
 }
 
 module.exports = TemplateFormat;

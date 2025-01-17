@@ -1,4 +1,4 @@
-const subServiceRequested = require('./subServiceRequestToApprovers');
+const subServiceRequested = require("./subServiceRequestToApprovers");
 
 const register = (config, logger) => [
   subServiceRequested.getHandler(config, logger),

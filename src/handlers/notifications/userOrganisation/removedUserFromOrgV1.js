@@ -1,9 +1,9 @@
-const { getNotifyAdapter } = require('../../../infrastructure/notify');
+const { getNotifyAdapter } = require("../../../infrastructure/notify");
 
 const process = async (config, logger, data) => {
   const notify = getNotifyAdapter(config);
 
-  await notify.sendEmail('userRemovedFromOrganisation', data.email, {
+  await notify.sendEmail("userRemovedFromOrganisation", data.email, {
     personalisation: {
       firstName: data.firstName,
       lastName: data.lastName,
@@ -15,7 +15,7 @@ const process = async (config, logger, data) => {
 };
 
 const getHandler = (config, logger) => ({
-  type: 'userremovedfromorganisationrequest_v1',
+  type: "userremovedfromorganisationrequest_v1",
   processor: async (data) => {
     await process(config, logger, data);
   },

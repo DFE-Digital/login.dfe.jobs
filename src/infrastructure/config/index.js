@@ -1,12 +1,10 @@
-'use strict';
-
 const fs = require('fs');
 const Path = require('path');
 
 const getSettingsObject = (settings) => {
   try {
     return JSON.parse(settings);
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -16,7 +14,7 @@ const getSettingsFromFile = (settingsPath) => {
     const file = fs.readFileSync(settingsPath, 'utf8');
     try {
       return JSON.parse(file);
-    } catch (e) {
+    } catch {
       return null;
     }
   }

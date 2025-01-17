@@ -1,4 +1,4 @@
-const GovNotifyAdapter = require('./GovNotifyAdapter');
+const GovNotifyAdapter = require("./GovNotifyAdapter");
 
 function getNotifyAdapter(config) {
   return new GovNotifyAdapter(config);
