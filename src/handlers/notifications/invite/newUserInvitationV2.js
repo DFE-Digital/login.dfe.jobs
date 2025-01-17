@@ -49,8 +49,11 @@ const process = async (config, logger, data) => {
             code: data.code,
             reason,
             subject: data.overrides?.subject
-              ? data.overrides.subject
-              : "You’ve been invited to join DfE Sign-in",
+              ? data.overrides.subject.replace(
+                  "((VERIFICATION CODE))",
+                  data.code,
+                )
+              : `${data.code} is your DfE Sign-in verification code`,
           },
         });
       }

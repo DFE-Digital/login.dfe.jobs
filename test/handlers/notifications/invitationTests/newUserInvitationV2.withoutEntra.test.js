@@ -88,14 +88,40 @@ describe("when sending v2 user invitation when Entra feature flag is turned off"
       it("assumes the default value when no override is provided", async () => {
         const handler = getHandler(config);
 
-        await handler.processor(commonJobData);
+        await handler.processor({
+          ...commonJobData,
+          code: "ABC123",
+        });
 
         expect(mockSendEmail).toHaveBeenCalledWith(
           expect.anything(),
           expect.anything(),
           expect.objectContaining({
             personalisation: expect.objectContaining({
-              subject: "You’ve been invited to join DfE Sign-in",
+              subject: "ABC123 is your DfE Sign-in verification code",
+            }),
+          }),
+        );
+      });
+
+      it("replaces the placeholder with the actual verification code", async () => {
+        const handler = getHandler(config);
+
+        await handler.processor({
+          ...commonJobData,
+          code: "ABC123",
+          overrides: {
+            subject:
+              "((VERIFICATION CODE)) is your DfE Sign-in verification code",
+          },
+        });
+
+        expect(mockSendEmail).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.anything(),
+          expect.objectContaining({
+            personalisation: expect.objectContaining({
+              subject: "ABC123 is your DfE Sign-in verification code",
             }),
           }),
         );
