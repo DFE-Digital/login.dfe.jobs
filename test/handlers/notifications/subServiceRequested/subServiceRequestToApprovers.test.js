@@ -1,7 +1,7 @@
 jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("../../../../src/infrastructure/directories");
 jest.mock("../../../../src/infrastructure/notify");
-jest.mock("../../../../src/handlers/notifications/utils");
+
 jest.mock("login.dfe.dao", () => ({
   directories: {
     getAllActiveUsersFromList() {

@@ -1,6 +1,6 @@
 jest.mock("../../../src/handlers/notifications", () => ({}));
 jest.mock("../../../src/handlers/serviceNotifications");
-
+jest.mock("../../../src/infrastructure/config", () => ({}));
 const { getProcessorMappings } = require("../../../src/handlers");
 
 const config = {

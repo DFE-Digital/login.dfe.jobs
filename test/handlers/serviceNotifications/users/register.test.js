@@ -5,7 +5,7 @@ jest.mock(
   "../../../../src/handlers/serviceNotifications/users/sendWSUserUpdatedV1",
 );
 jest.mock("../../../../src/handlers/serviceNotifications/utils");
-
+jest.mock("../../../../src/infrastructure/config", () => ({}));
 const {
   mockHandler,
   getDefaultConfig,
