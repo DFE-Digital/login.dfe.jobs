@@ -1,8 +1,5 @@
-const {
-  getAllApplicationRequiringNotification,
-  enqueue,
-} = require("./../utils");
-const kue = require("login.dfe.kue");
+const { getAllApplicationRequiringNotification } = require("./../utils");
+const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
 const { v4: uuid } = require("uuid");
 
 const applictionRequiringNotificationCondition = (a) =>
@@ -29,15 +26,8 @@ const process = async (config, logger, data, jobId) => {
 
   const jobs = await getRequiredJobs(config, logger, data, correlationId);
 
-  const queue = kue.createQueue({
-    redis: config.queueStorage.connectionString,
-  });
   for (let i = 0; i < jobs.length; i += 1) {
-    await enqueue(
-      queue,
-      `sendwsroleupdated_v1_${jobs[i].applicationId}`,
-      jobs[i],
-    );
+    await bullEnqueue(`sendwsroleupdated_v1_${jobs[i].applicationId}`, jobs[i]);
   }
 };
 

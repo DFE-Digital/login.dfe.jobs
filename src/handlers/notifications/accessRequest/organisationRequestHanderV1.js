@@ -1,8 +1,7 @@
 const { directories } = require("login.dfe.dao");
 const OrganisatonsClient = require("../../../infrastructure/organisations");
 const DirectoriesClient = require("../../../infrastructure/directories");
-const kue = require("login.dfe.kue");
-const { enqueue } = require("../utils");
+const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
 
 const process = async (config, logger, data) => {
   try {
@@ -27,21 +26,12 @@ const process = async (config, logger, data) => {
     );
     const user = await directoriesClient.getById(request.user_id);
 
-    const queue = kue.createQueue({
-      redis: config.queueStorage.connectionString,
-    });
-
-    /*  await enqueue(queue, 'useraccessrequest_v1', {
-      orgName: organisation.name,
-      name: `${user.given_name} ${user.family_name}`,
-      email: user.email,
-    });*/
-
     if (activeApproverIds.length > 0) {
       const approvers =
         await directoriesClient.getUsersByIds(activeApproverIds);
       const approverEmails = approvers.map((x) => x.email);
-      await enqueue(queue, "approveraccessrequest_v1", {
+
+      await bullEnqueue("approveraccessrequest_v1", {
         recipients: approverEmails,
         orgName: organisation.name,
         userName: `${user.given_name} ${user.family_name}`,
@@ -50,7 +40,7 @@ const process = async (config, logger, data) => {
         requestId: data.requestId,
       });
     } else {
-      await enqueue(queue, "supportrequest_v1", {
+      await bullEnqueue("supportrequest_v1", {
         name: `${user.given_name} ${user.family_name}`,
         email: user.email,
         orgName: organisation.name,
