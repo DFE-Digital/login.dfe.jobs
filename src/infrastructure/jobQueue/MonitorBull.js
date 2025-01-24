@@ -1,6 +1,6 @@
 const { Worker } = require("bullmq");
-const config = require("../config");
 const logger = require("../logger");
+const { bullConnectionUrl } = require("./BullHelpers");
 
 const process = async (job, processor) => {
   try {
@@ -28,11 +28,6 @@ class MonitorBull {
   }
 
   start() {
-    const connectionString =
-      config.queueStorage && config.queueStorage.connectionString
-        ? config.queueStorage.connectionString
-        : "redis://127.0.0.1:6379";
-
     // Closely matches Kue which "creates" a worker per "mapping.type"
     this.processorMapping.forEach((mapping) => {
       logger.debug(`MonitorBull: start monitoring ${mapping.type}`);
@@ -41,7 +36,7 @@ class MonitorBull {
         async (job) => {
           process(job, mapping.processor);
         },
-        { connection: { url: connectionString } },
+        { connection: { url: bullConnectionUrl } },
       );
       this.workers.push(worker);
     });
