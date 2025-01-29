@@ -56,6 +56,9 @@ const govNotifyEmailTemplatesSchema = new SimpleSchema({
   inviteNewUserEntra: String,
   notifyExistingUserWhenAttemptingToRegisterAgain: String,
   selfRegisterNewAccount: String,
+
+  // Verification
+  entraOtpEmail: String,
 });
 
 const govNotifyTemplatesSchema = new SimpleSchema({
