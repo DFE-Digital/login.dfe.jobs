@@ -1,16 +1,30 @@
-jest.mock("login.dfe.kue");
 jest.mock("../../../../src/infrastructure/access");
 jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("../../../../src/infrastructure/directories");
 jest.mock("../../../../src/handlers/serviceNotifications/utils");
 
-const kue = require("login.dfe.kue");
+jest.mock("../../../../src/infrastructure/config", () => ({}));
+
+const mockClose = jest.fn();
+const mockAdd = jest.fn();
+
+const {
+  bullQueueTtl,
+} = require("../../../../src/infrastructure/jobQueue/BullHelpers");
+
+jest.mock("bullmq", () => ({
+  Queue: jest.fn().mockImplementation(() => ({
+    close: mockClose,
+    add: mockAdd,
+  })),
+}));
+
+const { Queue } = require("bullmq");
 const AccessClient = require("../../../../src/infrastructure/access");
 const OrganisationsClient = require("../../../../src/infrastructure/organisations");
 const DirectoriesClient = require("../../../../src/infrastructure/directories");
 const {
   getAllApplicationRequiringNotification,
-  enqueue,
 } = require("../../../../src/handlers/serviceNotifications/utils");
 const {
   getDefaultConfig,
@@ -31,7 +45,6 @@ const data = {
   status: 1,
 };
 const jobId = 1;
-const queue = {};
 const accessClient = getAccessClientMock();
 const organisatonsClient = getOrganisationsClientMock();
 const directoriesClient = getDirectoriesClientMock();
@@ -76,12 +89,7 @@ describe("when handling userupdated_v1 job", () => {
       status: 2,
     });
     DirectoriesClient.mockImplementation(() => directoriesClient);
-
-    kue.createQueue.mockReset().mockReturnValue(queue);
-
     getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
-
-    enqueue.mockReset();
   });
 
   it("then it should return handler with correct type", () => {
@@ -91,12 +99,24 @@ describe("when handling userupdated_v1 job", () => {
   });
 
   it("then it should create queue with correct connectionString", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "service1",
+        relyingParty: {
+          params: {
+            wsWsdlUrl: "https://service.one/wsdl",
+            wsProvisionUserAction: "pu-action",
+          },
+        },
+      },
+    ]);
+
     const handler = getHandler(config, logger);
     await handler.processor(data, jobId);
 
-    expect(kue.createQueue).toHaveBeenCalledTimes(1);
-    expect(kue.createQueue).toHaveBeenCalledWith({
-      redis: config.queueStorage.connectionString,
+    expect(Queue).toHaveBeenCalledTimes(1);
+    expect(Queue).toHaveBeenCalledWith("sendwsuserupdated_v1_service1", {
+      connection: { url: "redis://127.0.0.1:6379" },
     });
   });
 
@@ -162,9 +182,10 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor(data, jobId);
 
-    expect(enqueue).toHaveBeenCalledTimes(2);
-    expect(enqueue).toHaveBeenCalledWith(
-      queue,
+    expect(Queue).toHaveBeenCalledTimes(2);
+    expect(mockClose).toHaveBeenCalledTimes(2);
+    expect(mockAdd).toHaveBeenCalledTimes(2);
+    expect(mockAdd).toHaveBeenCalledWith(
       "sendwsuserupdated_v1_service1",
       {
         applicationId: "service1",
@@ -184,9 +205,10 @@ describe("when handling userupdated_v1 job", () => {
           ],
         },
       },
+      bullQueueTtl,
     );
-    expect(enqueue).toHaveBeenCalledWith(
-      queue,
+
+    expect(mockAdd).toHaveBeenCalledWith(
       "sendwsuserupdated_v1_service2",
       {
         applicationId: "service2",
@@ -206,6 +228,7 @@ describe("when handling userupdated_v1 job", () => {
           ],
         },
       },
+      bullQueueTtl,
     );
   });
 
@@ -226,9 +249,10 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor(data, jobId);
 
-    expect(enqueue).toHaveBeenCalledTimes(1);
-    expect(enqueue).toHaveBeenCalledWith(
-      queue,
+    expect(Queue).toHaveBeenCalledTimes(1);
+    expect(mockClose).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledWith(
       "sendwsuserupdated_v1_service1parent",
       {
         applicationId: "service1parent",
@@ -252,6 +276,7 @@ describe("when handling userupdated_v1 job", () => {
           ],
         },
       },
+      bullQueueTtl,
     );
   });
 
@@ -273,9 +298,9 @@ describe("when handling userupdated_v1 job", () => {
 
     expect(directoriesClient.getUser).toHaveBeenCalledTimes(1);
     expect(directoriesClient.getUser).toHaveBeenCalledWith(data.sub);
-    expect(enqueue).toHaveBeenCalledTimes(1);
-    expect(enqueue).toHaveBeenCalledWith(
-      queue,
+    expect(mockClose).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledWith(
       "sendwsuserupdated_v1_service1",
       {
         applicationId: "service1",
@@ -295,6 +320,7 @@ describe("when handling userupdated_v1 job", () => {
           ],
         },
       },
+      bullQueueTtl,
     );
   });
 
@@ -316,9 +342,9 @@ describe("when handling userupdated_v1 job", () => {
 
     expect(directoriesClient.getUser).toHaveBeenCalledTimes(1);
     expect(directoriesClient.getUser).toHaveBeenCalledWith(data.sub);
-    expect(enqueue).toHaveBeenCalledTimes(1);
-    expect(enqueue).toHaveBeenCalledWith(
-      queue,
+    expect(mockClose).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledWith(
       "sendwsuserupdated_v1_service1",
       {
         applicationId: "service1",
@@ -338,6 +364,7 @@ describe("when handling userupdated_v1 job", () => {
           ],
         },
       },
+      bullQueueTtl,
     );
   });
 
@@ -372,9 +399,9 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor(data, jobId);
 
-    expect(enqueue).toHaveBeenCalledTimes(1);
-    expect(enqueue).toHaveBeenCalledWith(
-      queue,
+    expect(mockClose).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledWith(
       "sendwsuserupdated_v1_service1",
       {
         applicationId: "service1",
@@ -394,6 +421,7 @@ describe("when handling userupdated_v1 job", () => {
           ],
         },
       },
+      bullQueueTtl,
     );
   });
 });

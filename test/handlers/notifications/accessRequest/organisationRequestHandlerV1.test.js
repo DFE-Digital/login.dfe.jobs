@@ -1,7 +1,5 @@
-jest.mock("login.dfe.kue");
 jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("../../../../src/infrastructure/directories");
-jest.mock("../../../../src/handlers/notifications/utils");
 jest.mock("login.dfe.dao", () => ({
   directories: {
     getAllActiveUsersFromList(v) {
@@ -12,11 +10,26 @@ jest.mock("login.dfe.dao", () => ({
     },
   },
 }));
+jest.mock("../../../../src/infrastructure/config", () => ({}));
 
-const kue = require("login.dfe.kue");
+const mockClose = jest.fn();
+const mockAdd = jest.fn();
+
+const {
+  bullQueueTtl,
+} = require("../../../../src/infrastructure/jobQueue/BullHelpers");
+
+jest.mock("bullmq", () => ({
+  Queue: jest.fn().mockImplementation(() => ({
+    close: mockClose,
+    add: mockAdd,
+  })),
+}));
+
+const { Queue } = require("bullmq");
 const OrganisationsClient = require("../../../../src/infrastructure/organisations");
 const DirectoriesClient = require("../../../../src/infrastructure/directories");
-const { enqueue } = require("../../../../src/handlers/notifications/utils");
+
 const {
   getDefaultConfig,
   getLoggerMock,
@@ -33,7 +46,7 @@ const logger = getLoggerMock();
 const data = {
   requestId: "requestId",
 };
-const queue = {};
+
 const organisatonsClient = getOrganisationsClientMock();
 const directoriesClient = getDirectoriesClientMock();
 
@@ -62,8 +75,6 @@ describe("when handling organisationrequest_v1 job", () => {
     });
     directoriesClient.getUsersByIds.mockReturnValue([]);
     DirectoriesClient.mockImplementation(() => directoriesClient);
-    kue.createQueue.mockReset().mockReturnValue(queue);
-    enqueue.mockReset();
   });
 
   it("then it should return handler with correct type", () => {
@@ -74,9 +85,9 @@ describe("when handling organisationrequest_v1 job", () => {
   it("then it should create queue with correct connectionString", async () => {
     const handler = getHandler(config, logger);
     await handler.processor(data);
-    expect(kue.createQueue).toHaveBeenCalledTimes(1);
-    expect(kue.createQueue).toHaveBeenCalledWith({
-      redis: config.queueStorage.connectionString,
+    expect(Queue).toHaveBeenCalledTimes(1);
+    expect(Queue).toHaveBeenCalledWith("supportrequest_v1", {
+      connection: { url: "redis://127.0.0.1:6379" },
     });
   });
 
@@ -119,16 +130,22 @@ describe("when handling organisationrequest_v1 job", () => {
   it("then it should queue a supportrequest_v1 job if no approvers for org ", async () => {
     const handler = getHandler(config, logger);
     await handler.processor(data);
-    expect(enqueue).toHaveBeenCalledTimes(1);
-    expect(enqueue).toHaveBeenCalledWith(queue, "supportrequest_v1", {
-      email: "user.one-fromdir@unit.tests",
-      name: "name surname",
-      orgName: "organisation name",
-      type: "Access to an organisation",
-      urn: "",
-      message:
-        "Organisation request for organisation name, no approvers exist. Request reason: I need access pls",
-    });
+    expect(Queue).toHaveBeenCalledTimes(1);
+    expect(mockClose).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledWith(
+      "supportrequest_v1",
+      {
+        email: "user.one-fromdir@unit.tests",
+        name: "name surname",
+        orgName: "organisation name",
+        type: "Access to an organisation",
+        urn: "",
+        message:
+          "Organisation request for organisation name, no approvers exist. Request reason: I need access pls",
+      },
+      bullQueueTtl,
+    );
   });
 
   it("then it should queue a approveraccessrequest_v1 job if approvers for org ", async () => {
@@ -143,14 +160,19 @@ describe("when handling organisationrequest_v1 job", () => {
     ]);
     const handler = getHandler(config, logger);
     await handler.processor(data);
-    expect(enqueue).toHaveBeenCalledTimes(1);
-    expect(enqueue).toHaveBeenCalledWith(queue, "approveraccessrequest_v1", {
-      userEmail: "user.one-fromdir@unit.tests",
-      userName: "name surname",
-      recipients: ["approver@email.com"],
-      orgId: "org1",
-      orgName: "organisation name",
-      requestId: "requestId",
-    });
+    expect(Queue).toHaveBeenCalledTimes(1);
+    expect(mockClose).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledWith(
+      "approveraccessrequest_v1",
+      {
+        userEmail: "user.one-fromdir@unit.tests",
+        userName: "name surname",
+        recipients: ["approver@email.com"],
+        orgId: "org1",
+        orgName: "organisation name",
+        requestId: "requestId",
+      },
+      bullQueueTtl,
+    );
   });
 });

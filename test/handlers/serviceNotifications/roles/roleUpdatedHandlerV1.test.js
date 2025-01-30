@@ -1,17 +1,30 @@
-jest.mock("login.dfe.kue");
 jest.mock("../../../../src/infrastructure/access");
 jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("../../../../src/handlers/serviceNotifications/utils");
 
-const kue = require("login.dfe.kue");
 const {
   getAllApplicationRequiringNotification,
-  enqueue,
 } = require("../../../../src/handlers/serviceNotifications/utils");
 const { getDefaultConfig, getLoggerMock } = require("../testUtils");
 const {
   getHandler,
 } = require("../../../../src/handlers/serviceNotifications/roles/roleUpdatedHandlerV1");
+
+jest.mock("../../../../src/infrastructure/config/index", () => ({}));
+const mockClose = jest.fn();
+const mockAdd = jest.fn();
+
+const {
+  bullQueueTtl,
+} = require("../../../../src/infrastructure/jobQueue/BullHelpers");
+
+jest.mock("bullmq", () => ({
+  Queue: jest.fn().mockImplementation(() => ({
+    close: mockClose,
+    add: mockAdd,
+  })),
+}));
+const { Queue } = require("bullmq");
 
 const config = getDefaultConfig();
 const logger = getLoggerMock();
@@ -20,15 +33,10 @@ const data = {
   name: "role one",
 };
 const jobId = 1;
-const queue = {};
 
 describe("when handling roleupdated_v1 job", () => {
   beforeEach(() => {
-    kue.createQueue.mockReset().mockReturnValue(queue);
-
     getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
-
-    enqueue.mockReset();
   });
 
   it("then it should return handler with correct type", () => {
@@ -38,12 +46,23 @@ describe("when handling roleupdated_v1 job", () => {
   });
 
   it("then it should create queue with correct connectionString", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "service1",
+        relyingParty: {
+          params: {
+            wsWsdlUrl: "https://service.one/wsdl",
+          },
+        },
+      },
+    ]);
+
     const handler = getHandler(config, logger);
     await handler.processor(data, jobId);
 
-    expect(kue.createQueue).toHaveBeenCalledTimes(1);
-    expect(kue.createQueue).toHaveBeenCalledWith({
-      redis: config.queueStorage.connectionString,
+    expect(Queue).toHaveBeenCalledTimes(1);
+    expect(Queue).toHaveBeenCalledWith("sendwsroleupdated_v1_service1", {
+      connection: { url: "redis://127.0.0.1:6379" },
     });
   });
 
@@ -105,23 +124,24 @@ describe("when handling roleupdated_v1 job", () => {
 
     const handler = getHandler(config, logger);
     await handler.processor(data, jobId);
-
-    expect(enqueue).toHaveBeenCalledTimes(2);
-    expect(enqueue).toHaveBeenCalledWith(
-      queue,
+    expect(Queue).toHaveBeenCalledTimes(2);
+    expect(mockClose).toHaveBeenCalledTimes(2);
+    expect(mockAdd).toHaveBeenCalledTimes(2);
+    expect(mockAdd).toHaveBeenCalledWith(
       "sendwsroleupdated_v1_service1",
       {
         applicationId: "service1",
         role: data,
       },
+      bullQueueTtl,
     );
-    expect(enqueue).toHaveBeenCalledWith(
-      queue,
+    expect(mockAdd).toHaveBeenCalledWith(
       "sendwsroleupdated_v1_service2",
       {
         applicationId: "service2",
         role: data,
       },
+      bullQueueTtl,
     );
   });
 });

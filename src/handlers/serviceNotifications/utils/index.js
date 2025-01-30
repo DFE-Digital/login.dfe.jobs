@@ -40,19 +40,6 @@ const getAllApplicationRequiringNotification = async (
   return requiringNotification;
 };
 
-const enqueue = async (queue, type, data) => {
-  return new Promise((resolve, reject) => {
-    const queuedJob = queue.create(type, data);
-    queuedJob.save((err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(queuedJob.id);
-      }
-    });
-  });
-};
-
 const forEachAsync = async (col, iteratee) => {
   for (let i = 0; i < col.length; i += 1) {
     await iteratee(col[i], i);
@@ -61,6 +48,5 @@ const forEachAsync = async (col, iteratee) => {
 
 module.exports = {
   getAllApplicationRequiringNotification,
-  enqueue,
   forEachAsync,
 };

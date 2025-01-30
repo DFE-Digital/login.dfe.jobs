@@ -1,7 +1,7 @@
 const { getNotifyAdapter } = require("../../../infrastructure/notify");
 
 const process = async (config, logger, data) => {
-  const notify = await getNotifyAdapter(config);
+  const notify = getNotifyAdapter(config);
 
   for (let approverEmail of data.recipients) {
     await notify.sendEmail("approverRequestAccess", approverEmail, {
