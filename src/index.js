@@ -11,9 +11,7 @@ const config = require("./infrastructure/config");
 const configSchema = require("./infrastructure/config/schema");
 const registerRoutes = require("./routes");
 
-const MonitorKue = require("./infrastructure/jobQueue/MonitorKue");
 const MonitorBull = require("./infrastructure/jobQueue/MonitorBull");
-const MonitorComposite = require("./infrastructure/jobQueue/MonitorComposite");
 
 configSchema.validate();
 
@@ -26,10 +24,7 @@ logger.info("Getting processor mappings");
 
 getProcessorMappings(config, logger)
   .then((processorMapping) => {
-    const monitor = new MonitorComposite([
-      new MonitorKue(processorMapping),
-      new MonitorBull(processorMapping),
-    ]);
+    const monitor = new MonitorBull(processorMapping);
 
     monitor.start();
 
