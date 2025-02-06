@@ -145,7 +145,7 @@ const process = async (config, logger, data) => {
     config.publicApi.organisations,
     correlationId,
   );
-  const jobs = new JobsClient(config.queueStorage.connectionString);
+  const jobs = new JobsClient();
 
   const userAlreadyExists = await checkForExistingUser(
     directories,
