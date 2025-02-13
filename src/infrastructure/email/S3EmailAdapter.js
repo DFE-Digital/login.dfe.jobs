@@ -1,6 +1,6 @@
-const EmailAdapter = require('./EmailAdapter');
-const aws = require('aws-sdk');
-const emailUtils = require('./utils');
+const EmailAdapter = require("./EmailAdapter");
+const aws = require("aws-sdk");
+const emailUtils = require("./utils");
 
 class S3EmailAdapter extends EmailAdapter {
   constructor(config, logger) {
@@ -9,13 +9,19 @@ class S3EmailAdapter extends EmailAdapter {
     this.bucketName = config.notifications.email.params.bucketName;
     this.logger = logger;
 
-    if (config.notifications.email.params && config.notifications.email.params.accessKey && config.notifications.email.params.accessSecret) {
+    if (
+      config.notifications.email.params &&
+      config.notifications.email.params.accessKey &&
+      config.notifications.email.params.accessSecret
+    ) {
       aws.config.update({
         accessKeyId: config.notifications.email.params.accessKey,
         secretAccessKey: config.notifications.email.params.accessSecret,
       });
     } else {
-      this.logger.info('S3EmailAdapter- accessKeyId or secretAccessKey are missing')
+      this.logger.info(
+        "S3EmailAdapter- accessKeyId or secretAccessKey are missing",
+      );
     }
   }
 
@@ -23,7 +29,12 @@ class S3EmailAdapter extends EmailAdapter {
     try {
       return new Promise((resolve, reject) => {
         const fileName = emailUtils.makeFileName();
-        const content = emailUtils.getFileContent(recipient, template, data, subject);
+        const content = emailUtils.getFileContent(
+          recipient,
+          template,
+          data,
+          subject,
+        );
         const object = {
           Bucket: this.bucketName,
           Key: `notifications/email/${template}/${fileName}`,
@@ -40,8 +51,12 @@ class S3EmailAdapter extends EmailAdapter {
         });
       });
     } catch (e) {
-      this.logger.error(`Error sending S3 email- outer catch block - ${JSON.stringify(e)}`);
-      return Promise.reject(`Error sending S3 email- outer catch block - ${JSON.stringify(e)}`);
+      this.logger.error(
+        `Error sending S3 email- outer catch block - ${JSON.stringify(e)}`,
+      );
+      return Promise.reject(
+        `Error sending S3 email- outer catch block - ${JSON.stringify(e)}`,
+      );
     }
   }
 }

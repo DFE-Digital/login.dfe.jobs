@@ -1,11 +1,11 @@
 class EmailAdapter {
   constructor() {
     if (new.target === EmailAdapter) {
-      throw new TypeError('Cannot construct EmailAdapter instances directly');
+      throw new TypeError("Cannot construct EmailAdapter instances directly");
     }
   }
 
-  async send(recipient, template, data, subject) {
+  async send() {
     return Promise.resolve({});
   }
 }

@@ -1,4 +1,4 @@
-const ApiClient = require('./../ApiClient');
+const ApiClient = require("./../ApiClient");
 
 class DirectoriesClient extends ApiClient {
   constructor(opts, correlationId) {
@@ -6,13 +6,13 @@ class DirectoriesClient extends ApiClient {
   }
 
   async getUsersByIds(ids) {
-    return this._callApi('/users/by-ids', 'POST', {
+    return this._callApi("/users/by-ids", "POST", {
       ids: ids.toString(),
     });
-  };
+  }
 
   async getById(id) {
-    return this._callApi(`/users/${id}`)
+    return this._callApi(`/users/${id}`);
   }
 
   async getUser(userId) {
@@ -28,11 +28,11 @@ class DirectoriesClient extends ApiClient {
   }
 
   async createInvitation(invitation) {
-    return this._callApi('/invitations', 'POST', invitation);
+    return this._callApi("/invitations", "POST", invitation);
   }
 
   async updateInvitation(invitation) {
-    return this._callApi(`/invitations/${invitation.id}`, 'PATCH', {
+    return this._callApi(`/invitations/${invitation.id}`, "PATCH", {
       callbacks: invitation.callbacks,
     });
   }

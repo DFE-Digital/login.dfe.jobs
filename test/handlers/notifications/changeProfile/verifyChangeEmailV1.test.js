@@ -1,22 +1,24 @@
-jest.mock('../../../../src/infrastructure/notify');
+jest.mock("../../../../src/infrastructure/notify");
 
-const { getNotifyAdapter } = require('../../../../src/infrastructure/notify');
-const { getHandler } = require('../../../../src/handlers/notifications/changeProfile/verifyChangeEmailV1');
+const { getNotifyAdapter } = require("../../../../src/infrastructure/notify");
+const {
+  getHandler,
+} = require("../../../../src/handlers/notifications/changeProfile/verifyChangeEmailV1");
 
 const config = {
   notifications: {
-    profileUrl: 'https://profile.dfe.signin',
-    helpUrl: 'https://help.dfe.signin',
+    profileUrl: "https://profile.dfe.signin",
+    helpUrl: "https://help.dfe.signin",
   },
 };
 const jobData = {
-  firstName: 'User',
-  lastName: 'One',
-  email: 'user.one@unit.tests',
-  code: 'ABC123',
+  firstName: "User",
+  lastName: "One",
+  email: "user.one@unit.tests",
+  code: "ABC123",
 };
 
-describe('When handling verifychangeemail_v1 job', () => {
+describe("When handling verifychangeemail_v1 job", () => {
   const mockSendEmail = jest.fn();
 
   beforeEach(() => {
@@ -26,16 +28,16 @@ describe('When handling verifychangeemail_v1 job', () => {
     getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
 
-  it('should return a handler with a processor', () => {
+  it("should return a handler with a processor", () => {
     const handler = getHandler(config);
 
     expect(handler).not.toBeNull();
-    expect(handler.type).toBe('verifychangeemail_v1');
+    expect(handler.type).toBe("verifychangeemail_v1");
     expect(handler.processor).not.toBeNull();
     expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('should get email adapter with supplied config', async () => {
+  it("should get email adapter with supplied config", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -44,20 +46,20 @@ describe('When handling verifychangeemail_v1 job', () => {
     expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('should send email with expected template', async () => {
+  it("should send email with expected template", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
 
     expect(mockSendEmail).toHaveBeenCalledTimes(1);
     expect(mockSendEmail).toHaveBeenCalledWith(
-      'verifyChangeEmailAddress',
+      "verifyChangeEmailAddress",
       expect.anything(),
       expect.anything(),
     );
   });
 
-  it('should send email to users email address', async () => {
+  it("should send email to users email address", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -70,7 +72,7 @@ describe('When handling verifychangeemail_v1 job', () => {
     );
   });
 
-  it('should send email with expected personalisation data', async () => {
+  it("should send email with expected personalisation data", async () => {
     const handler = getHandler(config);
 
     await handler.processor(jobData);
@@ -85,15 +87,15 @@ describe('When handling verifychangeemail_v1 job', () => {
           lastName: jobData.lastName,
           email: jobData.email,
           code: jobData.code,
-          returnUrl: 'https://profile.dfe.signin/change-email/verify',
-          helpUrl: 'https://help.dfe.signin',
+          returnUrl: "https://profile.dfe.signin/change-email/verify",
+          helpUrl: "https://help.dfe.signin",
         }),
       }),
     );
   });
 
-  it('should use return url including uid if present in personalisation data', async () => {
-    jobData.uid = 'user1';
+  it("should use return url including uid if present in personalisation data", async () => {
+    jobData.uid = "user1";
 
     const handler = getHandler(config);
 
@@ -109,8 +111,8 @@ describe('When handling verifychangeemail_v1 job', () => {
           lastName: jobData.lastName,
           email: jobData.email,
           code: jobData.code,
-          returnUrl: 'https://profile.dfe.signin/change-email/user1/verify',
-          helpUrl: 'https://help.dfe.signin',
+          returnUrl: "https://profile.dfe.signin/change-email/user1/verify",
+          helpUrl: "https://help.dfe.signin",
         }),
       }),
     );

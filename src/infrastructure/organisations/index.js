@@ -1,4 +1,4 @@
-const ApiClient = require('./../ApiClient');
+const ApiClient = require("./../ApiClient");
 
 class OrganisatonsClient extends ApiClient {
   constructor(opts, correlationId) {
@@ -18,11 +18,19 @@ class OrganisatonsClient extends ApiClient {
   }
 
   async addOrganisationToInvitation(invitationId, organisationId, roleId) {
-    return this._callApi(`/organisations/${organisationId}/invitations/${invitationId}`, 'PUT', { roleId });
+    return this._callApi(
+      `/organisations/${organisationId}/invitations/${invitationId}`,
+      "PUT",
+      { roleId },
+    );
   }
 
   async addOrganisationToUser(userId, organisationId, roleId) {
-    return this._callApi(`/organisations/${organisationId}/users/${userId}`, 'PUT', { roleId });
+    return this._callApi(
+      `/organisations/${organisationId}/users/${userId}`,
+      "PUT",
+      { roleId },
+    );
   }
 
   async listUserOrganisations(userId) {

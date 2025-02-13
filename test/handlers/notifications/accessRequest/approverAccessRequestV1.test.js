@@ -1,102 +1,100 @@
-jest.mock('../../../../src/infrastructure/email');
+jest.mock("../../../../src/infrastructure/notify");
 
-const { getEmailAdapter } = require('../../../../src/infrastructure/email');
-const { getHandler } = require('../../../../src/handlers/notifications/accessRequest/approverAccessRequestV1');
-const emailSend = jest.fn();
+const { getNotifyAdapter } = require("../../../../src/infrastructure/notify");
+const {
+  getHandler,
+} = require("../../../../src/handlers/notifications/accessRequest/approverAccessRequestV1");
 
 const config = {
   notifications: {
-    servicesUrl: 'https://services.dfe.signin',
-    helpUrl: 'https://help.dfe.signin'
+    servicesUrl: "https://services.dfe.signin",
+    helpUrl: "https://help.dfe.signin",
   },
 };
-const logger = {};
 const jobData = {
-  orgName: 'Test Organisation',
-  userName: 'Test One',
-  userEmail: 'email@test.com',
-  recipients: ['test1@unit','test2@unit'],
-  orgId:'org',
-  requestId:'requestId',
+  orgName: "Test Organisation",
+  userName: "Test One",
+  userEmail: "email@test.com",
+  recipients: ["test1@unit", "test2@unit"],
+  orgId: "org",
+  requestId: "requestId",
 };
 
-describe('When handling approverAccessRequest_v1 job', () => {
+describe("When handling approverAccessRequest_v1 job", () => {
+  const mockSendEmail = jest.fn();
+
   beforeEach(() => {
-    emailSend.mockReset();
+    mockSendEmail.mockReset();
 
-    getEmailAdapter.mockReset();
-    getEmailAdapter.mockReturnValue({ send: emailSend });
+    getNotifyAdapter.mockReset();
+    getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
   });
-
-  it('then it should return a handler with a processor', () => {
-    const handler = getHandler(config, logger);
+  it("should return a handler with a processor", async () => {
+    const handler = getHandler(config);
 
     expect(handler).not.toBeNull();
-    expect(handler.type).toBe('approveraccessrequest_v1');
+    expect(handler.type).toBe("approveraccessrequest_v1");
     expect(handler.processor).not.toBeNull();
     expect(handler.processor).toBeInstanceOf(Function);
   });
 
-  it('then it should get email adapter with supplied config and logger', async () => {
-    const handler = getHandler(config, logger);
+  it("should get email adapter with supplied config", async () => {
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(getEmailAdapter.mock.calls).toHaveLength(1);
-    expect(getEmailAdapter.mock.calls[0][0]).toBe(config);
-    expect(getEmailAdapter.mock.calls[0][1]).toBe(logger);
+    expect(getNotifyAdapter).toHaveBeenCalledTimes(1);
+    expect(getNotifyAdapter).toHaveBeenCalledWith(config);
   });
 
-  it('then it should send email to users email address', async () => {
-    const handler = getHandler(config, logger);
+  it.each(jobData.recipients)(
+    "should send email to user %s",
+    async (approverEmail) => {
+      const handler = getHandler(config);
+
+      await handler.processor(jobData);
+
+      expect(mockSendEmail).toHaveBeenCalledTimes(2);
+      expect(mockSendEmail).toHaveBeenCalledWith(
+        expect.anything(),
+        approverEmail,
+        expect.anything(),
+      );
+    },
+  );
+
+  it("should send email with expected template", async () => {
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][0]).toBe('test1@unit');
+    expect(mockSendEmail).toHaveBeenCalledTimes(2);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      "approverRequestAccess",
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
-  it('then it should send email using approver-access-request-email template', async () => {
-    const handler = getHandler(config, logger);
+  it("should send email with expected personalisation data when the request is approved", async () => {
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][1]).toBe('approver-access-request-email');
-  });
-
-  it('then it should send email using request data as model', async () => {
-    const handler = getHandler(config, logger);
-
-    await handler.processor(jobData);
-
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][2]).toEqual({
-      name: jobData.userName,
-      orgName: jobData.orgName,
-      email: jobData.userEmail,
-      returnUrl: 'https://services.dfe.signin/access-requests/organisation-requests/requestId',
-      helpUrl: 'https://help.dfe.signin/contact'
-    });
-  });
-
-  it('then it should send email with subject', async () => {
-    const handler = getHandler(config, logger);
-
-    await handler.processor(jobData);
-
-    expect(emailSend.mock.calls).toHaveLength(1);
-    expect(emailSend.mock.calls[0][3]).toBe(`DfE Sign-in access request for ${jobData.orgName}`);
-  });
-
-  it('then emails are sent in batches of fifty email addresses', async ()=>{
-    jobData.recipients = new Array(60).fill('test@test');
-    const handler = getHandler(config, logger);
-
-    await handler.processor(jobData);
-
-    expect(emailSend.mock.calls).toHaveLength(2);
-    expect(emailSend.mock.calls[0][4]).toHaveLength(48);
-    expect(emailSend.mock.calls[1][4]).toHaveLength(10);
+    expect(mockSendEmail).toHaveBeenCalledTimes(2);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          name: jobData.userName,
+          orgName: jobData.orgName,
+          email: jobData.userEmail,
+          returnUrl:
+            "https://services.dfe.signin/access-requests/organisation-requests/requestId",
+          helpUrl: "https://help.dfe.signin/contact-us",
+        }),
+      }),
+    );
   });
 });

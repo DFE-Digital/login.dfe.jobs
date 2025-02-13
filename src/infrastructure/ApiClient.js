@@ -1,5 +1,5 @@
-const jwtStrategy = require('login.dfe.jwt-strategies');
-const { fetchApi } = require('login.dfe.async-retry');
+const jwtStrategy = require("login.dfe.jwt-strategies");
+const { fetchApi } = require("login.dfe.async-retry");
 
 class ApiClient {
   constructor(opts, correlationId) {
@@ -14,10 +14,10 @@ class ApiClient {
     }
   }
 
-  async _callApi(resource, method = 'GET', body = undefined) {
+  async _callApi(resource, method = "GET", body = undefined) {
     await this._ensureToken();
 
-    let uri = this.opts.url.endsWith('/')
+    let uri = this.opts.url.endsWith("/")
       ? `${this.opts.url.substr(0, this.opts.url.length - 1)}${resource}`
       : `${this.opts.url}${resource}`;
 
@@ -25,11 +25,11 @@ class ApiClient {
       return await fetchApi(uri, {
         method,
         headers: {
-          'x-correlation-id': this.correlationId,
-          'authorization': `bearer ${this.token}`,
+          "x-correlation-id": this.correlationId,
+          authorization: `bearer ${this.token}`,
         },
-        body
-      })
+        body,
+      });
     } catch (e) {
       const status = e.statusCode || 500;
       if (status === 404) {

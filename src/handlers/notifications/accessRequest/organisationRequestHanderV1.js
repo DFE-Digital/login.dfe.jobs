@@ -1,39 +1,37 @@
-const { directories } = require('login.dfe.dao');
-const OrganisatonsClient = require('../../../infrastructure/organisations');
-const DirectoriesClient = require('../../../infrastructure/directories');
-const kue = require('login.dfe.kue');
-const { enqueue } = require('../utils');
+const { directories } = require("login.dfe.dao");
+const OrganisatonsClient = require("../../../infrastructure/organisations");
+const DirectoriesClient = require("../../../infrastructure/directories");
+const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
 
 const process = async (config, logger, data) => {
-
   try {
-    const organisationsClient = new OrganisatonsClient(config.notifications.organisations);
-    const directoriesClient = new DirectoriesClient(config.notifications.directories);
+    const organisationsClient = new OrganisatonsClient(
+      config.notifications.organisations,
+    );
+    const directoriesClient = new DirectoriesClient(
+      config.notifications.directories,
+    );
 
     const { requestId } = data;
     const request = await organisationsClient.getOrgRequestById(requestId);
 
-    const approversForOrg = await organisationsClient.getApproversForOrganisation(request.org_id);
-    const activeApprovers = await directories.getAllActiveUsersFromList(approversForOrg);
+    const approversForOrg =
+      await organisationsClient.getApproversForOrganisation(request.org_id);
+    const activeApprovers =
+      await directories.getAllActiveUsersFromList(approversForOrg);
     const activeApproverIds = activeApprovers.map((entity) => entity.sub);
 
-    const organisation = await organisationsClient.getOrganisationById(request.org_id);
+    const organisation = await organisationsClient.getOrganisationById(
+      request.org_id,
+    );
     const user = await directoriesClient.getById(request.user_id);
 
-    const queue = kue.createQueue({
-      redis: config.queueStorage.connectionString,
-    });
-
-  /*  await enqueue(queue, 'useraccessrequest_v1', {
-      orgName: organisation.name,
-      name: `${user.given_name} ${user.family_name}`,
-      email: user.email,
-    });*/
-
     if (activeApproverIds.length > 0) {
-      const approvers = await directoriesClient.getUsersByIds(activeApproverIds);
-      const approverEmails = approvers.map(x => x.email);
-      await enqueue(queue, 'approveraccessrequest_v1', {
+      const approvers =
+        await directoriesClient.getUsersByIds(activeApproverIds);
+      const approverEmails = approvers.map((x) => x.email);
+
+      await bullEnqueue("approveraccessrequest_v1", {
         recipients: approverEmails,
         orgName: organisation.name,
         userName: `${user.given_name} ${user.family_name}`,
@@ -42,13 +40,13 @@ const process = async (config, logger, data) => {
         requestId: data.requestId,
       });
     } else {
-      await enqueue(queue, 'supportrequest_v1', {
+      await bullEnqueue("supportrequest_v1", {
         name: `${user.given_name} ${user.family_name}`,
         email: user.email,
         orgName: organisation.name,
-        urn: organisation.urn || '',
+        urn: organisation.urn || "",
         message: `Organisation request for ${organisation.name}, no approvers exist. Request reason: ${request.reason}`,
-        type: 'Access to an organisation',
+        type: "Access to an organisation",
       });
     }
   } catch (e) {
@@ -59,13 +57,12 @@ const process = async (config, logger, data) => {
 
 const getHandler = (config, logger) => {
   return {
-    type: 'organisationrequest_v1',
+    type: "organisationrequest_v1",
     processor: async (data) => {
       await process(config, logger, data);
-    }
+    },
   };
 };
-
 
 module.exports = {
   getHandler,

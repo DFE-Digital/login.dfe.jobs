@@ -1,21 +1,21 @@
 const getDefaultConfig = () => {
   return {
     queueStorage: {
-      connectionString: 'redis://test:6379',
+      connectionString: "redis://test:6379",
     },
     loggerSettings: {
-      logLevel: 'info',
+      logLevel: "info",
       coors: {
-        info: 'red',
-        ok: 'green',
-        error: 'yellow',
+        info: "red",
+        ok: "green",
+        error: "yellow",
       },
     },
     notifications: {
       email: {
-        type: 'disk'
+        type: "disk",
       },
-      envName:'unitTestEnv'
+      envName: "unitTestEnv",
     },
   };
 };
@@ -38,7 +38,7 @@ const getLoggerMock = () => {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
-    mockResetAll: function() {
+    mockResetAll: function () {
       this.info.mockReset();
       this.warn.mockReset();
       this.error.mockReset();
@@ -53,7 +53,6 @@ const getDirectoriesClientMock = () => {
     mockResetAll: function () {
       this.getUsersByIds.mockReset();
       this.getById.mockReset();
-
     },
   };
 };

@@ -1,76 +1,88 @@
-const Sequelize = require('sequelize').default;
-const { makeConnection } = require('./connection');
+const Sequelize = require("sequelize").default;
+const { makeConnection } = require("./connection");
 
 const defineUserState = (db) => {
-  return db.define('user_state', {
-    service_id: {
-      type: Sequelize.UUID,
-      primaryKey: true,
-      allowNull: false,
+  return db.define(
+    "user_state",
+    {
+      service_id: {
+        type: Sequelize.UUID,
+        primaryKey: true,
+        allowNull: false,
+      },
+      user_id: {
+        type: Sequelize.UUID,
+        primaryKey: true,
+        allowNull: false,
+      },
+      organisation_id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        allowNull: false,
+      },
+      last_action_sent: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
     },
-    user_id: {
-      type: Sequelize.UUID,
-      primaryKey: true,
-      allowNull: false,
+    {
+      timestamps: true,
+      tableName: "user_state",
+      schema: "service_notifications",
     },
-    organisation_id: {
-      type: Sequelize.INTEGER,
-      primaryKey: true,
-      allowNull: false,
-    },
-    last_action_sent: {
-      type: Sequelize.STRING,
-      allowNull: true,
-    },
-  }, {
-    timestamps: true,
-    tableName: 'user_state',
-    schema: 'service_notifications',
-  });
+  );
 };
 const defineRoleState = (db) => {
-  return db.define('role_state', {
-    service_id: {
-      type: Sequelize.UUID,
-      primaryKey: true,
-      allowNull: false,
+  return db.define(
+    "role_state",
+    {
+      service_id: {
+        type: Sequelize.UUID,
+        primaryKey: true,
+        allowNull: false,
+      },
+      role_id: {
+        type: Sequelize.UUID,
+        primaryKey: true,
+        allowNull: false,
+      },
+      last_action_sent: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
     },
-    role_id: {
-      type: Sequelize.UUID,
-      primaryKey: true,
-      allowNull: false,
+    {
+      timestamps: true,
+      tableName: "role_state",
+      schema: "service_notifications",
     },
-    last_action_sent: {
-      type: Sequelize.STRING,
-      allowNull: true,
-    },
-  }, {
-    timestamps: true,
-    tableName: 'role_state',
-    schema: 'service_notifications',
-  });
+  );
 };
 const defineOrganisationState = (db) => {
-  return db.define('organisation_state', {
-    service_id: {
-      type: Sequelize.UUID,
-      primaryKey: true,
-      allowNull: false,
+  return db.define(
+    "organisation_state",
+    {
+      service_id: {
+        type: Sequelize.UUID,
+        primaryKey: true,
+        allowNull: false,
+      },
+      organisation_id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        allowNull: false,
+      },
+      last_action_sent: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
     },
-    organisation_id: {
-      type: Sequelize.INTEGER,
-      primaryKey: true,
-      allowNull: false,
+    {
+      timestamps: true,
+      tableName: "organisation_state",
+      schema: "service_notifications",
     },
-    last_action_sent: {
-      type: Sequelize.STRING,
-      allowNull: true,
-    },
-  }, {
-    timestamps: true,
-    tableName: 'organisation_state',
-    schema: 'service_notifications',
-  });
+  );
 };
 
 const getRepository = (opts) => {
@@ -85,7 +97,7 @@ const getRepository = (opts) => {
     userState,
     roleState,
     organisationState,
-  }
+  };
 };
 
 module.exports = {

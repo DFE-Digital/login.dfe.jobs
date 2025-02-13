@@ -1,5 +1,5 @@
-const supportRequestV1 = require('./supportRequestV1');
-const supportOverdueRequest = require('./supportOverdueRequest');
+const supportRequestV1 = require("./supportRequestV1");
+const supportOverdueRequest = require("./supportOverdueRequest");
 
 const register = (config, logger) => {
   return [
