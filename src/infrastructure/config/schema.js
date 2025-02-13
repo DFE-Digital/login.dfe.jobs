@@ -78,15 +78,6 @@ const notificationsSchema = new SimpleSchema({
   supportEmailAddress: String,
   organisations: schemas.apiClient,
   directories: schemas.apiClient,
-  email: Object,
-  'email.type': {
-    type: String,
-    allowedValues: ['disk', 's3', 'ses']
-  },
-  'email.params': {
-    type: Object,
-    blackbox: true,
-  },
   govNotify: govNotifySchema,
   slackWebHookUrl: String,
   envName: String
