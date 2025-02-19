@@ -1,5 +1,11 @@
 jest.mock("../../../../src/infrastructure/jobs");
 
+jest.mock("../../../../src/infrastructure/config", () => ({
+  queueStorage: {
+    connectionString: "mockConnectionString",
+  },
+}));
+
 const jobs = {
   queueNotifyRelyingParty: jest.fn(),
 };

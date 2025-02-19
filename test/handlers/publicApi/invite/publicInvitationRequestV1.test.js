@@ -2,6 +2,12 @@ jest.mock("../../../../src/infrastructure/directories");
 jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("../../../../src/infrastructure/jobs");
 
+jest.mock("../../../../src/infrastructure/config", () => ({
+  queueStorage: {
+    connectionString: "mockConnectionString",
+  },
+}));
+
 const directories = {
   getUserByEmail: jest.fn(),
   getInvitationByEmail: jest.fn(),

@@ -1,5 +1,11 @@
 const { register } = require("../../../src/handlers/publicApi");
 
+jest.mock("../../../src/infrastructure/config", () => ({
+  queueStorage: {
+    connectionString: "mockConnectionString",
+  },
+}));
+
 const config = {};
 const logger = {};
 

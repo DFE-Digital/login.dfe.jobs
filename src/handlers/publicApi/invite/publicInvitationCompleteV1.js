@@ -1,7 +1,7 @@
 const JobsClient = require("../../../infrastructure/jobs");
 
 const notifyRelyingParties = async (config, data) => {
-  const jobs = new JobsClient(config.queueStorage.connectionString);
+  const jobs = new JobsClient();
 
   for (let i = 0; i < data.callbacks.length; i++) {
     const { callback, sourceId, state, clientId } = data.callbacks[i];
