@@ -14,7 +14,7 @@ const process = async (config, logger, data) => {
         email: data.email,
         orgName: data.orgName ?? "",
         urn: data.urn ?? "",
-        service: data.service,
+        service: data.service ?? "",
         type: data.type,
         message: data.message,
         showAdditionalInfoHeader,
