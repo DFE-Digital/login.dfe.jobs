@@ -74,7 +74,7 @@ const config = {
     envName: process.env.ENVIRONMENT_NAME,
     govNotify: {
         apiKey: process.env.GOVNOTIFY_API_KEY,
-        templates: process.env.GOVNOTIFY_TEMP_MAP
+        templates: JSON.parse(process.env.GOVNOTIFY_TEMP_MAP)
     },
     organisations: {
       type: "api",
@@ -244,7 +244,7 @@ const config = {
     }
   },
   entra: {
-    useEntraForAccountRegistration: process.env.ENTRA_USE_FOR_ACCOUNT_REGISTRATION
+    useEntraForAccountRegistration: Boolean(process.env.ENTRA_USE_FOR_ACCOUNT_REGISTRATION)
   }
 }
 
