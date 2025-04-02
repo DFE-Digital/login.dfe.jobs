@@ -244,7 +244,7 @@ const config = {
     }
   },
   entra: {
-    enableEntraSignIn: process.env.ENTRA_ENABLE_SIGN_IN
+    useEntraForAccountRegistration: process.env.ENTRA_USE_FOR_ACCOUNT_REGISTRATION
   }
 }
 
