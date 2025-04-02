@@ -156,7 +156,7 @@ stages:
                       deploymentLocation: ${{location}}
                       gitCheck: ${{parameters.gitCheck}}
                       tier: middle
-                      tierPlan: midtier-g2
+                      tierPlan: backend-g1
                       ipSecurityRestrictionsSubnets: prestier-g1-sn,prestier-g2-sn,prestier-g3-sn,prestier-g4-sn,prestier-g5-sn,
                         midtier-g1-sn,midtier-g2-sn,midtier-g3-sn,backend-g1-sn,backend-g3-sn
                       shaUse: ${{parameters.shaUse}}
