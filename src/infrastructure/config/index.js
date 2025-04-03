@@ -244,7 +244,7 @@ const config = {
     }
   },
   entra: {
-    useEntraForAccountRegistration: Boolean(process.env.ENTRA_USE_FOR_ACCOUNT_REGISTRATION)
+    useEntraForAccountRegistration: process.env.ENTRA_USE_FOR_ACCOUNT_REGISTRATION === 'true'
   }
 }
 
