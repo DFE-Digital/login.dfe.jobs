@@ -15,7 +15,18 @@ const jobData = {
   orgName: "Test Organisation",
   userName: "Test One",
   userEmail: "email@test.com",
-  recipients: ["test1@unit", "test2@unit"],
+  recipients: [
+    {
+      email: "test1@unit",
+      firstName: "Test",
+      lastName: "One",
+    },
+    {
+      email: "test2@unit",
+      firstName: "Test",
+      lastName: "Two",
+    },
+  ],
   orgId: "org",
   requestId: "requestId",
 };
@@ -49,7 +60,7 @@ describe("When handling approverAccessRequest_v1 job", () => {
 
   it.each(jobData.recipients)(
     "should send email to user %s",
-    async (approverEmail) => {
+    async (approveDetails) => {
       const handler = getHandler(config);
 
       await handler.processor(jobData);
@@ -57,7 +68,7 @@ describe("When handling approverAccessRequest_v1 job", () => {
       expect(mockSendEmail).toHaveBeenCalledTimes(2);
       expect(mockSendEmail).toHaveBeenCalledWith(
         expect.anything(),
-        approverEmail,
+        approveDetails.email,
         expect.anything(),
       );
     },

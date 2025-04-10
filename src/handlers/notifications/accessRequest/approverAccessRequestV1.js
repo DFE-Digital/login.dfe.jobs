@@ -3,9 +3,11 @@ const { getNotifyAdapter } = require("../../../infrastructure/notify");
 const process = async (config, logger, data) => {
   const notify = getNotifyAdapter(config);
 
-  for (let approverEmail of data.recipients) {
-    await notify.sendEmail("approverRequestAccess", approverEmail, {
+  for (let approverDetails of data.recipients) {
+    await notify.sendEmail("approverRequestAccess", approverDetails.email, {
       personalisation: {
+        approverFirstName: approverDetails.firstName,
+        approverLastName: approverDetails.lastName,
         orgName: data.orgName,
         name: data.userName,
         email: data.userEmail,
