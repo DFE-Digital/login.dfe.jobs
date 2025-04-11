@@ -29,10 +29,14 @@ const process = async (config, logger, data) => {
     if (activeApproverIds.length > 0) {
       const approvers =
         await directoriesClient.getUsersByIds(activeApproverIds);
-      const approverEmails = approvers.map((x) => x.email);
+      const approverDetails = approvers.map((x) => ({
+        email: x.email,
+        firstName: x.given_name,
+        lastName: x.family_name,
+      }));
 
       await bullEnqueue("approveraccessrequest_v1", {
-        recipients: approverEmails,
+        recipients: approverDetails,
         orgName: organisation.name,
         userName: `${user.given_name} ${user.family_name}`,
         userEmail: user.email,

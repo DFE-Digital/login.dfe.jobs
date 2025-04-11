@@ -156,6 +156,8 @@ describe("when handling organisationrequest_v1 job", () => {
       {
         id: "approver1",
         email: "approver@email.com",
+        given_name: "John",
+        family_name: "Doe",
       },
     ]);
     const handler = getHandler(config, logger);
@@ -167,7 +169,13 @@ describe("when handling organisationrequest_v1 job", () => {
       {
         userEmail: "user.one-fromdir@unit.tests",
         userName: "name surname",
-        recipients: ["approver@email.com"],
+        recipients: [
+          {
+            email: "approver@email.com",
+            firstName: "John",
+            lastName: "Doe",
+          },
+        ],
         orgId: "org1",
         orgName: "organisation name",
         requestId: "requestId",
