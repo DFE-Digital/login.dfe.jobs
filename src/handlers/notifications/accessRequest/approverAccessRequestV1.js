@@ -12,7 +12,7 @@ const process = async (config, logger, data) => {
         name: data.userName,
         email: data.userEmail,
         returnUrl: `${config.notifications.servicesUrl}/access-requests/organisation-requests/${data.requestId}`,
-        helpUrl: `${config.notifications.helpUrl}/contact-us`,
+        helpUrl: `${config.notifications.helpUrl}`,
       },
     });
   }
