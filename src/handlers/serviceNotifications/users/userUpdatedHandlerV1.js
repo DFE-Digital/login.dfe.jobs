@@ -1,7 +1,7 @@
 const { getAllApplicationRequiringNotification } = require("./../utils");
 const AccessClient = require("../../../infrastructure/access");
 const OrganisatonsClient = require("../../../infrastructure/organisations");
-const DirectoriesClient = require("../../../infrastructure/directories");
+const { getUserRaw } = require("login.dfe.api-client/users");
 const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
 const { v4: uuid } = require("uuid");
 
@@ -22,11 +22,7 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
 
   let user = userData;
   if (!user.status || !user.email) {
-    const directoriesClient = new DirectoriesClient(
-      config.serviceNotifications.directories,
-      correlationId,
-    );
-    user = await directoriesClient.getUser(user.sub);
+    user = await getUserRaw({ by: { id: user.sub } });
   }
 
   const jobs = [];

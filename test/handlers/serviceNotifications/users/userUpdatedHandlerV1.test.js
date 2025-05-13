@@ -1,7 +1,10 @@
 jest.mock("../../../../src/infrastructure/access");
 jest.mock("../../../../src/infrastructure/organisations");
-jest.mock("../../../../src/infrastructure/directories");
 jest.mock("../../../../src/handlers/serviceNotifications/utils");
+
+jest.mock("login.dfe.api-client/users", () => ({
+  getUserRaw: jest.fn(),
+}));
 
 jest.mock("../../../../src/infrastructure/config", () => ({}));
 
@@ -22,7 +25,7 @@ jest.mock("bullmq", () => ({
 const { Queue } = require("bullmq");
 const AccessClient = require("../../../../src/infrastructure/access");
 const OrganisationsClient = require("../../../../src/infrastructure/organisations");
-const DirectoriesClient = require("../../../../src/infrastructure/directories");
+const { getUserRaw } = require("login.dfe.api-client/users");
 const {
   getAllApplicationRequiringNotification,
 } = require("../../../../src/handlers/serviceNotifications/utils");
@@ -31,7 +34,6 @@ const {
   getLoggerMock,
   getAccessClientMock,
   getOrganisationsClientMock,
-  getDirectoriesClientMock,
 } = require("../testUtils");
 const {
   getHandler,
@@ -47,7 +49,6 @@ const data = {
 const jobId = 1;
 const accessClient = getAccessClientMock();
 const organisatonsClient = getOrganisationsClientMock();
-const directoriesClient = getDirectoriesClientMock();
 
 describe("when handling userupdated_v1 job", () => {
   beforeEach(() => {
@@ -82,13 +83,11 @@ describe("when handling userupdated_v1 job", () => {
     ]);
     OrganisationsClient.mockImplementation(() => organisatonsClient);
 
-    directoriesClient.mockResetAll();
-    directoriesClient.getUser.mockReturnValue({
+    getUserRaw.mockResolvedValue({
       sub: "user1",
       email: "user.one-fromdir@unit.tests",
       status: 2,
     });
-    DirectoriesClient.mockImplementation(() => directoriesClient);
     getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
   });
 
@@ -296,8 +295,8 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor({ sub: data.sub, status: data.status }, jobId);
 
-    expect(directoriesClient.getUser).toHaveBeenCalledTimes(1);
-    expect(directoriesClient.getUser).toHaveBeenCalledWith(data.sub);
+    expect(getUserRaw).toHaveBeenCalledTimes(1);
+    expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
     expect(mockClose).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledWith(
@@ -340,8 +339,8 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor({ sub: data.sub, email: data.email }, jobId);
 
-    expect(directoriesClient.getUser).toHaveBeenCalledTimes(1);
-    expect(directoriesClient.getUser).toHaveBeenCalledWith(data.sub);
+    expect(getUserRaw).toHaveBeenCalledTimes(1);
+    expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
     expect(mockClose).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledWith(

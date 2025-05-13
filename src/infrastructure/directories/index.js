@@ -5,10 +5,6 @@ class DirectoriesClient extends ApiClient {
     super(opts, correlationId);
   }
 
-  async getUser(userId) {
-    return this._callApi(`/users/${userId}`);
-  }
-
   async getUserByEmail(email) {
     return this._callApi(`/users/${email}`);
   }
