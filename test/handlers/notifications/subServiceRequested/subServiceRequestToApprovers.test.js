@@ -1,7 +1,8 @@
 jest.mock("../../../../src/infrastructure/organisations");
-jest.mock("../../../../src/infrastructure/directories");
 jest.mock("../../../../src/infrastructure/notify");
-
+jest.mock("login.dfe.api-client/users", () => ({
+  getUsersRaw: jest.fn(),
+}));
 jest.mock("login.dfe.dao", () => ({
   directories: {
     getAllActiveUsersFromList() {
@@ -11,16 +12,13 @@ jest.mock("login.dfe.dao", () => ({
 }));
 
 const OrganisationsClient = require("../../../../src/infrastructure/organisations");
-const DirectoriesClient = require("../../../../src/infrastructure/directories");
+const { getUsersRaw } = require("login.dfe.api-client/users");
 const { getNotifyAdapter } = require("../../../../src/infrastructure/notify");
 const {
   getHandler,
 } = require("../../../../src/handlers/notifications/subServiceRequested/subServiceRequestToApprovers");
 
-const {
-  getOrganisationsClientMock,
-  getDirectoriesClientMock,
-} = require("../../../utils");
+const { getOrganisationsClientMock } = require("../../../utils");
 
 const config = {
   notifications: {
@@ -43,7 +41,6 @@ const data = {
 describe("when processing a sub_service_request_to_approvers job", () => {
   const mockSendEmail = jest.fn();
   const organisatonsClient = getOrganisationsClientMock();
-  const directoriesClient = getDirectoriesClientMock();
 
   beforeEach(() => {
     mockSendEmail.mockReset();
@@ -63,8 +60,7 @@ describe("when processing a sub_service_request_to_approvers job", () => {
     ]);
     OrganisationsClient.mockImplementation(() => organisatonsClient);
 
-    directoriesClient.mockResetAll();
-    directoriesClient.getUsersByIds.mockReturnValue([
+    getUsersRaw.mockResolvedValue([
       {
         id: "approver1",
         email: "approver1@email.com",
@@ -78,7 +74,6 @@ describe("when processing a sub_service_request_to_approvers job", () => {
         family_name: "User2",
       },
     ]);
-    DirectoriesClient.mockImplementation(() => directoriesClient);
   });
 
   it("should return a handler with a processor", () => {

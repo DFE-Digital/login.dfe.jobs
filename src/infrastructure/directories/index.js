@@ -5,16 +5,6 @@ class DirectoriesClient extends ApiClient {
     super(opts, correlationId);
   }
 
-  async getUsersByIds(ids) {
-    return this._callApi("/users/by-ids", "POST", {
-      ids: ids.toString(),
-    });
-  }
-
-  async getById(id) {
-    return this._callApi(`/users/${id}`);
-  }
-
   async getUser(userId) {
     return this._callApi(`/users/${userId}`);
   }
