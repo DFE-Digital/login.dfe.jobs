@@ -6,6 +6,10 @@ jest.mock("login.dfe.api-client/users", () => ({
   getUserRaw: jest.fn(),
 }));
 
+jest.mock("login.dfe.api-client/invitations", () => ({
+  getInvitation: jest.fn(),
+}));
+
 jest.mock("../../../../src/infrastructure/config", () => ({
   queueStorage: {
     connectionString: "mockConnectionString",
@@ -13,7 +17,6 @@ jest.mock("../../../../src/infrastructure/config", () => ({
 }));
 
 const directories = {
-  getInvitationByEmail: jest.fn(),
   createInvitation: jest.fn(),
   updateInvitation: jest.fn(),
 };
@@ -33,6 +36,7 @@ const { getUserRaw } = require("login.dfe.api-client/users");
 const {
   getHandler,
 } = require("../../../../src/handlers/publicApi/invite/publicInvitationRequestV1");
+const { getInvitation } = require("login.dfe.api-client/invitations");
 
 const config = {
   queueStorage: {
@@ -73,7 +77,7 @@ describe("when handling a public invitation request (v1)", () => {
       state: "EXISTING_USER",
     };
     getUserRaw.mockReset();
-    directories.getInvitationByEmail.mockReset();
+    getInvitation.mockReset();
     directories.createInvitation.mockReset().mockReturnValue({
       id: "new-invite",
     });
@@ -135,15 +139,13 @@ describe("when handling a public invitation request (v1)", () => {
     getUserRaw.mockResolvedValue(existingUser);
     await handler.processor(data);
 
-    expect(directories.getInvitationByEmail).toHaveBeenCalledTimes(0);
+    expect(getInvitation).toHaveBeenCalledTimes(0);
     expect(directories.updateInvitation).toHaveBeenCalledTimes(0);
     expect(directories.createInvitation).toHaveBeenCalledTimes(0);
   });
 
   it("and an invitation already exists, then it should update invitation to include callback", async () => {
-    directories.getInvitationByEmail.mockReturnValue(
-      Object.assign({}, existingInvitation),
-    );
+    getInvitation.mockReturnValue(existingInvitation);
 
     await handler.processor(data);
 
@@ -158,9 +160,7 @@ describe("when handling a public invitation request (v1)", () => {
   });
 
   it("and an invitation already exists, then it should add org to invitation if org specified", async () => {
-    directories.getInvitationByEmail.mockReturnValue(
-      Object.assign({}, existingInvitation),
-    );
+    getInvitation.mockReturnValue(existingInvitation);
 
     await handler.processor(data);
 
@@ -173,9 +173,7 @@ describe("when handling a public invitation request (v1)", () => {
   });
 
   it("and an invitation already exists, then it should not attempt to add invitation to user if org not specified", async () => {
-    directories.getInvitationByEmail.mockReturnValue(
-      Object.assign({}, existingInvitation),
-    );
+    getInvitation.mockReturnValue(existingInvitation);
     data.organisation = undefined;
 
     await handler.processor(data);

@@ -3,6 +3,7 @@ const OrganisationsClient = require("../../../infrastructure/organisations");
 const JobsClient = require("../../../infrastructure/jobs");
 const { v4: uuid } = require("uuid");
 const { getUserRaw } = require("login.dfe.api-client/users");
+const { getInvitation } = require("login.dfe.api-client/invitations");
 
 const END_USER = 0;
 
@@ -46,7 +47,7 @@ const checkForExistingInvitation = async (
   callback,
   clientId,
 ) => {
-  const invitation = await directories.getInvitationByEmail(email);
+  const invitation = await getInvitation({ by: { email: email } });
   if (invitation) {
     if (!invitation.callbacks) {
       invitation.callbacks = [];
