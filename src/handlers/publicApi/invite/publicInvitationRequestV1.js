@@ -2,11 +2,11 @@ const DirectoriesClient = require("../../../infrastructure/directories");
 const OrganisationsClient = require("../../../infrastructure/organisations");
 const JobsClient = require("../../../infrastructure/jobs");
 const { v4: uuid } = require("uuid");
+const { getUserRaw } = require("login.dfe.api-client/users");
 
 const END_USER = 0;
 
 const checkForExistingUser = async (
-  directories,
   organisations,
   jobs,
   email,
@@ -15,7 +15,7 @@ const checkForExistingUser = async (
   callback,
   clientId,
 ) => {
-  const user = await directories.getUserByEmail(email);
+  const user = await getUserRaw({ by: { email: email } });
   if (user) {
     if (organisation) {
       await organisations.addOrganisationToUser(
@@ -36,6 +36,7 @@ const checkForExistingUser = async (
   }
   return false;
 };
+
 const checkForExistingInvitation = async (
   directories,
   organisations,
@@ -76,6 +77,7 @@ const checkForExistingInvitation = async (
   }
   return false;
 };
+
 const createInvitation = async (
   directories,
   organisations,
@@ -148,7 +150,6 @@ const process = async (config, logger, data) => {
   const jobs = new JobsClient();
 
   const userAlreadyExists = await checkForExistingUser(
-    directories,
     organisations,
     jobs,
     email,

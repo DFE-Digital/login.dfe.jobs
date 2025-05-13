@@ -2,6 +2,10 @@ jest.mock("../../../../src/infrastructure/directories");
 jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("../../../../src/infrastructure/jobs");
 
+jest.mock("login.dfe.api-client/users", () => ({
+  getUserRaw: jest.fn(),
+}));
+
 jest.mock("../../../../src/infrastructure/config", () => ({
   queueStorage: {
     connectionString: "mockConnectionString",
@@ -9,7 +13,6 @@ jest.mock("../../../../src/infrastructure/config", () => ({
 }));
 
 const directories = {
-  getUserByEmail: jest.fn(),
   getInvitationByEmail: jest.fn(),
   createInvitation: jest.fn(),
   updateInvitation: jest.fn(),
@@ -26,7 +29,7 @@ const jobs = {
   queueNotifyRelyingParty: jest.fn(),
 };
 const JobsClient = require("../../../../src/infrastructure/jobs");
-
+const { getUserRaw } = require("login.dfe.api-client/users");
 const {
   getHandler,
 } = require("../../../../src/handlers/publicApi/invite/publicInvitationRequestV1");
@@ -69,8 +72,7 @@ describe("when handling a public invitation request (v1)", () => {
       clientId: "clientone",
       state: "EXISTING_USER",
     };
-
-    directories.getUserByEmail.mockReset();
+    getUserRaw.mockReset();
     directories.getInvitationByEmail.mockReset();
     directories.createInvitation.mockReset().mockReturnValue({
       id: "new-invite",
@@ -95,8 +97,7 @@ describe("when handling a public invitation request (v1)", () => {
   });
 
   it("and a user already exists, then it should add org to user if org specified", async () => {
-    directories.getUserByEmail.mockReturnValue(existingUser);
-
+    getUserRaw.mockResolvedValue(existingUser);
     await handler.processor(data);
 
     expect(organisations.addOrganisationToUser).toHaveBeenCalledTimes(1);
@@ -108,7 +109,7 @@ describe("when handling a public invitation request (v1)", () => {
   });
 
   it("and a user already exists, then it should not attempt to add org to user if org not specified", async () => {
-    directories.getUserByEmail.mockReturnValue(existingUser);
+    getUserRaw.mockResolvedValue(existingUser);
     data.organisation = undefined;
 
     await handler.processor(data);
@@ -117,8 +118,7 @@ describe("when handling a public invitation request (v1)", () => {
   });
 
   it("and a user already exists, then it should notify the relying party that the users is active", async () => {
-    directories.getUserByEmail.mockReturnValue(existingUser);
-
+    getUserRaw.mockResolvedValue(existingUser);
     await handler.processor(data);
 
     expect(jobs.queueNotifyRelyingParty).toHaveBeenCalledTimes(1);
@@ -132,8 +132,7 @@ describe("when handling a public invitation request (v1)", () => {
   });
 
   it("and a user already exists, then it should not check for existing invitation or create a new one", async () => {
-    directories.getUserByEmail.mockReturnValue(existingUser);
-
+    getUserRaw.mockResolvedValue(existingUser);
     await handler.processor(data);
 
     expect(directories.getInvitationByEmail).toHaveBeenCalledTimes(0);
@@ -185,8 +184,7 @@ describe("when handling a public invitation request (v1)", () => {
   });
 
   it("and an invitation already exists, then it should not create a new one", async () => {
-    directories.getUserByEmail.mockReturnValue(existingUser);
-
+    getUserRaw.mockResolvedValue(existingUser);
     await handler.processor(data);
 
     expect(directories.createInvitation).toHaveBeenCalledTimes(0);
