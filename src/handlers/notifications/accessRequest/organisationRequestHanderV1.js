@@ -1,15 +1,12 @@
 const { directories } = require("login.dfe.dao");
 const OrganisatonsClient = require("../../../infrastructure/organisations");
-const DirectoriesClient = require("../../../infrastructure/directories");
 const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
+const { getUserRaw, getUsersRaw } = require("login.dfe.api-client/users");
 
 const process = async (config, logger, data) => {
   try {
     const organisationsClient = new OrganisatonsClient(
       config.notifications.organisations,
-    );
-    const directoriesClient = new DirectoriesClient(
-      config.notifications.directories,
     );
 
     const { requestId } = data;
@@ -24,11 +21,13 @@ const process = async (config, logger, data) => {
     const organisation = await organisationsClient.getOrganisationById(
       request.org_id,
     );
-    const user = await directoriesClient.getById(request.user_id);
+
+    const user = await getUserRaw({ by: { id: request.user_id } });
 
     if (activeApproverIds.length > 0) {
-      const approvers =
-        await directoriesClient.getUsersByIds(activeApproverIds);
+      const approvers = await getUsersRaw({
+        by: { userIds: activeApproverIds },
+      });
       const approverDetails = approvers.map((x) => ({
         email: x.email,
         firstName: x.given_name,
