@@ -32,6 +32,9 @@ setupApi({
     directories: {
       baseUri: config.publicApi.directories.service.url,
     },
+    applications: {
+      baseUri: config.publicApi.applications.service.url,
+    },
   },
 });
 

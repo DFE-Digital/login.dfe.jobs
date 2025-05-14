@@ -2,16 +2,16 @@ jest.mock("../../../../src/infrastructure/applications");
 jest.mock("login.dfe.async-retry");
 jest.mock("jsonwebtoken");
 
-const applications = {
-  getApplication: jest.fn(),
-};
-const ApplicationsClient = require("../../../../src/infrastructure/applications");
+jest.mock("login.dfe.api-client/services", () => ({
+  getServiceRaw: jest.fn(),
+}));
 
 const { fetchApi } = require("login.dfe.async-retry");
 const jwt = require("jsonwebtoken");
 const {
   getHandler,
 } = require("../../../../src/handlers/publicApi/invite/publicInvitationNotifyRelyingPartyV1");
+const { getServiceRaw } = require("login.dfe.api-client/services");
 
 const config = {
   queueStorage: {
@@ -44,12 +44,6 @@ describe("when handling a notify relying party (v1)", () => {
     };
 
     jwt.sign.mockReturnValue("json-web-token");
-
-    applications.getApplication.mockReset();
-    ApplicationsClient.mockReset().mockImplementation(() => {
-      return applications;
-    });
-
     handler = getHandler(config, logger);
   });
 
@@ -85,7 +79,7 @@ describe("when handling a notify relying party (v1)", () => {
 
   it("then it should authorize the call to the callback with a jwt signed using client api secret if callback has clientid", async () => {
     const apiSecret = "client_api_secret";
-    applications.getApplication.mockReturnValue({
+    getServiceRaw.mockResolvedValue({
       relyingParty: {
         api_secret: apiSecret,
       },
@@ -94,8 +88,10 @@ describe("when handling a notify relying party (v1)", () => {
 
     await handler.processor(data);
 
-    expect(applications.getApplication).toHaveBeenCalledTimes(1);
-    expect(applications.getApplication).toHaveBeenCalledWith(data.clientId);
+    expect(getServiceRaw).toHaveBeenCalledTimes(1);
+    expect(getServiceRaw).toHaveBeenCalledWith({
+      by: { clientId: "clientone" },
+    });
     expect(jwt.sign).toHaveBeenCalledTimes(1);
     expect(jwt.sign).toHaveBeenCalledWith({}, apiSecret, {
       expiresIn: "10m",
