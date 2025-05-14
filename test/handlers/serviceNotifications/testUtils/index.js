@@ -55,15 +55,6 @@ const getOrganisationsClientMock = () => {
   };
 };
 
-const getDirectoriesClientMock = () => {
-  return {
-    getUser: jest.fn(),
-    mockResetAll: function () {
-      this.getUser.mockReset();
-    },
-  };
-};
-
 const mockEntity = () => {
   return {
     findOne: jest.fn(),
@@ -103,7 +94,6 @@ module.exports = {
   getLoggerMock,
   getAccessClientMock,
   getOrganisationsClientMock,
-  getDirectoriesClientMock,
   getRepositoryMock,
   mockHandler,
 };

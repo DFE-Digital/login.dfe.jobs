@@ -46,20 +46,8 @@ const getLoggerMock = () => {
   };
 };
 
-const getDirectoriesClientMock = () => {
-  return {
-    getUsersByIds: jest.fn(),
-    getById: jest.fn(),
-    mockResetAll: function () {
-      this.getUsersByIds.mockReset();
-      this.getById.mockReset();
-    },
-  };
-};
-
 module.exports = {
   getDefaultConfig,
-  getDirectoriesClientMock,
   getOrganisationsClientMock,
   getLoggerMock,
 };
