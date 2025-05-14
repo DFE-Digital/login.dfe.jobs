@@ -3,7 +3,10 @@ const OrganisationsClient = require("../../../infrastructure/organisations");
 const JobsClient = require("../../../infrastructure/jobs");
 const { v4: uuid } = require("uuid");
 const { getUserRaw } = require("login.dfe.api-client/users");
-const { getInvitation } = require("login.dfe.api-client/invitations");
+const {
+  getInvitation,
+  createInvitation,
+} = require("login.dfe.api-client/invitations");
 
 const END_USER = 0;
 
@@ -79,8 +82,7 @@ const checkForExistingInvitation = async (
   return false;
 };
 
-const createInvitation = async (
-  directories,
+const createUserInvitation = async (
   organisations,
   firstName,
   lastName,
@@ -97,17 +99,14 @@ const createInvitation = async (
     firstName,
     lastName,
     email,
-    origin: {
-      clientId,
-      redirectUri: userRedirect,
-    },
+    clientId,
+    redirectUri: userRedirect,
     selfStarted: false,
     callbacks: [
       {
         sourceId,
-        callback,
+        callbackUri: callback,
         state: "NEW_INVITATION",
-        clientId,
       },
     ],
     overrides: {
@@ -115,7 +114,7 @@ const createInvitation = async (
       body: inviteBodyOverride,
     },
   };
-  invitation.id = (await directories.createInvitation(invitation)).id;
+  invitation.id = (await createInvitation(invitation)).id;
 
   if (organisation) {
     await organisations.addOrganisationToInvitation(
@@ -176,8 +175,7 @@ const process = async (config, logger, data) => {
     return;
   }
 
-  await createInvitation(
-    directories,
+  await createUserInvitation(
     organisations,
     firstName,
     lastName,

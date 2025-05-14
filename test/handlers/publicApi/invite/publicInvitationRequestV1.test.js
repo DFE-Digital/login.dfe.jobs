@@ -8,6 +8,7 @@ jest.mock("login.dfe.api-client/users", () => ({
 
 jest.mock("login.dfe.api-client/invitations", () => ({
   getInvitation: jest.fn(),
+  createInvitation: jest.fn(),
 }));
 
 jest.mock("../../../../src/infrastructure/config", () => ({
@@ -17,7 +18,6 @@ jest.mock("../../../../src/infrastructure/config", () => ({
 }));
 
 const directories = {
-  createInvitation: jest.fn(),
   updateInvitation: jest.fn(),
 };
 const DirectoriesClient = require("../../../../src/infrastructure/directories");
@@ -36,7 +36,10 @@ const { getUserRaw } = require("login.dfe.api-client/users");
 const {
   getHandler,
 } = require("../../../../src/handlers/publicApi/invite/publicInvitationRequestV1");
-const { getInvitation } = require("login.dfe.api-client/invitations");
+const {
+  getInvitation,
+  createInvitation,
+} = require("login.dfe.api-client/invitations");
 
 const config = {
   queueStorage: {
@@ -78,7 +81,7 @@ describe("when handling a public invitation request (v1)", () => {
     };
     getUserRaw.mockReset();
     getInvitation.mockReset();
-    directories.createInvitation.mockReset().mockReturnValue({
+    createInvitation.mockReset().mockResolvedValue({
       id: "new-invite",
     });
     directories.updateInvitation.mockReset();
@@ -141,7 +144,7 @@ describe("when handling a public invitation request (v1)", () => {
 
     expect(getInvitation).toHaveBeenCalledTimes(0);
     expect(directories.updateInvitation).toHaveBeenCalledTimes(0);
-    expect(directories.createInvitation).toHaveBeenCalledTimes(0);
+    expect(createInvitation).toHaveBeenCalledTimes(0);
   });
 
   it("and an invitation already exists, then it should update invitation to include callback", async () => {
@@ -185,26 +188,22 @@ describe("when handling a public invitation request (v1)", () => {
     getUserRaw.mockResolvedValue(existingUser);
     await handler.processor(data);
 
-    expect(directories.createInvitation).toHaveBeenCalledTimes(0);
+    expect(createInvitation).toHaveBeenCalledTimes(0);
   });
 
   it("and the user is new to the system, then it should create a new invitation", async () => {
     await handler.processor(data);
 
-    expect(directories.createInvitation).toHaveBeenCalledTimes(1);
-    expect(directories.createInvitation.mock.calls[0][0]).toMatchObject({
+    expect(createInvitation).toHaveBeenCalledTimes(1);
+    expect(createInvitation.mock.calls[0][0]).toMatchObject({
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
-      origin: {
-        clientId: data.clientId,
-        redirectUri: data.userRedirect,
-      },
       selfStarted: false,
       callbacks: [
         {
           sourceId: data.sourceId,
-          callback: data.callback,
+          callbackUri: data.callback,
         },
       ],
     });
