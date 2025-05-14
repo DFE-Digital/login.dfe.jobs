@@ -1,4 +1,3 @@
-jest.mock("../../../../src/infrastructure/directories");
 jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("../../../../src/infrastructure/jobs");
 
@@ -8,6 +7,7 @@ jest.mock("login.dfe.api-client/users", () => ({
 
 jest.mock("login.dfe.api-client/invitations", () => ({
   getInvitation: jest.fn(),
+  updateInvitation: jest.fn(),
   createInvitation: jest.fn(),
 }));
 
@@ -16,11 +16,6 @@ jest.mock("../../../../src/infrastructure/config", () => ({
     connectionString: "mockConnectionString",
   },
 }));
-
-const directories = {
-  updateInvitation: jest.fn(),
-};
-const DirectoriesClient = require("../../../../src/infrastructure/directories");
 
 const organisations = {
   addOrganisationToInvitation: jest.fn(),
@@ -38,6 +33,7 @@ const {
 } = require("../../../../src/handlers/publicApi/invite/publicInvitationRequestV1");
 const {
   getInvitation,
+  updateInvitation,
   createInvitation,
 } = require("login.dfe.api-client/invitations");
 
@@ -60,7 +56,7 @@ const existingUser = {
 };
 const existingInvitation = {
   id: "invite1",
-  callbacks: [{ sourceId: "test1", callback: "http://source2/users/" }],
+  callbacks: [{ sourceId: "test1", callbackUri: "http://source2/users/" }],
 };
 
 describe("when handling a public invitation request (v1)", () => {
@@ -84,10 +80,7 @@ describe("when handling a public invitation request (v1)", () => {
     createInvitation.mockReset().mockResolvedValue({
       id: "new-invite",
     });
-    directories.updateInvitation.mockReset();
-    DirectoriesClient.mockReset().mockImplementation(() => {
-      return directories;
-    });
+    updateInvitation.mockReset();
 
     organisations.addOrganisationToInvitation.mockReset();
     organisations.addOrganisationToUser.mockReset();
@@ -143,7 +136,7 @@ describe("when handling a public invitation request (v1)", () => {
     await handler.processor(data);
 
     expect(getInvitation).toHaveBeenCalledTimes(0);
-    expect(directories.updateInvitation).toHaveBeenCalledTimes(0);
+    expect(updateInvitation).toHaveBeenCalledTimes(0);
     expect(createInvitation).toHaveBeenCalledTimes(0);
   });
 
@@ -152,12 +145,12 @@ describe("when handling a public invitation request (v1)", () => {
 
     await handler.processor(data);
 
-    expect(directories.updateInvitation).toHaveBeenCalledTimes(1);
-    expect(directories.updateInvitation.mock.calls[0][0]).toMatchObject({
+    expect(updateInvitation).toHaveBeenCalledTimes(1);
+    expect(updateInvitation.mock.calls[0][0]).toMatchObject({
       id: "invite1",
       callbacks: [
-        { sourceId: "test1", callback: "http://source2/users/" },
-        { sourceId: data.sourceId, callback: data.callback },
+        { sourceId: "test1", callbackUri: "http://source2/users/" },
+        { sourceId: data.sourceId, callbackUri: data.callback },
       ],
     });
   });

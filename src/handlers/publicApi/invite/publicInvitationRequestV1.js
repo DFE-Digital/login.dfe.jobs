@@ -1,10 +1,10 @@
-const DirectoriesClient = require("../../../infrastructure/directories");
 const OrganisationsClient = require("../../../infrastructure/organisations");
 const JobsClient = require("../../../infrastructure/jobs");
 const { v4: uuid } = require("uuid");
 const { getUserRaw } = require("login.dfe.api-client/users");
 const {
   getInvitation,
+  updateInvitation,
   createInvitation,
 } = require("login.dfe.api-client/invitations");
 
@@ -42,7 +42,6 @@ const checkForExistingUser = async (
 };
 
 const checkForExistingInvitation = async (
-  directories,
   organisations,
   email,
   organisation,
@@ -62,11 +61,15 @@ const checkForExistingInvitation = async (
     ) {
       invitation.callbacks.push({
         sourceId,
-        callback,
+        callbackUri: callback,
         state: "EXISTING_INVITATION",
         clientId,
       });
-      await directories.updateInvitation(invitation);
+
+      await updateInvitation({
+        ...invitation,
+        ...{ invitationId: invitation.id },
+      });
     }
 
     if (organisation) {
@@ -139,10 +142,7 @@ const process = async (config, logger, data) => {
     inviteBodyOverride,
   } = data;
   const correlationId = `publicinvitationrequest_v1-${uuid()}`;
-  const directories = new DirectoriesClient(
-    config.publicApi.directories,
-    correlationId,
-  );
+
   const organisations = new OrganisationsClient(
     config.publicApi.organisations,
     correlationId,
@@ -163,7 +163,6 @@ const process = async (config, logger, data) => {
   }
 
   const invitationAlreadyExists = await checkForExistingInvitation(
-    directories,
     organisations,
     email,
     organisation,
