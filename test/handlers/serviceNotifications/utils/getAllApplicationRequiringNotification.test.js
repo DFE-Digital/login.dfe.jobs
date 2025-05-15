@@ -1,13 +1,12 @@
-jest.mock("../../../../src/infrastructure/applications");
+jest.mock("login.dfe.api-client/services", () => ({
+  getPaginatedServicesRaw: jest.fn(),
+}));
 
-const ApplicationsClient = require("../../../../src/infrastructure/applications");
+const { getPaginatedServicesRaw } = require("login.dfe.api-client/services");
 const {
   getAllApplicationRequiringNotification,
 } = require("../../../../src/handlers/serviceNotifications/utils");
 
-const applicationsClient = {
-  listApplications: jest.fn(),
-};
 const config = {
   serviceNotifications: {
     applications: {
@@ -20,29 +19,14 @@ const correlationId = "correlation-id";
 
 describe("when getting applications requiring notification", () => {
   beforeEach(() => {
-    applicationsClient.listApplications.mockReset().mockReturnValue({
+    getPaginatedServicesRaw.mockReturnValue({
       services: [],
       numberOfPages: 1,
     });
-    ApplicationsClient.mockReset().mockImplementation(() => applicationsClient);
-  });
-
-  it("then it should create applications client with specified config", async () => {
-    await getAllApplicationRequiringNotification(
-      config,
-      condition,
-      correlationId,
-    );
-
-    expect(ApplicationsClient).toHaveBeenCalledTimes(1);
-    expect(ApplicationsClient).toHaveBeenCalledWith(
-      config.serviceNotifications.applications,
-      correlationId,
-    );
   });
 
   it("then it should read all pages of applications", async () => {
-    applicationsClient.listApplications.mockReturnValue({
+    getPaginatedServicesRaw.mockReturnValue({
       services: [],
       numberOfPages: 2,
     });
@@ -53,9 +37,15 @@ describe("when getting applications requiring notification", () => {
       correlationId,
     );
 
-    expect(applicationsClient.listApplications).toHaveBeenCalledTimes(2);
-    expect(applicationsClient.listApplications).toHaveBeenCalledWith(1, 100);
-    expect(applicationsClient.listApplications).toHaveBeenCalledWith(2, 100);
+    expect(getPaginatedServicesRaw).toHaveBeenCalledTimes(2);
+    expect(getPaginatedServicesRaw).toHaveBeenCalledWith({
+      pageNumber: 1,
+      pageSize: 100,
+    });
+    expect(getPaginatedServicesRaw).toHaveBeenCalledWith({
+      pageNumber: 2,
+      pageSize: 100,
+    });
   });
 
   it("then it should return only applications meeting condition", async () => {
@@ -73,7 +63,7 @@ describe("when getting applications requiring notification", () => {
         receiveTestUpdates: false,
       },
     };
-    applicationsClient.listApplications.mockReturnValue({
+    getPaginatedServicesRaw.mockReturnValue({
       services: [service1, service2],
       numberOfPages: 1,
     });
@@ -116,7 +106,7 @@ describe("when getting applications requiring notification", () => {
         receiveTestUpdates: false,
       },
     };
-    applicationsClient.listApplications.mockReturnValue({
+    getPaginatedServicesRaw.mockReturnValue({
       services: [service1, service2, service3],
       numberOfPages: 1,
     });
@@ -159,7 +149,7 @@ describe("when getting applications requiring notification", () => {
         receiveTestUpdates: false,
       },
     };
-    applicationsClient.listApplications.mockReturnValue({
+    getPaginatedServicesRaw.mockReturnValue({
       services: [service1, service2, service3],
       numberOfPages: 1,
     });

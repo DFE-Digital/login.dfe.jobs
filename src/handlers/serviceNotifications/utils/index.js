@@ -1,4 +1,4 @@
-const ApplicationsClient = require("../../../infrastructure/applications");
+const { getPaginatedServicesRaw } = require("login.dfe.api-client/services");
 
 const getAllApplicationRequiringNotification = async (
   config,
@@ -6,15 +6,11 @@ const getAllApplicationRequiringNotification = async (
   correlationId,
   moveChildrenToParent = false,
 ) => {
-  const applicationsClient = new ApplicationsClient(
-    config.serviceNotifications.applications,
-    correlationId,
-  );
   let pageNumber = 1;
   let hasMorePages = true;
   let applications = [];
   while (hasMorePages) {
-    const page = await applicationsClient.listApplications(pageNumber, 100);
+    const page = await getPaginatedServicesRaw({ pageSize: 100, pageNumber });
 
     if (page.services && page.services.length > 0) {
       applications.push(...page.services);
@@ -40,13 +36,6 @@ const getAllApplicationRequiringNotification = async (
   return requiringNotification;
 };
 
-const forEachAsync = async (col, iteratee) => {
-  for (let i = 0; i < col.length; i += 1) {
-    await iteratee(col[i], i);
-  }
-};
-
 module.exports = {
   getAllApplicationRequiringNotification,
-  forEachAsync,
 };

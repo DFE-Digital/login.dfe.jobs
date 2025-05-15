@@ -1,4 +1,3 @@
-jest.mock("../../../../src/infrastructure/applications");
 jest.mock("login.dfe.async-retry");
 jest.mock("jsonwebtoken");
 
