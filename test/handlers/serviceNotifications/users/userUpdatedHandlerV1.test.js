@@ -1,9 +1,9 @@
-jest.mock("../../../../src/infrastructure/access");
 jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("../../../../src/handlers/serviceNotifications/utils");
 
 jest.mock("login.dfe.api-client/users", () => ({
   getUserRaw: jest.fn(),
+  getUserServicesRaw: jest.fn(),
 }));
 
 jest.mock("../../../../src/infrastructure/config", () => ({}));
@@ -23,16 +23,17 @@ jest.mock("bullmq", () => ({
 }));
 
 const { Queue } = require("bullmq");
-const AccessClient = require("../../../../src/infrastructure/access");
 const OrganisationsClient = require("../../../../src/infrastructure/organisations");
-const { getUserRaw } = require("login.dfe.api-client/users");
+const {
+  getUserRaw,
+  getUserServicesRaw,
+} = require("login.dfe.api-client/users");
 const {
   getAllApplicationRequiringNotification,
 } = require("../../../../src/handlers/serviceNotifications/utils");
 const {
   getDefaultConfig,
   getLoggerMock,
-  getAccessClientMock,
   getOrganisationsClientMock,
 } = require("../testUtils");
 const {
@@ -47,13 +48,11 @@ const data = {
   status: 1,
 };
 const jobId = 1;
-const accessClient = getAccessClientMock();
 const organisatonsClient = getOrganisationsClientMock();
 
 describe("when handling userupdated_v1 job", () => {
   beforeEach(() => {
-    accessClient.mockResetAll();
-    accessClient.listUserAccess.mockReturnValue([
+    getUserServicesRaw.mockReturnValue([
       {
         serviceId: "service1",
         organisationId: "organisation1",
@@ -65,7 +64,6 @@ describe("when handling userupdated_v1 job", () => {
         roles: [{ id: "role2", code: "ROLE-TWO", numericId: 2 }],
       },
     ]);
-    AccessClient.mockImplementation(() => accessClient);
 
     organisatonsClient.mockResetAll();
     organisatonsClient.listUserOrganisations.mockReturnValue([

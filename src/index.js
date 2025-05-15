@@ -35,6 +35,9 @@ setupApi({
     applications: {
       baseUri: config.publicApi.applications.service.url,
     },
+    access: {
+      baseUri: config.serviceNotifications.access.service.url,
+    },
   },
 });
 

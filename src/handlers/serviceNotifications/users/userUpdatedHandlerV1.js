@@ -1,7 +1,9 @@
 const { getAllApplicationRequiringNotification } = require("./../utils");
-const AccessClient = require("../../../infrastructure/access");
 const OrganisatonsClient = require("../../../infrastructure/organisations");
-const { getUserRaw } = require("login.dfe.api-client/users");
+const {
+  getUserRaw,
+  getUserServicesRaw,
+} = require("login.dfe.api-client/users");
 const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
 const { v4: uuid } = require("uuid");
 
@@ -11,10 +13,6 @@ const applictionRequiringNotificationCondition = (a) =>
   a.relyingParty.params.receiveUserUpdates === "true";
 
 const getRequiredJobs = async (config, logger, userData, correlationId) => {
-  const accessClient = new AccessClient(
-    config.serviceNotifications.access,
-    correlationId,
-  );
   const organisationsClient = new OrganisatonsClient(
     config.serviceNotifications.organisations,
     correlationId,
@@ -35,7 +33,7 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
   const userOrganisations = await organisationsClient.listUserOrganisations(
     user.sub,
   );
-  const userAccess = await accessClient.listUserAccess(user.sub);
+  const userAccess = await getUserServicesRaw({ userId: user.sub });
 
   applications.forEach((application) => {
     const userAccessToApplication = userAccess
