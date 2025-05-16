@@ -2,6 +2,7 @@ jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("login.dfe.api-client/users", () => ({
   getUserRaw: jest.fn(),
   getUsersRaw: jest.fn(),
+  getUserOrganisationRequestRaw: jest.fn(),
 }));
 jest.mock("login.dfe.dao", () => ({
   directories: {
@@ -38,7 +39,11 @@ const {
   getOrganisationsClientMock,
 } = require("../../../utils");
 
-const { getUserRaw, getUsersRaw } = require("login.dfe.api-client/users");
+const {
+  getUserRaw,
+  getUsersRaw,
+  getUserOrganisationRequestRaw,
+} = require("login.dfe.api-client/users");
 
 const {
   getHandler,
@@ -56,7 +61,7 @@ const organisatonsClient = getOrganisationsClientMock();
 describe("when handling organisationrequest_v1 job", () => {
   beforeEach(() => {
     organisatonsClient.mockResetAll();
-    organisatonsClient.getOrgRequestById.mockReturnValue({
+    getUserOrganisationRequestRaw.mockReturnValue({
       id: "requestId",
       user_id: "user1",
       org_id: "org1",
@@ -96,10 +101,10 @@ describe("when handling organisationrequest_v1 job", () => {
   it("then it should get the request by id", async () => {
     const handler = getHandler(config, logger);
     await handler.processor(data);
-    expect(organisatonsClient.getOrgRequestById).toHaveBeenCalledTimes(1);
-    expect(organisatonsClient.getOrgRequestById.mock.calls[0][0]).toBe(
-      "requestId",
-    );
+    expect(getUserOrganisationRequestRaw).toHaveBeenCalledTimes(1);
+    expect(getUserOrganisationRequestRaw.mock.calls[0][0]).toMatchObject({
+      by: { userOrganisationRequestId: "requestId" },
+    });
   });
 
   it("then it should get the approvers for the org in the request", async () => {

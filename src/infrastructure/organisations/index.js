@@ -5,10 +5,6 @@ class OrganisatonsClient extends ApiClient {
     super(opts, correlationId);
   }
 
-  async getOrgRequestById(requestId) {
-    return this._callApi(`/organisations/requests/${requestId}`);
-  }
-
   async getApproversForOrganisation(organisationId) {
     return this._callApi(`/organisations/${organisationId}/approvers`);
   }

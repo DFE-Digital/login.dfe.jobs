@@ -38,6 +38,9 @@ setupApi({
     access: {
       baseUri: config.serviceNotifications.access.service.url,
     },
+    organisations: {
+      baseUri: config.notifications.organisations.service.url,
+    },
   },
 });
 

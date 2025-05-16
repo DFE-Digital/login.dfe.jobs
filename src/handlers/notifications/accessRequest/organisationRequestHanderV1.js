@@ -1,7 +1,11 @@
 const { directories } = require("login.dfe.dao");
 const OrganisatonsClient = require("../../../infrastructure/organisations");
 const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
-const { getUserRaw, getUsersRaw } = require("login.dfe.api-client/users");
+const {
+  getUserRaw,
+  getUsersRaw,
+  getUserOrganisationRequestRaw,
+} = require("login.dfe.api-client/users");
 
 const process = async (config, logger, data) => {
   try {
@@ -10,7 +14,9 @@ const process = async (config, logger, data) => {
     );
 
     const { requestId } = data;
-    const request = await organisationsClient.getOrgRequestById(requestId);
+    const request = await getUserOrganisationRequestRaw({
+      by: { userOrganisationRequestId: requestId },
+    });
 
     const approversForOrg =
       await organisationsClient.getApproversForOrganisation(request.org_id);
