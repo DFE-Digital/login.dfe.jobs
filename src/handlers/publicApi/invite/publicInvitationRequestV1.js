@@ -3,9 +3,10 @@ const JobsClient = require("../../../infrastructure/jobs");
 const { v4: uuid } = require("uuid");
 const { getUserRaw } = require("login.dfe.api-client/users");
 const {
-  getInvitation,
+  getInvitationRaw,
   updateInvitation,
   createInvitation,
+  addOrganisationToInvitation,
 } = require("login.dfe.api-client/invitations");
 
 const END_USER = 0;
@@ -49,7 +50,7 @@ const checkForExistingInvitation = async (
   callback,
   clientId,
 ) => {
-  const invitation = await getInvitation({ by: { email: email } });
+  const invitation = await getInvitationRaw({ by: { email: email } });
   if (invitation) {
     if (!invitation.callbacks) {
       invitation.callbacks = [];
@@ -73,11 +74,11 @@ const checkForExistingInvitation = async (
     }
 
     if (organisation) {
-      await organisations.addOrganisationToInvitation(
-        invitation.id,
-        organisation,
-        END_USER,
-      );
+      await addOrganisationToInvitation({
+        invitationId: invitation.id,
+        organisationId: organisation,
+        roleId: END_USER,
+      });
     }
 
     return true;
@@ -86,7 +87,6 @@ const checkForExistingInvitation = async (
 };
 
 const createUserInvitation = async (
-  organisations,
   firstName,
   lastName,
   email,
@@ -120,11 +120,11 @@ const createUserInvitation = async (
   invitation.id = (await createInvitation(invitation)).id;
 
   if (organisation) {
-    await organisations.addOrganisationToInvitation(
-      invitation.id,
-      organisation,
-      END_USER,
-    );
+    await addOrganisationToInvitation({
+      invitationId: invitation.id,
+      organisationId: organisation,
+      roleId: END_USER,
+    });
   }
 };
 
@@ -175,7 +175,6 @@ const process = async (config, logger, data) => {
   }
 
   await createUserInvitation(
-    organisations,
     firstName,
     lastName,
     email,

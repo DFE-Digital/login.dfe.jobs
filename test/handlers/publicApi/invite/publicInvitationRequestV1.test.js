@@ -6,9 +6,10 @@ jest.mock("login.dfe.api-client/users", () => ({
 }));
 
 jest.mock("login.dfe.api-client/invitations", () => ({
-  getInvitation: jest.fn(),
+  getInvitationRaw: jest.fn(),
   updateInvitation: jest.fn(),
   createInvitation: jest.fn(),
+  addOrganisationToInvitation: jest.fn(),
 }));
 
 jest.mock("../../../../src/infrastructure/config", () => ({
@@ -18,7 +19,6 @@ jest.mock("../../../../src/infrastructure/config", () => ({
 }));
 
 const organisations = {
-  addOrganisationToInvitation: jest.fn(),
   addOrganisationToUser: jest.fn(),
 };
 const OrganisationsClient = require("../../../../src/infrastructure/organisations");
@@ -32,9 +32,10 @@ const {
   getHandler,
 } = require("../../../../src/handlers/publicApi/invite/publicInvitationRequestV1");
 const {
-  getInvitation,
   updateInvitation,
   createInvitation,
+  getInvitationRaw,
+  addOrganisationToInvitation,
 } = require("login.dfe.api-client/invitations");
 
 const config = {
@@ -76,13 +77,13 @@ describe("when handling a public invitation request (v1)", () => {
       state: "EXISTING_USER",
     };
     getUserRaw.mockReset();
-    getInvitation.mockReset();
+    getInvitationRaw.mockReset();
+    addOrganisationToInvitation.mockReset();
     createInvitation.mockReset().mockResolvedValue({
       id: "new-invite",
     });
     updateInvitation.mockReset();
 
-    organisations.addOrganisationToInvitation.mockReset();
     organisations.addOrganisationToUser.mockReset();
     OrganisationsClient.mockReset().mockImplementation(() => {
       return organisations;
@@ -135,13 +136,13 @@ describe("when handling a public invitation request (v1)", () => {
     getUserRaw.mockResolvedValue(existingUser);
     await handler.processor(data);
 
-    expect(getInvitation).toHaveBeenCalledTimes(0);
+    expect(getInvitationRaw).toHaveBeenCalledTimes(0);
     expect(updateInvitation).toHaveBeenCalledTimes(0);
     expect(createInvitation).toHaveBeenCalledTimes(0);
   });
 
   it("and an invitation already exists, then it should update invitation to include callback", async () => {
-    getInvitation.mockReturnValue(existingInvitation);
+    getInvitationRaw.mockReturnValue(existingInvitation);
 
     await handler.processor(data);
 
@@ -156,25 +157,25 @@ describe("when handling a public invitation request (v1)", () => {
   });
 
   it("and an invitation already exists, then it should add org to invitation if org specified", async () => {
-    getInvitation.mockReturnValue(existingInvitation);
+    getInvitationRaw.mockReturnValue(existingInvitation);
 
     await handler.processor(data);
 
-    expect(organisations.addOrganisationToInvitation).toHaveBeenCalledTimes(1);
-    expect(organisations.addOrganisationToInvitation).toHaveBeenCalledWith(
-      existingInvitation.id,
-      data.organisation,
-      0,
-    );
+    expect(addOrganisationToInvitation).toHaveBeenCalledTimes(1);
+    expect(addOrganisationToInvitation).toHaveBeenCalledWith({
+      invitationId: "invite1",
+      organisationId: "org1",
+      roleId: 0,
+    });
   });
 
   it("and an invitation already exists, then it should not attempt to add invitation to user if org not specified", async () => {
-    getInvitation.mockReturnValue(existingInvitation);
+    getInvitationRaw.mockReturnValue(existingInvitation);
     data.organisation = undefined;
 
     await handler.processor(data);
 
-    expect(organisations.addOrganisationToInvitation).toHaveBeenCalledTimes(0);
+    expect(addOrganisationToInvitation).toHaveBeenCalledTimes(0);
   });
 
   it("and an invitation already exists, then it should not create a new one", async () => {
@@ -205,12 +206,12 @@ describe("when handling a public invitation request (v1)", () => {
   it("and the user is new to the system, then it should add organisations to invitation if organisation present", async () => {
     await handler.processor(data);
 
-    expect(organisations.addOrganisationToInvitation).toHaveBeenCalledTimes(1);
-    expect(organisations.addOrganisationToInvitation).toHaveBeenCalledWith(
-      "new-invite",
-      data.organisation,
-      0,
-    );
+    expect(addOrganisationToInvitation).toHaveBeenCalledTimes(1);
+    expect(addOrganisationToInvitation).toHaveBeenCalledWith({
+      invitationId: "new-invite",
+      organisationId: "org1",
+      roleId: 0,
+    });
   });
 
   it("and the user is new to the system, then it should not attempt to add organisations to invitation if organisation not present", async () => {
@@ -218,6 +219,6 @@ describe("when handling a public invitation request (v1)", () => {
 
     await handler.processor(data);
 
-    expect(organisations.addOrganisationToInvitation).toHaveBeenCalledTimes(0);
+    expect(addOrganisationToInvitation).toHaveBeenCalledTimes(0);
   });
 });
