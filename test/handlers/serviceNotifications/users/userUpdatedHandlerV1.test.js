@@ -4,6 +4,7 @@ jest.mock("../../../../src/handlers/serviceNotifications/utils");
 jest.mock("login.dfe.api-client/users", () => ({
   getUserRaw: jest.fn(),
   getUserServicesRaw: jest.fn(),
+  getUserOrganisationsRaw: jest.fn(),
 }));
 
 jest.mock("../../../../src/infrastructure/config", () => ({}));
@@ -23,19 +24,15 @@ jest.mock("bullmq", () => ({
 }));
 
 const { Queue } = require("bullmq");
-const OrganisationsClient = require("../../../../src/infrastructure/organisations");
 const {
   getUserRaw,
   getUserServicesRaw,
+  getUserOrganisationsRaw,
 } = require("login.dfe.api-client/users");
 const {
   getAllApplicationRequiringNotification,
 } = require("../../../../src/handlers/serviceNotifications/utils");
-const {
-  getDefaultConfig,
-  getLoggerMock,
-  getOrganisationsClientMock,
-} = require("../testUtils");
+const { getDefaultConfig, getLoggerMock } = require("../testUtils");
 const {
   getHandler,
 } = require("../../../../src/handlers/serviceNotifications/users/userUpdatedHandlerV1");
@@ -48,7 +45,6 @@ const data = {
   status: 1,
 };
 const jobId = 1;
-const organisatonsClient = getOrganisationsClientMock();
 
 describe("when handling userupdated_v1 job", () => {
   beforeEach(() => {
@@ -65,8 +61,7 @@ describe("when handling userupdated_v1 job", () => {
       },
     ]);
 
-    organisatonsClient.mockResetAll();
-    organisatonsClient.listUserOrganisations.mockReturnValue([
+    getUserOrganisationsRaw.mockReturnValue([
       {
         organisation: {
           id: "organisation1",
@@ -79,7 +74,6 @@ describe("when handling userupdated_v1 job", () => {
         numericIdentifier: "sauser1",
       },
     ]);
-    OrganisationsClient.mockImplementation(() => organisatonsClient);
 
     getUserRaw.mockResolvedValue({
       sub: "user1",
@@ -366,7 +360,7 @@ describe("when handling userupdated_v1 job", () => {
   });
 
   it("then it should get establishment number as LA code if category is 002", async () => {
-    organisatonsClient.listUserOrganisations.mockReturnValue([
+    getUserOrganisationsRaw.mockReturnValue([
       {
         organisation: {
           id: "organisation1",

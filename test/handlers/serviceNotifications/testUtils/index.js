@@ -37,15 +37,6 @@ const getLoggerMock = () => {
   };
 };
 
-const getOrganisationsClientMock = () => {
-  return {
-    listUserOrganisations: jest.fn(),
-    mockResetAll: function () {
-      this.listUserOrganisations.mockReset();
-    },
-  };
-};
-
 const mockEntity = () => {
   return {
     findOne: jest.fn(),
@@ -83,7 +74,6 @@ const mockHandler = (type) => {
 module.exports = {
   getDefaultConfig,
   getLoggerMock,
-  getOrganisationsClientMock,
   getRepositoryMock,
   mockHandler,
 };
