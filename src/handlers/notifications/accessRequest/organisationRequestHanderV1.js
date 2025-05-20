@@ -6,6 +6,7 @@ const {
   getUsersRaw,
   getUserOrganisationRequestRaw,
 } = require("login.dfe.api-client/users");
+const { getOrganisationRaw } = require("login.dfe.api-client/organisations");
 
 const process = async (config, logger, data) => {
   try {
@@ -24,9 +25,9 @@ const process = async (config, logger, data) => {
       await directories.getAllActiveUsersFromList(approversForOrg);
     const activeApproverIds = activeApprovers.map((entity) => entity.sub);
 
-    const organisation = await organisationsClient.getOrganisationById(
-      request.org_id,
-    );
+    const organisation = await getOrganisationRaw({
+      by: { organisationId: request.org_id },
+    });
 
     const user = await getUserRaw({ by: { id: request.user_id } });
 

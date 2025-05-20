@@ -23,10 +23,8 @@ const getDefaultConfig = () => {
 const getOrganisationsClientMock = () => {
   return {
     getApproversForOrganisation: jest.fn(),
-    getOrganisationById: jest.fn(),
     mockResetAll: function () {
       this.getApproversForOrganisation.mockReset();
-      this.getOrganisationById.mockReset();
     },
   };
 };

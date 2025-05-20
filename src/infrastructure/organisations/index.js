@@ -9,10 +9,6 @@ class OrganisatonsClient extends ApiClient {
     return this._callApi(`/organisations/${organisationId}/approvers`);
   }
 
-  async getOrganisationById(organisationId) {
-    return this._callApi(`/organisations/v2/${organisationId}`);
-  }
-
   async addOrganisationToUser(userId, organisationId, roleId) {
     return this._callApi(
       `/organisations/${organisationId}/users/${userId}`,
