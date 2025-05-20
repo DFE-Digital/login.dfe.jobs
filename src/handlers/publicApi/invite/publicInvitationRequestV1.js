@@ -1,7 +1,8 @@
-const OrganisationsClient = require("../../../infrastructure/organisations");
 const JobsClient = require("../../../infrastructure/jobs");
-const { v4: uuid } = require("uuid");
-const { getUserRaw } = require("login.dfe.api-client/users");
+const {
+  getUserRaw,
+  addOrganisationToUser,
+} = require("login.dfe.api-client/users");
 const {
   getInvitationRaw,
   updateInvitation,
@@ -12,7 +13,6 @@ const {
 const END_USER = 0;
 
 const checkForExistingUser = async (
-  organisations,
   jobs,
   email,
   organisation,
@@ -23,11 +23,11 @@ const checkForExistingUser = async (
   const user = await getUserRaw({ by: { email: email } });
   if (user) {
     if (organisation) {
-      await organisations.addOrganisationToUser(
-        user.sub,
-        organisation,
-        END_USER,
-      );
+      await addOrganisationToUser({
+        userId: user.sub,
+        organisationId: organisation,
+        roleId: END_USER,
+      });
     }
     await jobs.queueNotifyRelyingParty(
       callback,
@@ -43,7 +43,6 @@ const checkForExistingUser = async (
 };
 
 const checkForExistingInvitation = async (
-  organisations,
   email,
   organisation,
   sourceId,
@@ -141,16 +140,10 @@ const process = async (config, logger, data) => {
     inviteSubjectOverride,
     inviteBodyOverride,
   } = data;
-  const correlationId = `publicinvitationrequest_v1-${uuid()}`;
 
-  const organisations = new OrganisationsClient(
-    config.publicApi.organisations,
-    correlationId,
-  );
   const jobs = new JobsClient();
 
   const userAlreadyExists = await checkForExistingUser(
-    organisations,
     jobs,
     email,
     organisation,
@@ -163,7 +156,6 @@ const process = async (config, logger, data) => {
   }
 
   const invitationAlreadyExists = await checkForExistingInvitation(
-    organisations,
     email,
     organisation,
     sourceId,

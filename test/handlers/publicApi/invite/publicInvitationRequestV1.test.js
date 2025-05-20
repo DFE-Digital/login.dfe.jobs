@@ -1,8 +1,8 @@
-jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("../../../../src/infrastructure/jobs");
 
 jest.mock("login.dfe.api-client/users", () => ({
   getUserRaw: jest.fn(),
+  addOrganisationToUser: jest.fn(),
 }));
 
 jest.mock("login.dfe.api-client/invitations", () => ({
@@ -18,16 +18,14 @@ jest.mock("../../../../src/infrastructure/config", () => ({
   },
 }));
 
-const organisations = {
-  addOrganisationToUser: jest.fn(),
-};
-const OrganisationsClient = require("../../../../src/infrastructure/organisations");
-
 const jobs = {
   queueNotifyRelyingParty: jest.fn(),
 };
 const JobsClient = require("../../../../src/infrastructure/jobs");
-const { getUserRaw } = require("login.dfe.api-client/users");
+const {
+  getUserRaw,
+  addOrganisationToUser,
+} = require("login.dfe.api-client/users");
 const {
   getHandler,
 } = require("../../../../src/handlers/publicApi/invite/publicInvitationRequestV1");
@@ -84,11 +82,6 @@ describe("when handling a public invitation request (v1)", () => {
     });
     updateInvitation.mockReset();
 
-    organisations.addOrganisationToUser.mockReset();
-    OrganisationsClient.mockReset().mockImplementation(() => {
-      return organisations;
-    });
-
     jobs.queueNotifyRelyingParty.mockReset();
     JobsClient.mockReset().mockImplementation(() => {
       return jobs;
@@ -101,12 +94,12 @@ describe("when handling a public invitation request (v1)", () => {
     getUserRaw.mockResolvedValue(existingUser);
     await handler.processor(data);
 
-    expect(organisations.addOrganisationToUser).toHaveBeenCalledTimes(1);
-    expect(organisations.addOrganisationToUser).toHaveBeenCalledWith(
-      existingUser.sub,
-      data.organisation,
-      0,
-    );
+    expect(addOrganisationToUser).toHaveBeenCalledTimes(1);
+    expect(addOrganisationToUser).toHaveBeenCalledWith({
+      organisationId: "org1",
+      roleId: 0,
+      userId: "user1",
+    });
   });
 
   it("and a user already exists, then it should not attempt to add org to user if org not specified", async () => {
@@ -115,7 +108,7 @@ describe("when handling a public invitation request (v1)", () => {
 
     await handler.processor(data);
 
-    expect(organisations.addOrganisationToUser).toHaveBeenCalledTimes(0);
+    expect(addOrganisationToUser).toHaveBeenCalledTimes(0);
   });
 
   it("and a user already exists, then it should notify the relying party that the users is active", async () => {
