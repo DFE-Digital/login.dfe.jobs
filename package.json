@@ -42,7 +42,6 @@
     "login.dfe.dao": "^5.0.6",
     "login.dfe.express-error-handling": "^3.0.3",
     "login.dfe.healthcheck": "^3.0.3",
-    "login.dfe.jwt-strategies": "^4.1.2",
     "node-cron": "^3.0.3",
     "nodemon": "^3.0.1",
     "notifications-node-client": "^8.2.1",
