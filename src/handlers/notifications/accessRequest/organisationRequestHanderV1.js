@@ -1,26 +1,26 @@
 const { directories } = require("login.dfe.dao");
-const OrganisatonsClient = require("../../../infrastructure/organisations");
 const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
 const {
   getUserRaw,
   getUsersRaw,
   getUserOrganisationRequestRaw,
 } = require("login.dfe.api-client/users");
-const { getOrganisationRaw } = require("login.dfe.api-client/organisations");
+const {
+  getOrganisationRaw,
+  getOrganisationApprovers,
+} = require("login.dfe.api-client/organisations");
 
 const process = async (config, logger, data) => {
   try {
-    const organisationsClient = new OrganisatonsClient(
-      config.notifications.organisations,
-    );
-
     const { requestId } = data;
     const request = await getUserOrganisationRequestRaw({
       by: { userOrganisationRequestId: requestId },
     });
 
-    const approversForOrg =
-      await organisationsClient.getApproversForOrganisation(request.org_id);
+    const approversForOrg = await getOrganisationApprovers({
+      organisationId: request.org_id,
+    });
+
     const activeApprovers =
       await directories.getAllActiveUsersFromList(approversForOrg);
     const activeApproverIds = activeApprovers.map((entity) => entity.sub);

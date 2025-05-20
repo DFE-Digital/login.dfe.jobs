@@ -1,4 +1,3 @@
-jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("login.dfe.api-client/users", () => ({
   getUserRaw: jest.fn(),
   getUsersRaw: jest.fn(),
@@ -6,6 +5,7 @@ jest.mock("login.dfe.api-client/users", () => ({
 }));
 jest.mock("login.dfe.api-client/organisations", () => ({
   getOrganisationRaw: jest.fn(),
+  getOrganisationApprovers: jest.fn(),
 }));
 jest.mock("login.dfe.dao", () => ({
   directories: {
@@ -34,13 +34,7 @@ jest.mock("bullmq", () => ({
 }));
 
 const { Queue } = require("bullmq");
-const OrganisationsClient = require("../../../../src/infrastructure/organisations");
-
-const {
-  getDefaultConfig,
-  getLoggerMock,
-  getOrganisationsClientMock,
-} = require("../../../utils");
+const { getDefaultConfig, getLoggerMock } = require("../../../utils");
 
 const {
   getUserRaw,
@@ -48,7 +42,10 @@ const {
   getUserOrganisationRequestRaw,
 } = require("login.dfe.api-client/users");
 
-const { getOrganisationRaw } = require("login.dfe.api-client/organisations");
+const {
+  getOrganisationRaw,
+  getOrganisationApprovers,
+} = require("login.dfe.api-client/organisations");
 
 const {
   getHandler,
@@ -61,24 +58,19 @@ const data = {
   requestId: "requestId",
 };
 
-const organisatonsClient = getOrganisationsClientMock();
-
 describe("when handling organisationrequest_v1 job", () => {
   beforeEach(() => {
-    organisatonsClient.mockResetAll();
     getUserOrganisationRequestRaw.mockReturnValue({
       id: "requestId",
       user_id: "user1",
       org_id: "org1",
       reason: "I need access pls",
     });
-    organisatonsClient.getApproversForOrganisation.mockReturnValue([]);
+    getOrganisationApprovers.mockReturnValue([]);
     getOrganisationRaw.mockReturnValue({
       id: "org1",
       name: "organisation name",
     });
-    OrganisationsClient.mockImplementation(() => organisatonsClient);
-
     getUserRaw.mockResolvedValue({
       sub: "user1",
       email: "user.one-fromdir@unit.tests",
@@ -107,7 +99,7 @@ describe("when handling organisationrequest_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor(data);
     expect(getUserOrganisationRequestRaw).toHaveBeenCalledTimes(1);
-    expect(getUserOrganisationRequestRaw.mock.calls[0][0]).toMatchObject({
+    expect(getUserOrganisationRequestRaw).toHaveBeenCalledWith({
       by: { userOrganisationRequestId: "requestId" },
     });
   });
@@ -115,19 +107,17 @@ describe("when handling organisationrequest_v1 job", () => {
   it("then it should get the approvers for the org in the request", async () => {
     const handler = getHandler(config, logger);
     await handler.processor(data);
-    expect(
-      organisatonsClient.getApproversForOrganisation,
-    ).toHaveBeenCalledTimes(1);
-    expect(
-      organisatonsClient.getApproversForOrganisation.mock.calls[0][0],
-    ).toBe("org1");
+    expect(getOrganisationApprovers).toHaveBeenCalledTimes(1);
+    expect(getOrganisationApprovers).toHaveBeenCalledWith({
+      organisationId: "org1",
+    });
   });
 
   it("then it should get the org details", async () => {
     const handler = getHandler(config, logger);
     await handler.processor(data);
     expect(getOrganisationRaw).toHaveBeenCalledTimes(1);
-    expect(getOrganisationRaw.mock.calls[0][0]).toMatchObject({
+    expect(getOrganisationRaw).toHaveBeenCalledWith({
       by: { organisationId: "org1" },
     });
   });
@@ -161,9 +151,7 @@ describe("when handling organisationrequest_v1 job", () => {
   });
 
   it("then it should queue a approveraccessrequest_v1 job if approvers for org ", async () => {
-    organisatonsClient.getApproversForOrganisation.mockReturnValue([
-      "appover1",
-    ]);
+    getOrganisationApprovers.mockReturnValue(["appover1"]);
     getUsersRaw.mockResolvedValue([
       {
         id: "approver1",

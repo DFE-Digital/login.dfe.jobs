@@ -1,16 +1,14 @@
 const { directories } = require("login.dfe.dao");
 const { getNotifyAdapter } = require("../../../infrastructure/notify");
-const OrganisatonsClient = require("../../../infrastructure/organisations");
 const { getUsersRaw } = require("login.dfe.api-client/users");
+const {
+  getOrganisationApprovers,
+} = require("login.dfe.api-client/organisations");
 
 const execute = async (config, logger, data) => {
-  const organisationsClient = new OrganisatonsClient(
-    config.notifications.organisations,
-  );
-
-  const approversForOrg = await organisationsClient.getApproversForOrganisation(
-    data.orgId,
-  );
+  const approversForOrg = await getOrganisationApprovers({
+    organisationId: data.orgId,
+  });
   const activeApprovers =
     await directories.getAllActiveUsersFromList(approversForOrg);
   const activeApproverIds = activeApprovers.map((entity) => entity.sub);

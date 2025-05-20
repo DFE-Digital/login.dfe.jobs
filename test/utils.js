@@ -20,15 +20,6 @@ const getDefaultConfig = () => {
   };
 };
 
-const getOrganisationsClientMock = () => {
-  return {
-    getApproversForOrganisation: jest.fn(),
-    mockResetAll: function () {
-      this.getApproversForOrganisation.mockReset();
-    },
-  };
-};
-
 const getLoggerMock = () => {
   return {
     info: jest.fn(),
@@ -44,6 +35,5 @@ const getLoggerMock = () => {
 
 module.exports = {
   getDefaultConfig,
-  getOrganisationsClientMock,
   getLoggerMock,
 };

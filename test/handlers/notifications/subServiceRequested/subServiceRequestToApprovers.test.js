@@ -1,9 +1,12 @@
-jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("../../../../src/infrastructure/notify");
 jest.mock("login.dfe.api-client/users", () => ({
   getUsersRaw: jest.fn(),
   getUserOrganisationRequestRaw: jest.fn(),
 }));
+jest.mock("login.dfe.api-client/organisations", () => ({
+  getOrganisationApprovers: jest.fn(),
+}));
+
 jest.mock("login.dfe.dao", () => ({
   directories: {
     getAllActiveUsersFromList() {
@@ -11,8 +14,9 @@ jest.mock("login.dfe.dao", () => ({
     },
   },
 }));
-
-const OrganisationsClient = require("../../../../src/infrastructure/organisations");
+const {
+  getOrganisationApprovers,
+} = require("login.dfe.api-client/organisations");
 const {
   getUsersRaw,
   getUserOrganisationRequestRaw,
@@ -21,8 +25,6 @@ const { getNotifyAdapter } = require("../../../../src/infrastructure/notify");
 const {
   getHandler,
 } = require("../../../../src/handlers/notifications/subServiceRequested/subServiceRequestToApprovers");
-
-const { getOrganisationsClientMock } = require("../../../utils");
 
 const config = {
   notifications: {
@@ -44,7 +46,6 @@ const data = {
 
 describe("when processing a sub_service_request_to_approvers job", () => {
   const mockSendEmail = jest.fn();
-  const organisatonsClient = getOrganisationsClientMock();
 
   beforeEach(() => {
     mockSendEmail.mockReset();
@@ -52,17 +53,13 @@ describe("when processing a sub_service_request_to_approvers job", () => {
     getNotifyAdapter.mockReset();
     getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
 
-    organisatonsClient.mockResetAll();
     getUserOrganisationRequestRaw.mockReturnValue({
       id: "requestId",
       user_id: "user1",
       org_id: "org1",
       reason: "I need access pls",
     });
-    organisatonsClient.getApproversForOrganisation.mockReturnValue([
-      "appover1",
-    ]);
-    OrganisationsClient.mockImplementation(() => organisatonsClient);
+    getOrganisationApprovers.mockReturnValue(["appover1"]);
 
     getUsersRaw.mockResolvedValue([
       {
