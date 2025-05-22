@@ -1,13 +1,18 @@
-const DirectoriesClient = require("../../../infrastructure/directories");
-const OrganisationsClient = require("../../../infrastructure/organisations");
 const JobsClient = require("../../../infrastructure/jobs");
-const { v4: uuid } = require("uuid");
+const {
+  getUserRaw,
+  addOrganisationToUser,
+} = require("login.dfe.api-client/users");
+const {
+  getInvitationRaw,
+  updateInvitation,
+  createInvitation,
+  addOrganisationToInvitation,
+} = require("login.dfe.api-client/invitations");
 
 const END_USER = 0;
 
 const checkForExistingUser = async (
-  directories,
-  organisations,
   jobs,
   email,
   organisation,
@@ -15,14 +20,14 @@ const checkForExistingUser = async (
   callback,
   clientId,
 ) => {
-  const user = await directories.getUserByEmail(email);
+  const user = await getUserRaw({ by: { email: email } });
   if (user) {
     if (organisation) {
-      await organisations.addOrganisationToUser(
-        user.sub,
-        organisation,
-        END_USER,
-      );
+      await addOrganisationToUser({
+        userId: user.sub,
+        organisationId: organisation,
+        roleId: END_USER,
+      });
     }
     await jobs.queueNotifyRelyingParty(
       callback,
@@ -36,16 +41,15 @@ const checkForExistingUser = async (
   }
   return false;
 };
+
 const checkForExistingInvitation = async (
-  directories,
-  organisations,
   email,
   organisation,
   sourceId,
   callback,
   clientId,
 ) => {
-  const invitation = await directories.getInvitationByEmail(email);
+  const invitation = await getInvitationRaw({ by: { email: email } });
   if (invitation) {
     if (!invitation.callbacks) {
       invitation.callbacks = [];
@@ -57,28 +61,31 @@ const checkForExistingInvitation = async (
     ) {
       invitation.callbacks.push({
         sourceId,
-        callback,
+        callbackUri: callback,
         state: "EXISTING_INVITATION",
         clientId,
       });
-      await directories.updateInvitation(invitation);
+
+      await updateInvitation({
+        ...invitation,
+        ...{ invitationId: invitation.id },
+      });
     }
 
     if (organisation) {
-      await organisations.addOrganisationToInvitation(
-        invitation.id,
-        organisation,
-        END_USER,
-      );
+      await addOrganisationToInvitation({
+        invitationId: invitation.id,
+        organisationId: organisation,
+        roleId: END_USER,
+      });
     }
 
     return true;
   }
   return false;
 };
-const createInvitation = async (
-  directories,
-  organisations,
+
+const createUserInvitation = async (
   firstName,
   lastName,
   email,
@@ -94,17 +101,14 @@ const createInvitation = async (
     firstName,
     lastName,
     email,
-    origin: {
-      clientId,
-      redirectUri: userRedirect,
-    },
+    clientId,
+    redirectUri: userRedirect,
     selfStarted: false,
     callbacks: [
       {
         sourceId,
-        callback,
+        callbackUri: callback,
         state: "NEW_INVITATION",
-        clientId,
       },
     ],
     overrides: {
@@ -112,14 +116,14 @@ const createInvitation = async (
       body: inviteBodyOverride,
     },
   };
-  invitation.id = (await directories.createInvitation(invitation)).id;
+  invitation.id = (await createInvitation(invitation)).id;
 
   if (organisation) {
-    await organisations.addOrganisationToInvitation(
-      invitation.id,
-      organisation,
-      END_USER,
-    );
+    await addOrganisationToInvitation({
+      invitationId: invitation.id,
+      organisationId: organisation,
+      roleId: END_USER,
+    });
   }
 };
 
@@ -136,20 +140,10 @@ const process = async (config, logger, data) => {
     inviteSubjectOverride,
     inviteBodyOverride,
   } = data;
-  const correlationId = `publicinvitationrequest_v1-${uuid()}`;
-  const directories = new DirectoriesClient(
-    config.publicApi.directories,
-    correlationId,
-  );
-  const organisations = new OrganisationsClient(
-    config.publicApi.organisations,
-    correlationId,
-  );
+
   const jobs = new JobsClient();
 
   const userAlreadyExists = await checkForExistingUser(
-    directories,
-    organisations,
     jobs,
     email,
     organisation,
@@ -162,8 +156,6 @@ const process = async (config, logger, data) => {
   }
 
   const invitationAlreadyExists = await checkForExistingInvitation(
-    directories,
-    organisations,
     email,
     organisation,
     sourceId,
@@ -174,9 +166,7 @@ const process = async (config, logger, data) => {
     return;
   }
 
-  await createInvitation(
-    directories,
-    organisations,
+  await createUserInvitation(
     firstName,
     lastName,
     email,

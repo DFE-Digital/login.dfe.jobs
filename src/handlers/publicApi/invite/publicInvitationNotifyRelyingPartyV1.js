@@ -1,17 +1,13 @@
 const { fetchApi } = require("login.dfe.async-retry");
 const jwt = require("jsonwebtoken");
-const ApplicationsClient = require("../../../infrastructure/applications");
 const { v4: uuid } = require("uuid");
+const { getServiceRaw } = require("login.dfe.api-client/services");
 
-const getToken = async (config, clientId, correlationId) => {
+const getToken = async (config, clientId) => {
   let secret = config.publicApi.auth.jwtSecret;
 
   if (clientId) {
-    const applications = new ApplicationsClient(
-      config.publicApi.applications,
-      correlationId,
-    );
-    const application = await applications.getApplication(clientId);
+    const application = await getServiceRaw({ by: { clientId: clientId } });
     if (!application) {
       throw new Error(`Cannot find application with client id ${clientId}`);
     }
@@ -43,7 +39,7 @@ const process = async (config, logger, data) => {
     );
   }
 
-  const token = await getToken(config, clientId, correlationId);
+  const token = await getToken(config, clientId);
 
   try {
     await fetchApi(callback, {

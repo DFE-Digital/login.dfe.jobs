@@ -11,11 +11,38 @@ const config = require("./infrastructure/config");
 const configSchema = require("./infrastructure/config/schema");
 const registerRoutes = require("./routes");
 
+const { setupApi } = require("login.dfe.api-client/api/setup");
+
 const MonitorBull = require("./infrastructure/jobQueue/MonitorBull");
 
 configSchema.validate();
 
 logger.info("starting");
+
+setupApi({
+  auth: {
+    tenant: config.publicApi.directories.service.auth.tenant,
+    authorityHostUrl:
+      config.publicApi.directories.service.auth.authorityHostUrl,
+    clientId: config.publicApi.directories.service.auth.clientId,
+    clientSecret: config.publicApi.directories.service.auth.clientSecret,
+    resource: config.publicApi.directories.service.auth.resource,
+  },
+  api: {
+    directories: {
+      baseUri: config.publicApi.directories.service.url,
+    },
+    applications: {
+      baseUri: config.publicApi.applications.service.url,
+    },
+    access: {
+      baseUri: config.serviceNotifications.access.service.url,
+    },
+    organisations: {
+      baseUri: config.notifications.organisations.service.url,
+    },
+  },
+});
 
 https.globalAgent.maxSockets = http.globalAgent.maxSockets =
   config.hostingEnvironment.agentKeepAlive.maxSockets || 50;

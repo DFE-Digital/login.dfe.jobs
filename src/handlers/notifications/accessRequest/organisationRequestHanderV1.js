@@ -1,34 +1,40 @@
 const { directories } = require("login.dfe.dao");
-const OrganisatonsClient = require("../../../infrastructure/organisations");
-const DirectoriesClient = require("../../../infrastructure/directories");
 const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
+const {
+  getUserRaw,
+  getUsersRaw,
+  getUserOrganisationRequestRaw,
+} = require("login.dfe.api-client/users");
+const {
+  getOrganisationRaw,
+  getOrganisationApprovers,
+} = require("login.dfe.api-client/organisations");
 
 const process = async (config, logger, data) => {
   try {
-    const organisationsClient = new OrganisatonsClient(
-      config.notifications.organisations,
-    );
-    const directoriesClient = new DirectoriesClient(
-      config.notifications.directories,
-    );
-
     const { requestId } = data;
-    const request = await organisationsClient.getOrgRequestById(requestId);
+    const request = await getUserOrganisationRequestRaw({
+      by: { userOrganisationRequestId: requestId },
+    });
 
-    const approversForOrg =
-      await organisationsClient.getApproversForOrganisation(request.org_id);
+    const approversForOrg = await getOrganisationApprovers({
+      organisationId: request.org_id,
+    });
+
     const activeApprovers =
       await directories.getAllActiveUsersFromList(approversForOrg);
     const activeApproverIds = activeApprovers.map((entity) => entity.sub);
 
-    const organisation = await organisationsClient.getOrganisationById(
-      request.org_id,
-    );
-    const user = await directoriesClient.getById(request.user_id);
+    const organisation = await getOrganisationRaw({
+      by: { organisationId: request.org_id },
+    });
+
+    const user = await getUserRaw({ by: { id: request.user_id } });
 
     if (activeApproverIds.length > 0) {
-      const approvers =
-        await directoriesClient.getUsersByIds(activeApproverIds);
+      const approvers = await getUsersRaw({
+        by: { userIds: activeApproverIds },
+      });
       const approverDetails = approvers.map((x) => ({
         email: x.email,
         firstName: x.given_name,

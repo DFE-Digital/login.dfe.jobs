@@ -20,19 +20,6 @@ const getDefaultConfig = () => {
   };
 };
 
-const getOrganisationsClientMock = () => {
-  return {
-    getOrgRequestById: jest.fn(),
-    getApproversForOrganisation: jest.fn(),
-    getOrganisationById: jest.fn(),
-    mockResetAll: function () {
-      this.getOrgRequestById.mockReset();
-      this.getApproversForOrganisation.mockReset();
-      this.getOrganisationById.mockReset();
-    },
-  };
-};
-
 const getLoggerMock = () => {
   return {
     info: jest.fn(),
@@ -46,20 +33,7 @@ const getLoggerMock = () => {
   };
 };
 
-const getDirectoriesClientMock = () => {
-  return {
-    getUsersByIds: jest.fn(),
-    getById: jest.fn(),
-    mockResetAll: function () {
-      this.getUsersByIds.mockReset();
-      this.getById.mockReset();
-    },
-  };
-};
-
 module.exports = {
   getDefaultConfig,
-  getDirectoriesClientMock,
-  getOrganisationsClientMock,
   getLoggerMock,
 };

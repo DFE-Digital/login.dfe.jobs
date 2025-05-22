@@ -1,7 +1,10 @@
-jest.mock("../../../../src/infrastructure/access");
-jest.mock("../../../../src/infrastructure/organisations");
-jest.mock("../../../../src/infrastructure/directories");
 jest.mock("../../../../src/handlers/serviceNotifications/utils");
+
+jest.mock("login.dfe.api-client/users", () => ({
+  getUserRaw: jest.fn(),
+  getUserServicesRaw: jest.fn(),
+  getUserOrganisationsRaw: jest.fn(),
+}));
 
 jest.mock("../../../../src/infrastructure/config", () => ({}));
 
@@ -20,19 +23,15 @@ jest.mock("bullmq", () => ({
 }));
 
 const { Queue } = require("bullmq");
-const AccessClient = require("../../../../src/infrastructure/access");
-const OrganisationsClient = require("../../../../src/infrastructure/organisations");
-const DirectoriesClient = require("../../../../src/infrastructure/directories");
+const {
+  getUserRaw,
+  getUserServicesRaw,
+  getUserOrganisationsRaw,
+} = require("login.dfe.api-client/users");
 const {
   getAllApplicationRequiringNotification,
 } = require("../../../../src/handlers/serviceNotifications/utils");
-const {
-  getDefaultConfig,
-  getLoggerMock,
-  getAccessClientMock,
-  getOrganisationsClientMock,
-  getDirectoriesClientMock,
-} = require("../testUtils");
+const { getDefaultConfig, getLoggerMock } = require("../testUtils");
 const {
   getHandler,
 } = require("../../../../src/handlers/serviceNotifications/users/userUpdatedHandlerV1");
@@ -45,14 +44,10 @@ const data = {
   status: 1,
 };
 const jobId = 1;
-const accessClient = getAccessClientMock();
-const organisatonsClient = getOrganisationsClientMock();
-const directoriesClient = getDirectoriesClientMock();
 
 describe("when handling userupdated_v1 job", () => {
   beforeEach(() => {
-    accessClient.mockResetAll();
-    accessClient.listUserAccess.mockReturnValue([
+    getUserServicesRaw.mockReturnValue([
       {
         serviceId: "service1",
         organisationId: "organisation1",
@@ -64,10 +59,8 @@ describe("when handling userupdated_v1 job", () => {
         roles: [{ id: "role2", code: "ROLE-TWO", numericId: 2 }],
       },
     ]);
-    AccessClient.mockImplementation(() => accessClient);
 
-    organisatonsClient.mockResetAll();
-    organisatonsClient.listUserOrganisations.mockReturnValue([
+    getUserOrganisationsRaw.mockReturnValue([
       {
         organisation: {
           id: "organisation1",
@@ -80,15 +73,12 @@ describe("when handling userupdated_v1 job", () => {
         numericIdentifier: "sauser1",
       },
     ]);
-    OrganisationsClient.mockImplementation(() => organisatonsClient);
 
-    directoriesClient.mockResetAll();
-    directoriesClient.getUser.mockReturnValue({
+    getUserRaw.mockResolvedValue({
       sub: "user1",
       email: "user.one-fromdir@unit.tests",
       status: 2,
     });
-    DirectoriesClient.mockImplementation(() => directoriesClient);
     getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
   });
 
@@ -296,8 +286,8 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor({ sub: data.sub, status: data.status }, jobId);
 
-    expect(directoriesClient.getUser).toHaveBeenCalledTimes(1);
-    expect(directoriesClient.getUser).toHaveBeenCalledWith(data.sub);
+    expect(getUserRaw).toHaveBeenCalledTimes(1);
+    expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
     expect(mockClose).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledWith(
@@ -340,8 +330,8 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor({ sub: data.sub, email: data.email }, jobId);
 
-    expect(directoriesClient.getUser).toHaveBeenCalledTimes(1);
-    expect(directoriesClient.getUser).toHaveBeenCalledWith(data.sub);
+    expect(getUserRaw).toHaveBeenCalledTimes(1);
+    expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
     expect(mockClose).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledWith(
@@ -369,7 +359,7 @@ describe("when handling userupdated_v1 job", () => {
   });
 
   it("then it should get establishment number as LA code if category is 002", async () => {
-    organisatonsClient.listUserOrganisations.mockReturnValue([
+    getUserOrganisationsRaw.mockReturnValue([
       {
         organisation: {
           id: "organisation1",

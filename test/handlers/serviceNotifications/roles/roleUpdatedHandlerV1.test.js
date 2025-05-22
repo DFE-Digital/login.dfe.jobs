@@ -1,6 +1,5 @@
-jest.mock("../../../../src/infrastructure/access");
-jest.mock("../../../../src/infrastructure/organisations");
 jest.mock("../../../../src/handlers/serviceNotifications/utils");
+jest.mock("login.dfe.api-client/services");
 
 const {
   getAllApplicationRequiringNotification,
