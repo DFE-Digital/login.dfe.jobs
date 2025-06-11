@@ -31,8 +31,9 @@
     "agentkeepalive": "^4.6.0",
     "body-parser": "^1.20.3",
     "bullmq": "^5.41.5",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.5.0",
     "express": "^4.21.2",
+    "i": "^0.3.7",
     "jsonwebtoken": "^9.0.2",
     "login.dfe.api-client": "^1.0.9",
     "login.dfe.api.auth": "^2.3.4",
@@ -54,16 +55,16 @@
     "xml2js": "^0.5.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.26.0",
-    "eslint": "^9.26.0",
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.28.0",
     "eslint-formatter-junit": "^8.40.0",
-    "eslint-plugin-jest": "^28.11.0",
+    "eslint-plugin-jest": "^28.13.3",
     "globals": "^15.14.0",
     "husky": "^9.1.7",
     "jest": "^29.7.0",
     "jest-cli": "^29.7.0",
     "jest-junit": "^16.0.0",
-    "lint-staged": "^15.4.3",
+    "lint-staged": "^15.5.2",
     "node-mocks-http": "^1.17.2",
     "prettier": "^3.5.3"
   }
