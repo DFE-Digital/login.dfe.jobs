@@ -3,14 +3,18 @@ const logger = require("../logger");
 const { bullConnectionUrl } = require("./BullHelpers");
 
 const process = async (job, processor) => {
+  const meta = { handler: job.name, jobId: job.id };
   try {
-    logger.info(`MonitorBull: received job ${job.id} of type ${job.name}`);
+    logger.info(
+      `MonitorBull: received job "${job.id}" for handler "${job.name}"`,
+      meta,
+    );
     await processor(job.data);
-    logger.info(`MonitorBull: processed job ${job.id}`);
+    logger.info(`MonitorBull: processed job "${job.id}"`, meta);
   } catch (err) {
-    logger.error(`MonitorBull: Error processing job ${job.id}`, {
-      job: { name: job.name, id: job.id },
-      error: { message: err.message, stack: err.stack },
+    logger.error(`MonitorBull: Error processing job "${job.id}"`, {
+      ...meta,
+      ...{ error: { message: err.message, stack: err.stack } },
     });
     await job.moveToFailed({ message: err.message, stack: err.stack }, false);
   }
@@ -30,7 +34,7 @@ class MonitorBull {
   start() {
     // Closely matches Kue which "creates" a worker per "mapping.type"
     this.processorMapping.forEach((mapping) => {
-      logger.debug(`MonitorBull: start monitoring ${mapping.type}`);
+      logger.debug(`MonitorBull: start monitoring handler "${mapping.type}"`);
       const worker = new Worker(
         mapping.type,
         async (job) => {
