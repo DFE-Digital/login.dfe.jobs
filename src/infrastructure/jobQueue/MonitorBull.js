@@ -1,6 +1,7 @@
 const { Worker } = require("bullmq");
 const logger = require("../logger");
 const { bullConnectionUrl } = require("./BullHelpers");
+const { logWithCorrelationContext } = require("login.dfe.api-client/logging");
 
 const process = async (job, processor) => {
   const meta = { handler: job.name, jobId: job.id };
@@ -38,7 +39,9 @@ class MonitorBull {
       const worker = new Worker(
         mapping.type,
         async (job) => {
-          process(job, mapping.processor);
+          await logWithCorrelationContext(mapping.type, () =>
+            process(job, mapping.processor),
+          );
         },
         { connection: { url: bullConnectionUrl } },
       );
