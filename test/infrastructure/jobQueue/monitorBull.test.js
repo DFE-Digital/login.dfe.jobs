@@ -58,7 +58,7 @@ describe("MonitorBull", () => {
       'MonitorBull: start monitoring handler "test"',
     );
     expect(logger.debug).toHaveBeenCalledWith(
-      "MonitorBull: start monitoring test2 (with policy max: 45 duration: 300000)",
+      'MonitorBull: start monitoring handler "test2" (with policy max: 45 duration: 300000)',
     );
   });
 
