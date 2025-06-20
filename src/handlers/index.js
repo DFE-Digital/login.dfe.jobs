@@ -6,7 +6,7 @@ const registerExternalJobs = async (externalJobs, mappings, config, logger) => {
   const processors = await externalJobs.register(config, logger);
   processors.forEach((processor) => {
     mappings.push(processor);
-    logger.info(`Added ${processor.type} processor`);
+    logger.debug(`Added ${processor.type} processor`);
   });
 };
 
@@ -20,7 +20,7 @@ const getProcessorMappings = async (config, logger) => {
       return Promise.resolve();
     },
   });
-  logger.info("Added test processor");
+  logger.debug("Added test processor");
 
   await registerExternalJobs(notifications, mappings, config, logger);
   await registerExternalJobs(publicApi, mappings, config, logger);
