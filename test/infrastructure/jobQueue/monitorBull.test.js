@@ -55,7 +55,7 @@ describe("MonitorBull", () => {
       connection: { url: "redis://127.0.0.1:6379" },
     });
     expect(logger.debug).toHaveBeenCalledWith(
-      "MonitorBull: start monitoring test",
+      'MonitorBull: start monitoring handler "test"',
     );
     expect(logger.debug).toHaveBeenCalledWith(
       "MonitorBull: start monitoring test2 (with policy max: 45 duration: 300000)",

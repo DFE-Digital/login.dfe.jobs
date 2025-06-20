@@ -1,16 +1,21 @@
 const { Worker } = require("bullmq");
 const logger = require("../logger");
 const { bullConnectionUrl } = require("./BullHelpers");
+const { logWithCorrelationContext } = require("login.dfe.api-client/logging");
 
 const process = async (job, processor) => {
+  const meta = { handler: job.name, jobId: job.id };
   try {
-    logger.info(`MonitorBull: received job ${job.id} of type ${job.name}`);
+    logger.info(
+      `MonitorBull: received job "${job.id}" for handler "${job.name}"`,
+      meta,
+    );
     await processor(job.data);
-    logger.info(`MonitorBull: processed job ${job.id}`);
+    logger.info(`MonitorBull: processed job "${job.id}"`, meta);
   } catch (err) {
-    logger.error(`MonitorBull: Error processing job ${job.id}`, {
-      job: { name: job.name, id: job.id },
-      error: { message: err.message, stack: err.stack },
+    logger.error(`MonitorBull: Error processing job "${job.id}"`, {
+      ...meta,
+      ...{ error: { message: err.message, stack: err.stack } },
     });
     await job.moveToFailed({ message: err.message, stack: err.stack }, false);
   }
@@ -39,12 +44,14 @@ class MonitorBull {
         limiterPolicyDescription = ` (with policy max: ${mapping.limiter.max} duration: ${mapping.limiter.duration})`;
       }
       logger.debug(
-        `MonitorBull: start monitoring ${mapping.type}${limiterPolicyDescription}`,
+        `MonitorBull: start monitoring handler "${mapping.type}"${limiterPolicyDescription}`,
       );
       const worker = new Worker(
         mapping.type,
         async (job) => {
-          process(job, mapping.processor);
+          await logWithCorrelationContext(mapping.type, () =>
+            process(job, mapping.processor),
+          );
         },
         {
           connection: { url: bullConnectionUrl },

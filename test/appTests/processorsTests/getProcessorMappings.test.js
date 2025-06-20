@@ -8,6 +8,7 @@ const config = {
 };
 const logger = {
   info: () => {},
+  debug: () => {},
 };
 
 describe("when getting processor mappings", () => {
