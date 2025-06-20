@@ -76,6 +76,14 @@ describe("When handling supportrequest_v1 job", () => {
     );
   });
 
+  it("should specify a limiter policy", async () => {
+    const handler = getHandler(config);
+    expect(handler.limiter).toMatchObject({
+      max: 45,
+      duration: 300000,
+    });
+  });
+
   it.each([
     ["", "", false],
     [null, "", false],

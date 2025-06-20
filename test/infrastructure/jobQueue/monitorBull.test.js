@@ -29,6 +29,17 @@ describe("MonitorBull", () => {
         return Promise.resolve();
       },
     },
+    {
+      type: "test2",
+      limiter: {
+        max: 45,
+        duration: 300000,
+      },
+      processor: (jobData) => {
+        logger.info(`Test2 job - ${JSON.stringify(jobData)}`);
+        return Promise.resolve();
+      },
+    },
   ];
 
   it("should construct a new MonitorBull", async () => {
@@ -45,6 +56,9 @@ describe("MonitorBull", () => {
     });
     expect(logger.debug).toHaveBeenCalledWith(
       'MonitorBull: start monitoring handler "test"',
+    );
+    expect(logger.debug).toHaveBeenCalledWith(
+      'MonitorBull: start monitoring handler "test2" (with policy max: 45 duration: 300000)',
     );
   });
 

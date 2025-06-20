@@ -35,7 +35,17 @@ class MonitorBull {
   start() {
     // Closely matches Kue which "creates" a worker per "mapping.type"
     this.processorMapping.forEach((mapping) => {
-      logger.debug(`MonitorBull: start monitoring handler "${mapping.type}"`);
+      let limiterPolicyDescription = "";
+      if (
+        mapping?.limiter &&
+        typeof mapping.limiter.max === "number" &&
+        typeof mapping.limiter.duration === "number"
+      ) {
+        limiterPolicyDescription = ` (with policy max: ${mapping.limiter.max} duration: ${mapping.limiter.duration})`;
+      }
+      logger.debug(
+        `MonitorBull: start monitoring handler "${mapping.type}"${limiterPolicyDescription}`,
+      );
       const worker = new Worker(
         mapping.type,
         async (job) => {
@@ -43,7 +53,10 @@ class MonitorBull {
             process(job, mapping.processor),
           );
         },
-        { connection: { url: bullConnectionUrl } },
+        {
+          connection: { url: bullConnectionUrl },
+          limiter: mapping?.limiter,
+        },
       );
       this.workers.push(worker);
     });
