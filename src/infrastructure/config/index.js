@@ -29,8 +29,8 @@ const config = {
     env: process.env.LOCAL_ENV || "azure",
     host: process.env.LOCAL_HOST || process.env.STANDALONE_JOBS_HOST_NAME,
     port: process.env.LOCAL_PORT_JOBS || 443,
-    sslCert: process.env.LOCAL_SSL_CERT || "",
-    sslKey: process.env.LOCAL_SSL_KEY || "",
+    sslCert: process.env.LOCAL_SSL_CERT ? process.env.LOCAL_SSL_CERT.replace(/\\n/g, '\n') : "",
+    sslKey: process.env.LOCAL_SSL_KEY ? process.env.LOCAL_SSL_KEY.replace(/\\n/g, '\n') : "",
     protocol: "https",
     applicationInsights: process.env.APPLICATIONINSIGHTS_CONNECTION_STRING,
     sessionSecret: process.env.SESSION_ENCRYPTION_SECRET_JOBS,
@@ -47,7 +47,7 @@ const config = {
     clientID: process.env.AAD_SHD_APP_ID
   },
   queueStorage: {
-    connectionString: process.env.REDIS_CONN + "/4?tls=true"
+    connectionString: process.env.LOCAL_REDIS_CONN ? process.env.LOCAL_REDIS_CONN + "/4" : process.env.REDIS_CONN + "/4?tls=true"
   },
   persistentStorage: {
     host: process.env.PLATFORM_GLOBAL_SERVER_NAME,
@@ -262,4 +262,4 @@ function mimicLegacySettings(config) {
 
 mimicLegacySettings(config);
 
-module.exports = config; 
+module.exports = config;

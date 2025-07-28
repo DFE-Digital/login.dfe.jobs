@@ -8,8 +8,8 @@
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/src/index.js",
       "outputCapture": "std",
+      "envFile": "${workspaceFolder}/../.env",
       "env": {
-        "settings": "config/local-config.json",
         "NODE_TLS_REJECT_UNAUTHORIZED": "0"
       }
     }
