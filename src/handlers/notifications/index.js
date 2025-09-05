@@ -7,6 +7,7 @@ const passwordReset = require("./passwordReset");
 const registration = require("./registration");
 const serviceRemoved = require("./serviceRemoved");
 const serviceRequested = require("./serviceRequested");
+const serviceRequestActioned = require("./serviceRequestActioned");
 const serviceRequestRejected = require("./serviceRequestRejected");
 const subServiceRequestActioned = require("./subServiceRequestActioned");
 const subServiceRequested = require("./subServiceRequested");
@@ -26,6 +27,10 @@ const register = (config, logger) => {
   const registrationHandlers = registration.register(config, logger);
   const serviceRemovedHandler = serviceRemoved.register(config, logger);
   const serviceRequestedHandler = serviceRequested.register(config, logger);
+  const serviceRequestActionedHandler = serviceRequestActioned.register(
+    config,
+    logger,
+  );
   const serviceRequestRejectedHandler = serviceRequestRejected.register(
     config,
     logger,
@@ -51,6 +56,7 @@ const register = (config, logger) => {
     ...registrationHandlers,
     ...serviceRemovedHandler,
     ...serviceRequestedHandler,
+    ...serviceRequestActionedHandler,
     ...serviceRequestRejectedHandler,
     ...subServiceRequestActionedHandler,
     ...subServiceRequestedHandler,

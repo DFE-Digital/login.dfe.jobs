@@ -11,6 +11,13 @@ const logger = {
   info: jest.fn(),
   error: jest.fn(),
 };
+jest.mock("login.dfe.dao", () => ({
+  directories: {
+    getAllActiveUsersFromList() {
+      return [1];
+    },
+  },
+}));
 
 describe("when registering subServiceRequestActioned handlers", () => {
   let subServiceRequestApproved;
