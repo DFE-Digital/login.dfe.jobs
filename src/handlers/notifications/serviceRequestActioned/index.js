@@ -1,7 +1,7 @@
-const userServiceRequestOutcomeToApprovers = require("./userServiceRequestOutcomeToApprovers");
+const serviceRequestOutcomeToApprovers = require("./serviceRequestOutcomeToApprovers");
 
 const register = (config, logger) => {
-  return [userServiceRequestOutcomeToApprovers.getHandler(config, logger)];
+  return [serviceRequestOutcomeToApprovers.getHandler(config, logger)];
 };
 
 module.exports = {

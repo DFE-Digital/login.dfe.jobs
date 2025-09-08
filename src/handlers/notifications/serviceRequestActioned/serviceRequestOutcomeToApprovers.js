@@ -15,7 +15,10 @@ const process = async (config, logger, data) => {
 
     const activeApprovers =
       await directories.getAllActiveUsersFromList(approversForOrg);
-    const activeApproverIds = activeApprovers.map((entity) => entity.sub);
+    let activeApproverIds = activeApprovers.map((entity) => entity.sub);
+    activeApproverIds = activeApproverIds.filter(
+      (id) => id !== data.approverUserId.toUpperCase(),
+    );
 
     const notify = getNotifyAdapter(config);
     const approvers = await getUsersRaw({
@@ -38,14 +41,14 @@ const process = async (config, logger, data) => {
           data.approved === true ? "" : (data.reason?.trim() ?? "");
         const showReasonHeader = reason.length > 0;
 
-        await notify.sendEmail(template, data.email, {
+        await notify.sendEmail(template, approver.email, {
           personalisation: {
             approverFirstName: approver.firstName,
             approverLastName: approver.lastName,
             endUserName: data.endUserName,
             endUserEmail: data.endUserEmail,
             orgName: data.orgName,
-            serviceName: data.serviceName,
+            requestedServiceName: data.requestedServiceName,
             requestedSubServices: data.requestedSubServices,
             showReasonHeader,
             reason,
@@ -55,6 +58,7 @@ const process = async (config, logger, data) => {
       }),
     );
   } catch (e) {
+    console.log(e.response.data.errors);
     logger.error(e.message);
     throw e;
   }

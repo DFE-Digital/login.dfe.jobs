@@ -15,7 +15,10 @@ const process = async (config, logger, data) => {
 
     const activeApprovers =
       await directories.getAllActiveUsersFromList(approversForOrg);
-    const activeApproverIds = activeApprovers.map((entity) => entity.sub);
+    let activeApproverIds = activeApprovers.map((entity) => entity.sub);
+    activeApproverIds = activeApproverIds.filter(
+      (id) => id !== data.approverUserId.toUpperCase(),
+    );
 
     const notify = getNotifyAdapter(config);
     const approvers = await getUsersRaw({
