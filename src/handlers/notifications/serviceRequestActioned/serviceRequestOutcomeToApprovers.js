@@ -16,6 +16,8 @@ const process = async (config, logger, data) => {
     const activeApprovers =
       await directories.getAllActiveUsersFromList(approversForOrg);
     let activeApproverIds = activeApprovers.map((entity) => entity.sub);
+    // Filter out approver who did the accepting/rejecting, they don't need an
+    // email as they were the one who performed the action
     activeApproverIds = activeApproverIds.filter(
       (id) => id !== data.approverUserId.toUpperCase(),
     );
@@ -58,8 +60,11 @@ const process = async (config, logger, data) => {
       }),
     );
   } catch (e) {
-    console.log(e.response.data.errors);
-    logger.error(e.message);
+    if (e.response) {
+      logger.error(e.response.data.errors);
+    } else {
+      logger.error(e.message);
+    }
     throw e;
   }
 };
