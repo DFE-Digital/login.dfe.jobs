@@ -183,4 +183,18 @@ describe("when handling organisationrequest_v1 job", () => {
       bullQueueTtl,
     );
   });
+
+  it("should log an error message if response is not present", async () => {
+    getOrganisationApprovers.mockImplementation(() => {
+      const error = new Error("Server Error");
+      error.statusCode = 500;
+      throw error;
+    });
+
+    const handler = getHandler(config, logger);
+
+    await expect(handler.processor(data)).rejects.toThrow("Server Error");
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect(logger.error).toHaveBeenCalledWith("Server Error");
+  });
 });

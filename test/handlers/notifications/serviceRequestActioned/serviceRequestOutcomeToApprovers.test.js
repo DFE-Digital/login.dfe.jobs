@@ -1,7 +1,6 @@
 jest.mock("../../../../src/infrastructure/notify");
 jest.mock("login.dfe.api-client/users", () => ({
   getUsersRaw: jest.fn(),
-  getUserOrganisationRequestRaw: jest.fn(),
 }));
 jest.mock("login.dfe.api-client/organisations", () => ({
   getOrganisationApprovers: jest.fn(),
@@ -24,17 +23,14 @@ jest.mock("login.dfe.dao", () => ({
   },
 }));
 
-const {
-  getUsersRaw,
-  getUserOrganisationRequestRaw,
-} = require("login.dfe.api-client/users");
+const { getUsersRaw } = require("login.dfe.api-client/users");
 const {
   getOrganisationApprovers,
 } = require("login.dfe.api-client/organisations");
 const { getNotifyAdapter } = require("../../../../src/infrastructure/notify");
 const {
   getHandler,
-} = require("../../../../src/handlers/notifications/accessRequest/organisationRequestOutcomeToApprovers");
+} = require("../../../../src/handlers/notifications/serviceRequestActioned/serviceRequestOutcomeToAPprovers");
 
 const config = {
   notifications: {
@@ -49,6 +45,8 @@ const jobData = {
   endUserName: "End User",
   organisationId: "org-id-1",
   orgName: "Test Organisation",
+  requestedServiceName: "Test service",
+  requestedSubServices: [],
   approved: true,
   reason: null,
 };
@@ -58,7 +56,7 @@ const logger = {
   error: jest.fn(),
 };
 
-describe("when processing a organisationRequestOutcomeToApprovers job", () => {
+describe("when processing a serviceRequestOutcomeToAPprovers job", () => {
   const mockSendEmail = jest.fn();
 
   beforeEach(() => {
@@ -67,12 +65,6 @@ describe("when processing a organisationRequestOutcomeToApprovers job", () => {
     getNotifyAdapter.mockReset();
     getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
 
-    getUserOrganisationRequestRaw.mockReturnValue({
-      id: "requestId",
-      user_id: "user1",
-      org_id: "org1",
-      reason: "I need access pls",
-    });
     getOrganisationApprovers.mockReturnValue(["approver-1", "approver-2"]);
 
     // Simulate approver-1 being filtered out as it would be in the code.
@@ -90,7 +82,7 @@ describe("when processing a organisationRequestOutcomeToApprovers job", () => {
     const handler = getHandler(config, logger);
 
     expect(handler).not.toBeNull();
-    expect(handler.type).toBe("organisation_request_outcome_to_approvers");
+    expect(handler.type).toBe("service_request_outcome_to_approvers");
     expect(handler.processor).not.toBeNull();
     expect(handler.processor).toBeInstanceOf(Function);
   });
@@ -105,7 +97,7 @@ describe("when processing a organisationRequestOutcomeToApprovers job", () => {
 
     expect(mockSendEmail).toHaveBeenCalledTimes(1);
     expect(mockSendEmail).toHaveBeenCalledWith(
-      "userRequestForOrganisationAccessApprovedToApprovers",
+      "userRequestForServiceApprovedToApprovers",
       expect.anything(),
       expect.anything(),
     );
@@ -119,7 +111,7 @@ describe("when processing a organisationRequestOutcomeToApprovers job", () => {
 
     expect(mockSendEmail).toHaveBeenCalledTimes(1);
     expect(mockSendEmail).toHaveBeenCalledWith(
-      "userRequestForOrganisationAccessRejectedToApprovers",
+      "userRequestForServiceRejectedToApprovers",
       expect.anything(),
       expect.anything(),
     );
@@ -141,6 +133,8 @@ describe("when processing a organisationRequestOutcomeToApprovers job", () => {
           endUserName: jobData.endUserName,
           endUserEmail: jobData.endUserEmail,
           orgName: jobData.orgName,
+          requestedServiceName: "Test service",
+          requestedSubServices: [],
           showReasonHeader: false,
           reason: "",
           helpUrl: `${config.notifications.helpUrl}/contact-us`,

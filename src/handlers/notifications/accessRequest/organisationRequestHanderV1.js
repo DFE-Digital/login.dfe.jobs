@@ -60,7 +60,7 @@ const process = async (config, logger, data) => {
       });
     }
   } catch (e) {
-    console.log(e.message);
+    logger.error(e.message);
     throw e;
   }
 };

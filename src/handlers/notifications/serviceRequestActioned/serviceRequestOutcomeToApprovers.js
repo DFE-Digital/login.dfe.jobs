@@ -34,7 +34,6 @@ const process = async (config, logger, data) => {
 
     await Promise.all(
       approverDetails.map(async (approver) => {
-        console.log(approver);
         const template =
           data.approved === true
             ? "userRequestForServiceApprovedToApprovers"

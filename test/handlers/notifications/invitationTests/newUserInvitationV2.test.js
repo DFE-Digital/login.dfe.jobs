@@ -5,6 +5,9 @@ const {
   getHandler,
 } = require("../../../../src/handlers/notifications/invite/newUserInvitationV2");
 
+const { getLoggerMock } = require("../../../utils");
+const logger = getLoggerMock();
+
 const config = {
   notifications: {
     profileUrl: "https://profile.test/reg",
@@ -44,5 +47,24 @@ describe("when sending v2 user invitation", () => {
 
     expect(getNotifyAdapter).toHaveBeenCalledTimes(1);
     expect(getNotifyAdapter).toHaveBeenCalledWith(config);
+  });
+
+  it("should log an error message if an exception occurs", async () => {
+    mockSendEmail.mockImplementation(() => {
+      const error = new Error("Server Error");
+      error.statusCode = 500;
+      throw error;
+    });
+    getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
+
+    const handler = getHandler(config, logger);
+
+    await expect(handler.processor(commonJobData)).rejects.toThrow(
+      'Failed to process and send the email for type invitation_v2 - {"statusCode":500}',
+    );
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect(logger.error).toHaveBeenCalledWith(
+      'Failed to process and send the email for type invitation_v2- {"statusCode":500}',
+    );
   });
 });
