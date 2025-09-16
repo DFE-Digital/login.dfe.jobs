@@ -30,7 +30,7 @@ const {
 const { getNotifyAdapter } = require("../../../../src/infrastructure/notify");
 const {
   getHandler,
-} = require("../../../../src/handlers/notifications/serviceRequestActioned/serviceRequestOutcomeToAPprovers");
+} = require("../../../../src/handlers/notifications/serviceRequestActioned/serviceRequestOutcomeToApprovers");
 
 const config = {
   notifications: {
@@ -56,7 +56,7 @@ const logger = {
   error: jest.fn(),
 };
 
-describe("when processing a serviceRequestOutcomeToAPprovers job", () => {
+describe("when processing a serviceRequestOutcomeToApprovers job", () => {
   const mockSendEmail = jest.fn();
 
   beforeEach(() => {

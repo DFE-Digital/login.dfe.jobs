@@ -113,4 +113,19 @@ describe("when handling a notify relying party (v1)", () => {
       },
     });
   });
+
+  it("should log an error when an exception happens", async () => {
+    fetchApi.mockImplementation(() => {
+      const error = new Error("Server Error");
+      error.statusCode = 500;
+      throw error;
+    });
+
+    await expect(handler.processor(data)).rejects.toThrow("Server Error");
+
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect(logger.error.mock.calls[0][0]).toBe(
+      "Error notifying rp - Server Error. (userId: user-1, sourceId: firstuser, callback: http://source/callback)",
+    );
+  });
 });
