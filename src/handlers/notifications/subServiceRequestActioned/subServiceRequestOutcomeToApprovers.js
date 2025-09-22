@@ -8,10 +8,8 @@ const {
 const process = async (config, logger, data) => {
   const notify = getNotifyAdapter(config);
   try {
-    const organisationId = data.organisationId;
-
     const approversForOrg = await getOrganisationApprovers({
-      organisationId: organisationId,
+      organisationId: data.orgId,
     });
 
     const activeApprovers =

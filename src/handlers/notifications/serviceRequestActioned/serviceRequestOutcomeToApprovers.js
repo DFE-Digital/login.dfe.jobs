@@ -7,10 +7,8 @@ const {
 
 const process = async (config, logger, data) => {
   try {
-    const organisationId = data.organisationId;
-
     const approversForOrg = await getOrganisationApprovers({
-      organisationId: organisationId,
+      organisationId: data.orgId,
     });
 
     const activeApprovers =

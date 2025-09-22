@@ -47,7 +47,7 @@ const jobData = {
   approverUserId: "approver-2",
   endUserEmail: "end-user-email@test.com",
   endUserName: "End User",
-  organisationId: "org-id-1",
+  orgId: "org-id-1",
   orgName: "Test Organisation",
   approved: true,
   reason: null,
