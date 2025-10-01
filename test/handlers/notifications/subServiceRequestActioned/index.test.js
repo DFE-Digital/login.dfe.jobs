@@ -11,9 +11,17 @@ const logger = {
   info: jest.fn(),
   error: jest.fn(),
 };
+jest.mock("login.dfe.dao", () => ({
+  directories: {
+    getAllActiveUsersFromList() {
+      return [1];
+    },
+  },
+}));
 
 describe("when registering subServiceRequestActioned handlers", () => {
   let subServiceRequestApproved;
+  let subServiceRequestOutcomeToApprovers;
   let subServiceRequestRejected;
   let register;
 
@@ -21,6 +29,12 @@ describe("when registering subServiceRequestActioned handlers", () => {
     subServiceRequestApproved = require("../../../../src/handlers/notifications/subServiceRequestActioned/subServiceRequestApproved");
     subServiceRequestApproved.getHandler = jest.fn().mockReturnValue({
       type: "sub_service_request_approved",
+      processor,
+    });
+
+    subServiceRequestOutcomeToApprovers = require("../../../../src/handlers/notifications/subServiceRequestActioned/subServiceRequestOutcomeToApprovers");
+    subServiceRequestOutcomeToApprovers.getHandler = jest.fn().mockReturnValue({
+      type: "sub_service_request_outcome_to_approvers",
       processor,
     });
 

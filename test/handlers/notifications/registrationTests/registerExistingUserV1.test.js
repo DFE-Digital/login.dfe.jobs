@@ -94,4 +94,34 @@ describe("when sending v1 existing user registration", () => {
       }),
     );
   });
+
+  it("should default service name to 'DfE Sign-in' if one is not provided", async () => {
+    const testJobData = {
+      firstName: "First",
+      lastName: "Last",
+      email: "first.last@example.com",
+      returnUrl:
+        "https://profile.test/register/complete?outcome=account_exists",
+    };
+    const handler = getHandler(config);
+
+    await handler.processor(testJobData);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: jobData.firstName,
+          lastName: jobData.lastName,
+          email: jobData.email,
+          serviceName: "DfE Sign-in",
+          returnUrl:
+            "https://profile.test/register/complete?outcome=account_exists",
+          helpUrl: "https://help.url/contact-us",
+        }),
+      }),
+    );
+  });
 });

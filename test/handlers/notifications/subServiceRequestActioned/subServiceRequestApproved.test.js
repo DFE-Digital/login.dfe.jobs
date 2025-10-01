@@ -99,4 +99,37 @@ describe("When processing a sub_service_request_approved job", () => {
       }),
     );
   });
+
+  it("should have permission default to 'n/a' if one is not provided", async () => {
+    const testData = {
+      email: "mock-email",
+      firstName: "mock-firstName",
+      lastName: "mock-lastName",
+      orgName: "mock-organisation-name",
+      serviceName: "mock-service-name",
+      requestedSubServices: ["mock-sub-service1"],
+      signInUrl: `${config.notifications.servicesUrl}/my-services`,
+      helpUrl: `${config.notifications.helpUrl}/contact-us`,
+    };
+    const handler = getHandler(config);
+    await handler.processor(testData);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        personalisation: expect.objectContaining({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          orgName: data.orgName,
+          permissionName: "n/a",
+          serviceName: data.serviceName,
+          requestedSubServices: data.requestedSubServices,
+          signInUrl: `${config.notifications.servicesUrl}/my-services`,
+          helpUrl: `${config.notifications.helpUrl}/contact-us`,
+        }),
+      }),
+    );
+  });
 });

@@ -190,4 +190,38 @@ describe("When handling supportrequest_v1 job", () => {
       );
     },
   );
+
+  it.each([
+    ["", ""],
+    [null, ""],
+    [undefined, ""],
+    ["mock-a-orgName", "mock-a-orgName"],
+  ])(
+    "should send an email with expected personalisation data, with the service set as %s, the expected service should be %s",
+    async (service, expectedService) => {
+      const handler = getHandler(config);
+      const data = { ...jobData, ...{ service } };
+      await handler.processor(data);
+
+      expect(mockSendEmail).toHaveBeenCalledTimes(1);
+      expect(mockSendEmail).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({
+          personalisation: expect.objectContaining({
+            name: data.name,
+            email: data.email,
+            orgName: data.orgName,
+            urn: data.urn,
+            service: expectedService,
+            type: data.type,
+            message: data.message,
+            showAdditionalInfoHeader: true,
+            typeAdditionalInfo: data.typeAdditionalInfo,
+            helpUrl: `${config.notifications.helpUrl}/contact-us`,
+          }),
+        }),
+      );
+    },
+  );
 });

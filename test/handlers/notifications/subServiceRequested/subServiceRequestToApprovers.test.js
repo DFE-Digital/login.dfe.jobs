@@ -7,10 +7,12 @@ jest.mock("login.dfe.api-client/organisations", () => ({
   getOrganisationApprovers: jest.fn(),
 }));
 
+let mockServiceRequestOutcomeToApprovers = [1];
+
 jest.mock("login.dfe.dao", () => ({
   directories: {
     getAllActiveUsersFromList() {
-      return [1];
+      return mockServiceRequestOutcomeToApprovers;
     },
   },
 }));
@@ -48,6 +50,7 @@ describe("when processing a sub_service_request_to_approvers job", () => {
   const mockSendEmail = jest.fn();
 
   beforeEach(() => {
+    mockServiceRequestOutcomeToApprovers = [1];
     mockSendEmail.mockReset();
 
     getNotifyAdapter.mockReset();
@@ -93,6 +96,16 @@ describe("when processing a sub_service_request_to_approvers job", () => {
 
     expect(getNotifyAdapter).toHaveBeenCalledTimes(1);
     expect(getNotifyAdapter).toHaveBeenCalledWith(config);
+  });
+
+  it("should not send any emails if there are no approvers", async () => {
+    mockServiceRequestOutcomeToApprovers = [];
+
+    const handler = getHandler(config);
+
+    await handler.processor(data);
+
+    expect(mockSendEmail).toHaveBeenCalledTimes(0);
   });
 
   it("should send email with expected template for each approver", async () => {
