@@ -2,7 +2,7 @@
 
 # login.dfe.jobs
 
-Generic job processing service
+Generic job processing service.
 
 ## Testing
 
