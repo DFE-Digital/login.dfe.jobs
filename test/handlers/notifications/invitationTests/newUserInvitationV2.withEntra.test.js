@@ -7,7 +7,7 @@ const {
 
 const config = {
   notifications: {
-    profileUrl: "https://profile.test/reg",
+    interactionsUrl: "https://interactions.test/reg",
     helpUrl: "https://help.test",
   },
   entra: {
@@ -75,7 +75,7 @@ describe("when sending v2 user invitation with Entra feature flag turned on", ()
             email: "user.one@unit.tests",
             isApprover: true,
             returnUrl:
-              "https://profile.test/reg/register/59205751-c229-4924-8acb-61a7d5edfa33?id=email",
+              "https://interactions.test/reg/register/59205751-c229-4924-8acb-61a7d5edfa33?id=email",
             helpUrl: "https://help.test",
           }),
         }),

@@ -7,7 +7,7 @@ const {
 
 const config = {
   notifications: {
-    profileUrl: "https://profile.test/reg",
+    interactionsUrl: "https://interactions.test/reg",
     helpUrl: "https://help.test",
   },
   entra: {
@@ -77,7 +77,7 @@ describe("when sending v2 user invitation when Entra feature flag is turned off"
             isApprover: true,
             code: "ABC123",
             returnUrl:
-              "https://profile.test/reg/register/59205751-c229-4924-8acb-61a7d5edfa33?id=email",
+              "https://interactions.test/reg/register/59205751-c229-4924-8acb-61a7d5edfa33?id=email",
             helpUrl: "https://help.test",
           }),
         }),
@@ -285,7 +285,7 @@ describe("when sending v2 user invitation when Entra feature flag is turned off"
             serviceName: "Example Service Name",
             code: "ABC123",
             returnUrl:
-              "https://profile.test/reg/register/59205751-c229-4924-8acb-61a7d5edfa33?id=email",
+              "https://interactions.test/reg/register/59205751-c229-4924-8acb-61a7d5edfa33?id=email",
             helpUrl: "https://help.test",
           }),
         }),

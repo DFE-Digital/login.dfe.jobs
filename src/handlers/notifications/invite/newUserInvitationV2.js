@@ -10,7 +10,7 @@ const process = async (config, logger, data) => {
       email: data.email,
       customMessage: data.overrides?.body ?? "",
       isApprover: !!data.isApprover,
-      returnUrl: `${config.notifications.profileUrl}/register/${data.invitationId}?id=email`,
+      returnUrl: `${config.notifications.interactionsUrl}/register/${data.invitationId}?id=email`,
       helpUrl: config.notifications.helpUrl,
     };
 
