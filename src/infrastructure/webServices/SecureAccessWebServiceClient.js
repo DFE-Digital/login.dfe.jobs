@@ -4,11 +4,9 @@ const { stripPrefix } = require("xml2js/lib/processors");
 const ProvisionUserDefaultFormatter = require("./ProvisionUserDefaultFormatter");
 const ProvisionUserCollectFormatter = require("./ProvisionUserCollectFormatter");
 const ProvisionUserS2SFormatter = require("./ProvisionUserS2SFormatter");
-const ProvisionUserDQTFormatter = require("./ProvisionUserDQTFormatter");
 const ProvisionOrganisationDefaultFormatter = require("./ProvisionOrganisationDefaultFormatter");
 const ProvisionOrganisationCollectFormatter = require("./ProvisionOrganisationCollectFormatter");
 const ProvisionOrganisationS2SFormatter = require("./ProvisionOrganisationS2SFormatter");
-const ProvisionOrganisationDQTFormatter = require("./ProvisionOrganisationDQTFormatter");
 const ProvisionGroupDefaultFormatter = require("./ProvisionGroupDefaultFormatter");
 const ProvisionGroupCollectFormatter = require("./ProvisionGroupCollectFormatter");
 const ProvisionGroupS2SFormatter = require("./ProvisionGroupS2SFormatter");
@@ -128,8 +126,6 @@ class SecureAccessWebServiceClient {
       this._provisionUserFormatter = new ProvisionUserDefaultFormatter();
     } else if (type.toLowerCase() === "collect") {
       this._provisionUserFormatter = new ProvisionUserCollectFormatter();
-    } else if (type.toLowerCase() === "dqt") {
-      this._provisionUserFormatter = new ProvisionUserDQTFormatter();
     } else if (type.toLowerCase() === "s2s") {
       this._provisionUserFormatter = new ProvisionUserS2SFormatter();
     }
@@ -142,9 +138,6 @@ class SecureAccessWebServiceClient {
     } else if (type.toLowerCase() === "collect") {
       this._provisionOrganisationFormatter =
         new ProvisionOrganisationCollectFormatter();
-    } else if (type.toLowerCase() === "dqt") {
-      this._provisionOrganisationFormatter =
-        new ProvisionOrganisationDQTFormatter();
     } else if (type.toLowerCase() === "s2s") {
       this._provisionOrganisationFormatter =
         new ProvisionOrganisationS2SFormatter();
