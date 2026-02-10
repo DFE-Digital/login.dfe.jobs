@@ -23,7 +23,7 @@ A job represents a discrete unit of work that can be processed asynchronously, s
 | ------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **External legacy service integrations**    | .\src\handlers\serviceNotifications | Handlers for organisation, users and role synchronisation with GIAS, COLLECT and School 2 School (S2S)                                                                                                                                                                                                  |
 | **Email notifications**                     | .\src\handlers\notifications        | Email based notifications for invitations, service/sub-service access requests, user service removals, organisation approver status change, pre-Entra user account self-service and support escalation (e.g. overdue requests) using [GovNotify](https://www.notifications.service.gov.uk/ "GovNotify") |
-| **New user invitations via DSi Public API** | .\src\handlers\publicAPI\invite     | NOTE: No longer used.                                                                                                                                                                                                                                                                                   |
+| **New user invitations via DSi Public API** | .\src\handlers\publicAPI\invite     | Handlers to invite users via the public API                                                                                                                                                                                                                                                             |
 
 **NOTE:** A full detailed list of supported jobs can be found in the .\src\handlers folder.
 
@@ -57,10 +57,6 @@ Jobs flow through the system in the following sequence:
 6. **Handler Execution**: The specific handler processes the job data, which may involve sending emails via GOV.UK Notify, calling external APIs, updating databases, or enqueueing follow-up jobs
 7. **Completion**: Successful jobs are marked complete and removed from Redis after a TTL period (1 hour or 50 jobs). Failed jobs are retried with exponential backoff. Jobs exceeding max retries are moved to a failed queue for inspection (retained for 12 hours)
 
-### Rate Limiting
-
-Handlers can optionally specify rate limits to prevent overwhelming external services with API requests. This is configured per job type with two parameters: `max` (maximum invocations) and `duration` (time window in milliseconds). For example, a handler might be limited to 100 invocations per 5 minutes (300,000ms).
-
 ### External Integrations
 
 **GOV.UK Notify**: Used for sending emails and SMS messages using predefined templates. Handles user notifications for registrations, password resets, access requests, and service changes.
@@ -79,7 +75,7 @@ The service exposes a health check endpoint at `/healthcheck` for monitoring ser
 
 ### Configuration
 
-The service is configured via environment variables including Redis connection strings, GOV.UK Notify API credentials, external service URLs, Slack webhook URLs for operational notifications, and various template IDs for email/SMS notifications. Different configurations can be used for local development versus Azure-hosted environments.
+The service is configured via environment variables including Redis connection strings, GOV.UK Notify API credentials, etc.
 
 ### Job Lifecycle States
 
@@ -119,7 +115,6 @@ BullMQ provides built-in retry functionality for failed jobs:
 
 - **Dead Letter Queue**: Jobs that exceed max retry attempts are moved to a failed jobs queue for inspection
 - **Logging**: All failures are logged with full context (job data, error messages, stack traces) for debugging
-- **Alerting**: (Configure monitoring tools to alert on high failure rates)
 
 ## Progress Reporting
 
@@ -141,6 +136,57 @@ Jobs transition through the following states:
 
 ## Development
 
+In this example, my-request-type jobs will execute at most 100 times per 5-minute window. Additional jobs will wait in the queue until the time window resets.
+
+### Adding a New Job Type
+
+In this example we're going to add a new `notifications` type of job, but the same steps are taken when doing
+`public-api` or `serviceNotifications` jobs
+
+1. **Create a handler** in this repository:
+
+```javascript
+// src/handlers/notifications/myNewJob.js
+const getHandler = (config, logger) => ({
+  type: "my-new-job",
+  processor: async (data) => {
+    logger.info(`Processing job with data: ${JSON.stringify(data)}`);
+    // Your business logic here
+  },
+});
+module.exports = getHandler;
+```
+
+2. **Register the handler** in the main application setup
+
+```javascript
+// src/handlers/notifications/index.js
+const myNewJob = require("./myNewJob");
+
+const register = (config, logger) => {
+  const myNewHandler = myNewJob.register(config, logger);
+
+  return [...myNewHander];
+};
+```
+
+3. **Add function to [login.dfe.jobs-client](https://github.com/DFE-Digital/login.dfe.jobs-client)** to allow applications to invoke this job type
+
+```javascript
+// lib/NotificationClient.js
+async sendMyNewJob(
+  userEmail,
+) {
+  await send(
+    "my-new-job",
+    {
+      userEmail,
+    },
+    this.connectionString,
+  );
+}
+```
+
 ### Rate Limiting with the Limiter Feature
 
 Some external services have rate limits or flood detection. To prevent overwhelming these services, you can limit how frequently a job type executes.
@@ -160,30 +206,6 @@ const getHandler = (config, logger) => ({
 });
 ```
 
-In this example, my-request-type jobs will execute at most 100 times per 5-minute window. Additional jobs will wait in the queue until the time window resets.
-
-### Adding a New Job Type
-
-1. **Create a handler** in this repository:
-   ```javascript
-   // src/handlers/myNewJob.js
-   const getHandler = (config, logger) => ({
-     type: "my-new-job",
-     processor: async (data) => {
-       logger.info(`Processing job with data: ${JSON.stringify(data)}`);
-       // Your business logic here
-     },
-   });
-   module.exports = getHandler;
-   ```
-2. **Register the handler** in the main application setup
-3. **Add enqueueing support** in [login.dfe.jobs-client](https://github.com/DFE-Digital/login.dfe.jobs-client "login.dfe.jobs-client"):
-   ```javascript
-   await jobsClient.enqueue("my-new-job", {
-     /* your job data */
-   });
-   ```
-
 ## Testing
 
 ### Unit Tests
@@ -194,25 +216,20 @@ Run the unit test suite:
 npm run test
 ```
 
-### Testing Locally
+### Testing changes locally
 
-The recommended approach is to use the [jobs-client](https://github.com/DFE-Digital/login.dfe.jobs-client "jobs-client") to enqueue test jobs:
+The current easiest way to test this is using the jobs-client. It's not a perfect solution, as you need to clone another repo to test functionality in this repo.
 
-1. Clone and install [login.dfe.jobs-client](https://github.com/DFE-Digital/login.dfe.jobs-client "login.dfe.jobs-client"):
-   ```bash
-   git clone https://github.com/DFE-Digital/login.dfe.jobs-client
-   cd login.dfe.jobs-client
-   npm install
-   ```
-2. Start a local Redis instance:
-   ```bash
-   docker run -p 6379:6379 redis-stack-server:latest
+- Ensure you have https://github.com/DFE-Digital/login.dfe.jobs-client cloned. Also ensure you've installed its packages with `npm i`
+- Either start up a local redis container or point the jobs service at the DEV instance of Redis
+- Start the `jobs` service
+- Go to the `tools` folder in `login.dfe.jobs-client`
+- Run one of the scripts in the folder, e.g., `node sendInvitation.js`
 
-```
-3. Configure this service in your local developer .env to connect to your local Redis.
-4. Start this service in VS Code
-5. Use the jobs-client to enqueue test jobs and observe processing in this service's logs
-## Configuration
-### Local Development Configuration
-You will need to ensure that you have generated you local .env configuration file using the steps outlined in [login.dfe.dsi-config](https://github.com/DFE-Digital/login.dfe.dsi-config "login.dfe.dsi-config").
+This also means that if you create a new job, it would be prudent to create a new script in this folder for easier testing in future.
+
+If you want to use a local version of redis, this can be easily started with the following command:
+
+```bash
+docker run -p 6379:6379 redis-stack-server:latest
 ```
