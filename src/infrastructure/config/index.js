@@ -3,6 +3,16 @@ const os = require('os');
 const path = require('path');
 
 require('dotenv').config();
+const parseJson = (value, fallback) => {
+  try {
+    if (value === undefined || value === null || value === '') {
+      return fallback;
+    }
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
 
 const config = {
   loggerSettings: {
@@ -74,7 +84,7 @@ const config = {
     envName: process.env.ENVIRONMENT_NAME,
     govNotify: {
         apiKey: process.env.GOVNOTIFY_API_KEY,
-        templates: JSON.parse(process.env.GOVNOTIFY_TEMP_MAP)
+        templates: parseJson(process.env.GOVNOTIFY_TEMP_MAP, {})
     },
     organisations: {
       type: "api",
