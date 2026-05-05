@@ -112,6 +112,44 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
 };
 
 const process = async (config, logger, data, jobId) => {
+  if (data.removedServiceId) {
+    try {
+      const allApps = await getAllApplicationRequiringNotification();
+      const removedApp = allApps.find((a) => a.id === data.removedServiceId);
+      if (removedApp) {
+        const user =
+          data.email && data.status !== undefined
+            ? data
+            : await getUserRaw({ by: { id: data.sub } });
+        const job = {
+          user: {
+            sub: user.sub || data.sub,
+            email: user.email,
+            given_name: user.given_name,
+            family_name: user.family_name,
+            status: 0,
+          },
+          application: removedApp,
+          organisationId: data.removedOrgId,
+        };
+        await bullEnqueue(`sendwsuserupdated_v1_${removedApp.id}`, job);
+        logger.info(
+          `Enqueued deactivation sync for removed service ${removedApp.id} for user ${data.sub}`,
+        );
+      } else {
+        logger.warn(
+          `Removed service ${data.removedServiceId} not found in applications requiring notification`,
+        );
+      }
+    } catch (e) {
+      logger.error(`Failed to enqueue deactivation sync for removed service`, {
+        error: { message: e.message, stack: e.stack },
+        sub: data.sub,
+        removedServiceId: data.removedServiceId,
+      });
+    }
+  }
+
   const correlationId = `userupdated-${jobId || uuid()}`;
 
   const jobs = await getRequiredJobs(config, logger, data, correlationId);

@@ -414,4 +414,92 @@ describe("when handling userupdated_v1 job", () => {
       bullQueueTtl,
     );
   });
+
+  it("then it should enqueue deactivation sync when removedServiceId is present", async () => {
+    getAllApplicationRequiringNotification
+      .mockReset()
+      .mockReturnValue([{ id: "app-1" }]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-1",
+        removedOrgId: "org-1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    expect(mockAdd).toHaveBeenCalledWith(
+      "sendwsuserupdated_v1_app-1",
+      expect.objectContaining({
+        user: expect.objectContaining({ status: 0 }),
+        organisationId: "org-1",
+      }),
+      bullQueueTtl,
+    );
+  });
+
+  it("then it should not enqueue deactivation sync and should run normal sync when removedServiceId is absent", async () => {
+    getAllApplicationRequiringNotification
+      .mockReset()
+      .mockReturnValue([{ id: "service1" }]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor({ sub: "123" }, jobId);
+
+    expect(getUserServicesRaw).toHaveBeenCalledTimes(1);
+    const deactivationCalls = mockAdd.mock.calls.filter(
+      ([type, payload]) =>
+        type.startsWith("sendwsuserupdated_v1_") && payload?.user?.status === 0,
+    );
+    expect(deactivationCalls).toHaveLength(0);
+  });
+
+  it("then it should log a warning when removedServiceId does not match any application", async () => {
+    getAllApplicationRequiringNotification
+      .mockReset()
+      .mockReturnValue([{ id: "app-1" }]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      { sub: "123", removedServiceId: "nonexistent" },
+      jobId,
+    );
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Removed service nonexistent not found in applications requiring notification",
+    );
+    expect(mockAdd).not.toHaveBeenCalled();
+  });
+
+  it("then it should log an error and continue if deactivation sync throws", async () => {
+    getAllApplicationRequiringNotification
+      .mockReset()
+      .mockReturnValue([{ id: "app-1" }]);
+    mockAdd.mockRejectedValueOnce(new Error("enqueue-fail"));
+
+    const handler = getHandler(config, logger);
+    await expect(
+      handler.processor(
+        {
+          sub: "123",
+          removedServiceId: "app-1",
+          email: "user@unit.tests",
+          status: 1,
+        },
+        jobId,
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "Failed to enqueue deactivation sync for removed service",
+      expect.objectContaining({
+        sub: "123",
+        removedServiceId: "app-1",
+      }),
+    );
+  });
 });
