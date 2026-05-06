@@ -551,4 +551,29 @@ describe("when handling userupdated_v1 job", () => {
       }),
     );
   });
+
+  it("then it should log a warning and not enqueue when removedOrgId is missing", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-1",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      "removedOrgId missing for user 123 when enqueuing deactivation sync for service app-1",
+    );
+    expect(mockAdd).not.toHaveBeenCalled();
+  });
 });
