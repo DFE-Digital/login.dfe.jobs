@@ -414,4 +414,135 @@ describe("when handling userupdated_v1 job", () => {
       bullQueueTtl,
     );
   });
+
+  describe("when data contains removedServiceId (deactivation)", () => {
+    beforeEach(() => {
+      getUserRaw.mockResolvedValue({
+        sub: "user1",
+        email: "user.one-fromdir@unit.tests",
+        given_name: "John",
+        family_name: "Doe",
+        status: 1,
+      });
+    });
+
+    // Scenario 1 — Service removal triggers deactivation sync to COLLECT
+    it("should enqueue SOAP deactivation job with status 0 for COLLECT when removedServiceId matches", async () => {
+      const collectServiceId = "collect-service-id";
+      getAllApplicationRequiringNotification.mockReturnValueOnce([
+        {
+          id: collectServiceId,
+          relyingParty: { params: { receiveUserUpdates: "true" } },
+        },
+      ]);
+      const payload = {
+        sub: "user-123",
+        removedServiceId: collectServiceId,
+        removedOrgId: "org-456",
+      };
+
+      const handler = getHandler(config, logger);
+      await handler.processor(payload, jobId);
+
+      expect(mockAdd).toHaveBeenCalledTimes(1);
+      expect(mockAdd).toHaveBeenCalledWith(
+        `sendwsuserupdated_v1_${collectServiceId}`,
+        {
+          applicationId: collectServiceId,
+          user: expect.objectContaining({
+            userId: "user1",
+            status: 0,
+            organisationId: "org-456",
+          }),
+        },
+        bullQueueTtl,
+      );
+      expect(getUserServicesRaw).not.toHaveBeenCalled();
+    });
+
+    // Scenario 2 — Service removal triggers deactivation sync to S2S
+    it("should enqueue SOAP deactivation job with status 0 for S2S when removedServiceId matches", async () => {
+      const s2sServiceId = "s2s-service-id";
+      getAllApplicationRequiringNotification.mockReturnValueOnce([
+        {
+          id: s2sServiceId,
+          relyingParty: { params: { receiveUserUpdates: "true" } },
+        },
+      ]);
+      const payload = {
+        sub: "user-123",
+        removedServiceId: s2sServiceId,
+        removedOrgId: "org-456",
+      };
+
+      const handler = getHandler(config, logger);
+      await handler.processor(payload, jobId);
+
+      expect(mockAdd).toHaveBeenCalledTimes(1);
+      expect(mockAdd).toHaveBeenCalledWith(
+        `sendwsuserupdated_v1_${s2sServiceId}`,
+        {
+          applicationId: s2sServiceId,
+          user: expect.objectContaining({
+            userId: "user1",
+            status: 0,
+            organisationId: "org-456",
+          }),
+        },
+        bullQueueTtl,
+      );
+      expect(getUserServicesRaw).not.toHaveBeenCalled();
+    });
+
+    // Scenario 5 — Non-legacy service removal does not trigger SOAP sync
+    it("should not enqueue any job and not call getUserServicesRaw when removedServiceId is non-legacy", async () => {
+      getAllApplicationRequiringNotification.mockReturnValueOnce([
+        {
+          id: "some-other-legacy-service",
+          relyingParty: { params: { receiveUserUpdates: "true" } },
+        },
+      ]);
+      const payload = {
+        sub: "user-123",
+        removedServiceId: "non-legacy-service-id",
+        removedOrgId: "org-456",
+      };
+
+      const handler = getHandler(config, logger);
+      await handler.processor(payload, jobId);
+
+      expect(mockAdd).not.toHaveBeenCalled();
+      expect(getUserServicesRaw).not.toHaveBeenCalled();
+    });
+
+    // Scenario 4 — Unknown removedServiceId (app not found) does nothing and does not throw
+    it("should not enqueue any job when removedServiceId does not match any known application", async () => {
+      const payload = {
+        sub: "user-123",
+        removedServiceId: "unknown-service-id",
+        removedOrgId: "org-456",
+      };
+
+      const handler = getHandler(config, logger);
+      await expect(handler.processor(payload, jobId)).resolves.not.toThrow();
+
+      expect(mockAdd).not.toHaveBeenCalled();
+      expect(getUserServicesRaw).not.toHaveBeenCalled();
+    });
+
+    // Scenario 4/Backward compat — No removedServiceId falls through to existing getUserServicesRaw logic
+    it("should call getUserServicesRaw and not trigger the deactivation branch when removedServiceId is absent", async () => {
+      const normalPayload = {
+        sub: "user1",
+        email: "user.one@unit.tests",
+        status: 1,
+      };
+
+      const handler = getHandler(config, logger);
+      await handler.processor(normalPayload, jobId);
+
+      expect(getUserServicesRaw).toHaveBeenCalledTimes(1);
+      expect(getUserRaw).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -114,6 +114,43 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
 const process = async (config, logger, data, jobId) => {
   const correlationId = `userupdated-${jobId || uuid()}`;
 
+  if (data.removedServiceId) {
+    const applications = await getAllApplicationRequiringNotification(
+      config,
+      applictionRequiringNotificationCondition,
+      correlationId,
+      true,
+    );
+    const application = applications.find(
+      (a) => a.id.toLowerCase() === data.removedServiceId.toLowerCase(),
+    );
+    if (application) {
+      const user = await getUserRaw({ by: { id: data.sub } });
+      await bullEnqueue(`sendwsuserupdated_v1_${application.id}`, {
+        user: {
+          userId: user.sub,
+          firstName: user.given_name,
+          lastName: user.family_name,
+          email: user.email,
+          status: 0,
+          organisationId: data.removedOrgId,
+          roles: [],
+        },
+        applicationId: application.id,
+      });
+      logger.info(
+        `Deactivation sync enqueued for service ${data.removedServiceId} and user ${data.sub}`,
+        { correlationId },
+      );
+    } else {
+      logger.warn(
+        `Deactivation sync skipped: removedServiceId ${data.removedServiceId} did not match any legacy application`,
+        { correlationId, sub: data.sub },
+      );
+    }
+    return;
+  }
+
   const jobs = await getRequiredJobs(config, logger, data, correlationId);
 
   for (let i = 0; i < jobs.length; i += 1) {
