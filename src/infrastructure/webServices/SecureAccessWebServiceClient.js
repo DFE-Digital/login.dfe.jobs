@@ -16,6 +16,60 @@ class SoapHttpClient {
     this.correlationId = correlationId;
   }
 
+  parseXml(xml) {
+    return new Promise((resolve, reject) => {
+      parseXmlString(
+        xml,
+        {
+          tagNameProcessors: [stripPrefix],
+        },
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
+        },
+      );
+    });
+  }
+
+  getSoapFaultMessage(fault) {
+    if (!fault) {
+      return "SOAP fault returned";
+    }
+
+    const faultCode = fault.faultcode?.[0] || fault.Code?.[0]?.Value?.[0];
+    const faultReason =
+      fault.faultstring?.[0] || fault.Reason?.[0]?.Text?.[0] || "Unknown";
+    return `${faultCode || "SOAP Fault"}: ${faultReason}`;
+  }
+
+  async validateSoapResponseBody(body) {
+    const responseBody = `${body || ""}`.trim();
+    if (!responseBody) {
+      throw new Error("SOAP endpoint returned an empty response body");
+    }
+
+    let parsedBody;
+    try {
+      parsedBody = await this.parseXml(responseBody);
+    } catch (e) {
+      throw new Error(`Unable to parse SOAP response body - ${e.message}`);
+    }
+
+    const envelope = parsedBody?.Envelope;
+    const bodyNode = envelope?.Body?.[0];
+    if (!bodyNode) {
+      throw new Error("SOAP response is missing Envelope/Body elements");
+    }
+
+    const fault = bodyNode.Fault?.[0];
+    if (fault) {
+      throw new Error(this.getSoapFaultMessage(fault));
+    }
+  }
+
   request(rurl, data, callback, exheaders) {
     let headers;
 
@@ -78,11 +132,16 @@ class SoapHttpClient {
       this.request(
         endpoint,
         soapMessage.toXmlString(),
-        (err, response, body) => {
+        async (err, response, body) => {
           if (err) {
             reject(err);
           } else {
-            resolve(body);
+            try {
+              await this.validateSoapResponseBody(body);
+              resolve(body);
+            } catch (e) {
+              reject(e);
+            }
           }
         },
         { SOAPAction: soapAction, "content-type": soapMessage.contentType },

@@ -6,11 +6,9 @@ const {
 } = require("login.dfe.api-client/users");
 const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
 const { v4: uuid } = require("uuid");
+const { canReceiveUserUpdate } = require("./userUpdateEligibility");
 
-const applictionRequiringNotificationCondition = (a) =>
-  a.relyingParty &&
-  a.relyingParty.params &&
-  a.relyingParty.params.receiveUserUpdates === "true";
+const applictionRequiringNotificationCondition = (a) => canReceiveUserUpdate(a);
 
 const getRequiredJobs = async (config, logger, userData, correlationId) => {
   let user = userData;
@@ -19,12 +17,13 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
   }
 
   const jobs = [];
-  const applications = await getAllApplicationRequiringNotification(
+  const candidateApplications = await getAllApplicationRequiringNotification(
     config,
     applictionRequiringNotificationCondition,
     correlationId,
     true,
   );
+  const applications = candidateApplications;
   const userOrganisations = await getUserOrganisationsRaw({ userId: user.sub });
   const userAccess = await getUserServicesRaw({ userId: user.sub });
 
@@ -115,6 +114,13 @@ const process = async (config, logger, data, jobId) => {
   const correlationId = `userupdated-${jobId || uuid()}`;
 
   const jobs = await getRequiredJobs(config, logger, data, correlationId);
+  if (jobs.length === 0) {
+    logger.info(
+      `No eligible user update targets found for user ${data.sub || "unknown"}`,
+      { correlationId },
+    );
+    return;
+  }
 
   for (let i = 0; i < jobs.length; i += 1) {
     await bullEnqueue(`sendwsuserupdated_v1_${jobs[i].applicationId}`, jobs[i]);
