@@ -24,8 +24,28 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
     true,
   );
   const applications = candidateApplications;
-  const userOrganisations = await getUserOrganisationsRaw({ userId: user.sub });
-  const userAccess = await getUserServicesRaw({ userId: user.sub });
+
+  // Prefer access info captured by the upstream notification (e.g. Directories
+  // snapshots services/organisations BEFORE deactivating the user, so a live
+  // lookup here would return empty). Fall back to live lookups when the
+  // payload does not carry them, to preserve backwards compatibility.
+  const hasEmbeddedAccess =
+    Array.isArray(userData?.userServices) ||
+    Array.isArray(userData?.userOrganisations);
+
+  if (hasEmbeddedAccess) {
+    logger.info(
+      `Using user access snapshot embedded in userupdated_v1 payload for user ${user.sub}`,
+      { correlationId },
+    );
+  }
+
+  const userOrganisations = Array.isArray(userData?.userOrganisations)
+    ? userData.userOrganisations
+    : await getUserOrganisationsRaw({ userId: user.sub });
+  const userAccess = Array.isArray(userData?.userServices)
+    ? userData.userServices
+    : await getUserServicesRaw({ userId: user.sub });
 
   applications.forEach((application) => {
     const userAccessToApplication = userAccess
