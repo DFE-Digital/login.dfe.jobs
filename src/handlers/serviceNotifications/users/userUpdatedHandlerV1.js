@@ -38,7 +38,25 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
       `Using user access snapshot embedded in userupdated_v1 payload for user ${user.sub}`,
       { correlationId },
     );
+    logger.info(
+      `Snapshot for user ${user.sub}: ${JSON.stringify({
+        userServices: userData.userServices,
+        userOrganisations: userData.userOrganisations,
+      })}`,
+      { correlationId },
+    );
   }
+
+  logger.info(
+    `Applications considered for notification: ${JSON.stringify(
+      applications.map((a) => ({
+        id: a.id,
+        name: a.name,
+        receiveUserUpdates: a.receiveUserUpdates,
+      })),
+    )} for user ${user.sub}`,
+    { correlationId },
+  );
 
   const userOrganisations = Array.isArray(userData?.userOrganisations)
     ? userData.userOrganisations
