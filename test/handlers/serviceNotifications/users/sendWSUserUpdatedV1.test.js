@@ -71,7 +71,7 @@ describe("when handling sendwsuserupdated_v1 job", () => {
       organisation_urn: data.user.organisationUrn,
       organisation_la_code: data.user.organisationLACode,
     });
-    repository.userState.destroy = jest.fn().mockResolvedValue();
+    repository.userState.destroy.mockResolvedValue();
     repository.userRoleState.findAll.mockReturnValue([
       {
         role_id: data.user.roles[0].id,
@@ -324,6 +324,9 @@ describe("when handling sendwsuserupdated_v1 job", () => {
 
     expect(secureAccessWebServiceClient.provisionUser.mock.calls[0][0]).toBe(
       "UPDATE",
+    );
+    expect(repository.userState.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ last_action_sent: "UPDATE" }),
     );
   });
 });
