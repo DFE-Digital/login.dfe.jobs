@@ -414,4 +414,288 @@ describe("when handling userupdated_v1 job", () => {
       bullQueueTtl,
     );
   });
+
+  it("then it should enqueue deactivation sync when removedServiceId is present", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-1",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-1",
+        removedOrgId: "organisation1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    expect(mockAdd).toHaveBeenCalledWith(
+      "sendwsuserupdated_v1_app-1",
+      expect.objectContaining({
+        applicationId: "app-1",
+        user: expect.objectContaining({
+          userId: "123",
+          legacyUserId: "sauser1",
+          status: 0,
+          organisationId: 123,
+          organisationUrn: "985632",
+          organisationLACode: "999",
+          roles: [],
+        }),
+      }),
+      bullQueueTtl,
+    );
+  });
+
+  it("then it should not enqueue deactivation sync and should run normal sync when removedServiceId is absent", async () => {
+    getAllApplicationRequiringNotification
+      .mockReset()
+      .mockReturnValue([{ id: "service1" }]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor({ sub: "123" }, jobId);
+
+    expect(getUserServicesRaw).toHaveBeenCalledTimes(1);
+    const deactivationCalls = mockAdd.mock.calls.filter(
+      ([type, payload]) =>
+        type.startsWith("sendwsuserupdated_v1_") && payload?.user?.status === 0,
+    );
+    expect(deactivationCalls).toHaveLength(0);
+  });
+
+  it("then it should prefer direct app match over parent-via-children when app appears in both", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-parent",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+        children: [{ id: "app-s2s" }],
+      },
+      {
+        id: "app-s2s",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-s2s",
+        removedOrgId: "organisation1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    expect(mockAdd).toHaveBeenCalledWith(
+      "sendwsuserupdated_v1_app-s2s",
+      expect.objectContaining({
+        applicationId: "app-s2s",
+        user: expect.objectContaining({ status: 0, userId: "123" }),
+      }),
+      bullQueueTtl,
+    );
+    const parentCall = mockAdd.mock.calls.find(([type]) =>
+      type.includes("app-parent"),
+    );
+    expect(parentCall).toBeUndefined();
+  });
+
+  it("then it should enqueue deactivation sync when removedServiceId matches a child service", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-parent",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+        children: [{ id: "app-child" }],
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-child",
+        removedOrgId: "organisation1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    expect(mockAdd).toHaveBeenCalledWith(
+      "sendwsuserupdated_v1_app-parent",
+      expect.objectContaining({
+        applicationId: "app-parent",
+        user: expect.objectContaining({ status: 0, userId: "123" }),
+      }),
+      bullQueueTtl,
+    );
+  });
+
+  it("then it should log a warning when removedServiceId does not match any application", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-1",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      { sub: "123", removedServiceId: "nonexistent" },
+      jobId,
+    );
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Removed service nonexistent not found in applications requiring notification",
+    );
+    expect(mockAdd).not.toHaveBeenCalled();
+  });
+
+  it("then it should log an error and continue if deactivation sync throws", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-1",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+      },
+    ]);
+    mockAdd.mockRejectedValueOnce(new Error("enqueue-fail"));
+
+    const handler = getHandler(config, logger);
+    await expect(
+      handler.processor(
+        {
+          sub: "123",
+          removedServiceId: "app-1",
+          removedOrgId: "organisation1",
+          email: "user@unit.tests",
+          status: 1,
+        },
+        jobId,
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "Failed to enqueue deactivation sync for removed service",
+      expect.objectContaining({
+        sub: "123",
+        removedServiceId: "app-1",
+      }),
+    );
+  });
+
+  it("then it should log a warning and not enqueue when removedOrgId is missing", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-1",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      "removedOrgId missing for user 123 when enqueuing deactivation sync for service app-1",
+    );
+    expect(mockAdd).not.toHaveBeenCalled();
+  });
+
+  it("then it should use establishment number as LA code in deactivation sync when org category is 002", async () => {
+    getUserOrganisationsRaw.mockReturnValue([
+      {
+        organisation: {
+          id: "organisation1",
+          legacyId: 123,
+          urn: "985632",
+          category: { id: "002" },
+          establishmentNumber: "898",
+        },
+        numericIdentifier: "sauser1",
+      },
+    ]);
+
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-1",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-1",
+        removedOrgId: "organisation1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    expect(mockAdd).toHaveBeenCalledWith(
+      "sendwsuserupdated_v1_app-1",
+      expect.objectContaining({
+        applicationId: "app-1",
+        user: expect.objectContaining({
+          status: 0,
+          organisationLACode: "898",
+        }),
+      }),
+      bullQueueTtl,
+    );
+  });
+
+  it("then it should log a warning and not enqueue when removedOrgId does not match any user organisation", async () => {
+    getUserOrganisationsRaw.mockReturnValue([
+      {
+        organisation: {
+          id: "different-org",
+          legacyId: 456,
+          urn: "000001",
+        },
+        numericIdentifier: "sauser2",
+      },
+    ]);
+
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-1",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-1",
+        removedOrgId: "organisation1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Could not find organisation organisation1 for user 123 when enqueuing deactivation sync for service app-1",
+    );
+    expect(mockAdd).not.toHaveBeenCalled();
+  });
 });
