@@ -6,11 +6,9 @@ const {
 } = require("login.dfe.api-client/users");
 const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
 const { v4: uuid } = require("uuid");
+const { canReceiveUserUpdate } = require("./userUpdateEligibility");
 
-const applictionRequiringNotificationCondition = (a) =>
-  a.relyingParty &&
-  a.relyingParty.params &&
-  a.relyingParty.params.receiveUserUpdates === "true";
+const applictionRequiringNotificationCondition = (a) => canReceiveUserUpdate(a);
 
 const getRequiredJobs = async (config, logger, userData, correlationId) => {
   let user = userData;
@@ -19,14 +17,53 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
   }
 
   const jobs = [];
-  const applications = await getAllApplicationRequiringNotification(
+  const candidateApplications = await getAllApplicationRequiringNotification(
     config,
     applictionRequiringNotificationCondition,
     correlationId,
     true,
   );
-  const userOrganisations = await getUserOrganisationsRaw({ userId: user.sub });
-  const userAccess = await getUserServicesRaw({ userId: user.sub });
+  const applications = candidateApplications;
+
+  // Prefer access info captured by the upstream notification (e.g. Directories
+  // snapshots services/organisations BEFORE deactivating the user, so a live
+  // lookup here would return empty). Fall back to live lookups when the
+  // payload does not carry them, to preserve backwards compatibility.
+  const hasEmbeddedAccess =
+    Array.isArray(userData?.userServices) ||
+    Array.isArray(userData?.userOrganisations);
+
+  if (hasEmbeddedAccess) {
+    logger.info(
+      `Using user access snapshot embedded in userupdated_v1 payload for user ${user.sub}`,
+      { correlationId },
+    );
+    logger.info(
+      `Snapshot for user ${user.sub}: ${JSON.stringify({
+        userServices: userData.userServices,
+        userOrganisations: userData.userOrganisations,
+      })}`,
+      { correlationId },
+    );
+  }
+
+  logger.info(
+    `Applications considered for notification: ${JSON.stringify(
+      applications.map((a) => ({
+        id: a.id,
+        name: a.name,
+        receiveUserUpdates: a.receiveUserUpdates,
+      })),
+    )} for user ${user.sub}`,
+    { correlationId },
+  );
+
+  const userOrganisations = Array.isArray(userData?.userOrganisations)
+    ? userData.userOrganisations
+    : await getUserOrganisationsRaw({ userId: user.sub });
+  const userAccess = Array.isArray(userData?.userServices)
+    ? userData.userServices
+    : await getUserServicesRaw({ userId: user.sub });
 
   applications.forEach((application) => {
     const userAccessToApplication = userAccess
@@ -115,6 +152,13 @@ const process = async (config, logger, data, jobId) => {
   const correlationId = `userupdated-${jobId || uuid()}`;
 
   const jobs = await getRequiredJobs(config, logger, data, correlationId);
+  if (jobs.length === 0) {
+    logger.info(
+      `No eligible user update targets found for user ${data.sub || "unknown"}`,
+      { correlationId },
+    );
+    return;
+  }
 
   for (let i = 0; i < jobs.length; i += 1) {
     await bullEnqueue(`sendwsuserupdated_v1_${jobs[i].applicationId}`, jobs[i]);

@@ -47,6 +47,9 @@ const jobId = 1;
 
 describe("when handling userupdated_v1 job", () => {
   beforeEach(() => {
+    logger.info.mockReset();
+    logger.warn.mockReset();
+    logger.error.mockReset();
     getUserServicesRaw.mockReturnValue([
       {
         serviceId: "service1",
@@ -122,14 +125,14 @@ describe("when handling userupdated_v1 job", () => {
       "userupdated-1",
     );
     expect(getAllApplicationRequiringNotification.mock.calls[0][3]).toBe(true);
-    expect(
-      getAllApplicationRequiringNotification.mock.calls[0][1]({}),
-    ).toBeUndefined();
+    expect(getAllApplicationRequiringNotification.mock.calls[0][1]({})).toBe(
+      false,
+    );
     expect(
       getAllApplicationRequiringNotification.mock.calls[0][1]({
         relyingParty: {},
       }),
-    ).toBeUndefined();
+    ).toBe(false);
     expect(
       getAllApplicationRequiringNotification.mock.calls[0][1]({
         relyingParty: { params: {} },
@@ -144,7 +147,28 @@ describe("when handling userupdated_v1 job", () => {
       getAllApplicationRequiringNotification.mock.calls[0][1]({
         relyingParty: { params: { receiveUserUpdates: "true" } },
       }),
+    ).toBe(false);
+    expect(
+      getAllApplicationRequiringNotification.mock.calls[0][1]({
+        relyingParty: {
+          params: {
+            receiveUserUpdates: "true",
+            wsWsdlUrl: "https://service.one/wsdl",
+          },
+        },
+      }),
     ).toBe(true);
+  });
+
+  it("then it should log and skip when no eligible targets are available", async () => {
+    const handler = getHandler(config, logger);
+    await handler.processor(data, jobId);
+
+    expect(mockAdd).toHaveBeenCalledTimes(0);
+    expect(logger.info).toHaveBeenCalledWith(
+      "No eligible user update targets found for user user1",
+      { correlationId: "userupdated-1" },
+    );
   });
 
   it("then it should queue a senduserupdated_v1 job for each application", async () => {
@@ -259,6 +283,79 @@ describe("when handling userupdated_v1 job", () => {
               id: 1,
               code: "ROLE-ONE",
             },
+            {
+              id: 2,
+              code: "ROLE-TWO",
+            },
+          ],
+        },
+      },
+      bullQueueTtl,
+    );
+  });
+
+  it("then it should include all eligible services when legacy flags are mixed", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "service1",
+        relyingParty: {
+          params: {
+            receiveUserUpdates: "true",
+            wsWsdlUrl: "https://service.one/wsdl",
+          },
+        },
+      },
+      {
+        id: "service2",
+        relyingParty: {
+          params: {
+            receiveUserUpdates: "true",
+            wsWsdlUrl: "https://service.two/wsdl",
+            isLegacyWsSync: "true",
+          },
+        },
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(data, jobId);
+
+    expect(mockAdd).toHaveBeenCalledTimes(2);
+    expect(mockAdd).toHaveBeenCalledWith(
+      "sendwsuserupdated_v1_service1",
+      {
+        applicationId: "service1",
+        user: {
+          userId: "user1",
+          legacyUserId: "sauser1",
+          email: "user.one@unit.tests",
+          status: 1,
+          organisationId: 123,
+          organisationUrn: "985632",
+          organisationLACode: "999",
+          roles: [
+            {
+              id: 1,
+              code: "ROLE-ONE",
+            },
+          ],
+        },
+      },
+      bullQueueTtl,
+    );
+    expect(mockAdd).toHaveBeenCalledWith(
+      "sendwsuserupdated_v1_service2",
+      {
+        applicationId: "service2",
+        user: {
+          userId: "user1",
+          legacyUserId: "sauser1",
+          email: "user.one@unit.tests",
+          status: 1,
+          organisationId: 123,
+          organisationUrn: "985632",
+          organisationLACode: "999",
+          roles: [
             {
               id: 2,
               code: "ROLE-TWO",
@@ -412,6 +509,98 @@ describe("when handling userupdated_v1 job", () => {
         },
       },
       bullQueueTtl,
+    );
+  });
+
+  it("then it should use the embedded user access snapshot from the payload instead of doing a live lookup", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "service1",
+        relyingParty: {
+          params: {
+            wsWsdlUrl: "https://service.one/wsdl",
+            wsProvisionUserAction: "pu-action",
+          },
+        },
+      },
+    ]);
+
+    const dataWithSnapshot = {
+      sub: "user1",
+      email: "user.one@unit.tests",
+      given_name: "Test",
+      family_name: "Tester",
+      status: 1,
+      userServices: [
+        {
+          serviceId: "service1",
+          organisationId: "organisation1",
+          roles: [{ id: "role1", code: "ROLE-ONE", numericId: 1 }],
+        },
+      ],
+      userOrganisations: [
+        {
+          organisation: {
+            id: "organisation1",
+            legacyId: 123,
+            urn: "985632",
+            localAuthority: { code: "999" },
+          },
+          numericIdentifier: "sauser1",
+        },
+      ],
+    };
+
+    const handler = getHandler(config, logger);
+    await handler.processor(dataWithSnapshot, jobId);
+
+    expect(getUserServicesRaw).not.toHaveBeenCalled();
+    expect(getUserOrganisationsRaw).not.toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Using user access snapshot embedded in userupdated_v1 payload for user user1",
+      ),
+      expect.any(Object),
+    );
+    expect(mockAdd).toHaveBeenCalledTimes(1);
+    expect(mockAdd).toHaveBeenCalledWith(
+      "sendwsuserupdated_v1_service1",
+      expect.objectContaining({
+        applicationId: "service1",
+        user: expect.objectContaining({
+          userId: "user1",
+          status: 1,
+          organisationId: 123,
+          roles: [{ id: 1, code: "ROLE-ONE" }],
+        }),
+      }),
+      bullQueueTtl,
+    );
+  });
+
+  it("then it should fall back to live lookup when the payload carries no access snapshot", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "service1",
+        relyingParty: {
+          params: {
+            wsWsdlUrl: "https://service.one/wsdl",
+            wsProvisionUserAction: "pu-action",
+          },
+        },
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(data, jobId);
+
+    expect(getUserServicesRaw).toHaveBeenCalledWith({ userId: "user1" });
+    expect(getUserOrganisationsRaw).toHaveBeenCalledWith({ userId: "user1" });
+    expect(logger.info).not.toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Using user access snapshot embedded in userupdated_v1 payload",
+      ),
+      expect.any(Object),
     );
   });
 });

@@ -1,22 +1,20 @@
 const { getAllApplicationRequiringNotification } = require("./../utils");
 const userUpdatedHandlerV1 = require("./userUpdatedHandlerV1");
 const sendWSUserUpdatedV1 = require("./sendWSUserUpdatedV1");
+const { canReceiveUserUpdate } = require("./userUpdateEligibility");
 
-const applictionRequiringNotificationCondition = (a) =>
-  a.relyingParty &&
-  a.relyingParty.params &&
-  a.relyingParty.params.receiveUserUpdates === "true";
+const applictionRequiringNotificationCondition = (a) => canReceiveUserUpdate(a);
 
 const register = async (config, logger, correlationId) => {
   const handlers = [userUpdatedHandlerV1.getHandler(config, logger)];
 
-  const applications = await getAllApplicationRequiringNotification(
+  const candidateApplications = await getAllApplicationRequiringNotification(
     config,
     applictionRequiringNotificationCondition,
     correlationId,
   );
   handlers.push(
-    ...applications.map((application) =>
+    ...candidateApplications.map((application) =>
       sendWSUserUpdatedV1.getHandler(config, logger, application),
     ),
   );
