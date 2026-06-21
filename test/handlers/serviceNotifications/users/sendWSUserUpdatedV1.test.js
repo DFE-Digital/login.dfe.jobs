@@ -71,6 +71,7 @@ describe("when handling sendwsuserupdated_v1 job", () => {
       organisation_urn: data.user.organisationUrn,
       organisation_la_code: data.user.organisationLACode,
     });
+    repository.userState.destroy.mockResolvedValue();
     repository.userRoleState.findAll.mockReturnValue([
       {
         role_id: data.user.roles[0].id,
@@ -179,5 +180,153 @@ describe("when handling sendwsuserupdated_v1 job", () => {
       organisation_id: data.user.organisationId,
       last_action_sent: "CREATE",
     });
+  });
+
+  it("sends DEACTIVATE action when user.status is 0", async () => {
+    repository.userState.findOne.mockResolvedValue({
+      last_action_sent: "UPDATE",
+    });
+
+    const handler = getHandler(config, logger, application);
+    await handler.processor(
+      {
+        applicationId: "app-1",
+        user: {
+          userId: "user-1",
+          organisationId: "org-1",
+          status: 0,
+          legacyUserId: "legacy-1",
+          legacyUsername: "luser",
+          firstName: "Jane",
+          lastName: "Doe",
+          email: "jane@example.com",
+          organisationUrn: "URN1",
+          organisationLACode: "LA01",
+          roles: [],
+          organisationUid: "uid1",
+        },
+      },
+      "job-1",
+    );
+
+    expect(secureAccessWebServiceClient.provisionUser).toHaveBeenCalledWith(
+      "DEACTIVATE",
+      "legacy-1",
+      "luser",
+      "Jane",
+      "Doe",
+      "jane@example.com",
+      "org-1",
+      0,
+      "URN1",
+      "LA01",
+      [],
+      "uid1",
+    );
+  });
+
+  it("deletes the user_state row on deactivation instead of upserting", async () => {
+    repository.userState.findOne.mockResolvedValue({
+      last_action_sent: "UPDATE",
+    });
+
+    const handler = getHandler(config, logger, application);
+    await handler.processor(
+      {
+        applicationId: "app-1",
+        user: {
+          userId: "user-1",
+          organisationId: "org-1",
+          status: 0,
+          legacyUserId: "legacy-1",
+          legacyUsername: "luser",
+          firstName: "Jane",
+          lastName: "Doe",
+          email: "jane@example.com",
+          organisationUrn: "URN1",
+          organisationLACode: "LA01",
+          roles: [],
+          organisationUid: "uid1",
+        },
+      },
+      "job-1",
+    );
+
+    expect(repository.userState.destroy).toHaveBeenCalledWith({
+      where: {
+        service_id: "app-1",
+        user_id: "user-1",
+        organisation_id: "org-1",
+      },
+    });
+    expect(repository.userState.upsert).not.toHaveBeenCalled();
+  });
+
+  it("sends CREATE when user.status is 1 and no previous action exists", async () => {
+    repository.userState.findOne.mockResolvedValue(null);
+
+    const handler = getHandler(config, logger, application);
+    await handler.processor(
+      {
+        applicationId: "app-1",
+        user: {
+          userId: "user-1",
+          organisationId: "org-1",
+          status: 1,
+          legacyUserId: "legacy-1",
+          legacyUsername: "luser",
+          firstName: "Jane",
+          lastName: "Doe",
+          email: "jane@example.com",
+          organisationUrn: "URN1",
+          organisationLACode: "LA01",
+          roles: [],
+          organisationUid: "uid1",
+        },
+      },
+      "job-1",
+    );
+
+    expect(secureAccessWebServiceClient.provisionUser.mock.calls[0][0]).toBe(
+      "CREATE",
+    );
+    expect(repository.userState.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ last_action_sent: "CREATE" }),
+    );
+  });
+
+  it("sends UPDATE when user.status is 1 and a previous action exists", async () => {
+    repository.userState.findOne.mockResolvedValue({
+      last_action_sent: "CREATE",
+    });
+
+    const handler = getHandler(config, logger, application);
+    await handler.processor(
+      {
+        applicationId: "app-1",
+        user: {
+          userId: "user-1",
+          organisationId: "org-1",
+          status: 1,
+          legacyUserId: "legacy-1",
+          legacyUsername: "luser",
+          firstName: "Jane",
+          lastName: "Doe",
+          email: "jane@example.com",
+          organisationUrn: "URN1",
+          organisationLACode: "LA01",
+          roles: [],
+          organisationUid: "uid1",
+        },
+      },
+      "job-1",
+    );
+
+    expect(secureAccessWebServiceClient.provisionUser.mock.calls[0][0]).toBe(
+      "UPDATE",
+    );
+    expect(repository.userState.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ last_action_sent: "UPDATE" }),
+    );
   });
 });

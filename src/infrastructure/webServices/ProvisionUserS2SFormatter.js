@@ -20,7 +20,8 @@ class ProvisionUserS2SFormatter {
           organisationId,
           userId: saUserId,
           userName: saUsername,
-          wsAccountStatusCode,
+          wsAccountStatusCode:
+            wsAccountStatusCode === 1 ? "Active" : "Archived",
         },
       },
     });

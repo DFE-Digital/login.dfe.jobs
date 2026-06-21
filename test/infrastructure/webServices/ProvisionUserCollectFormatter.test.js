@@ -12,7 +12,7 @@ describe("provisionUserCollectFormatter", () => {
       "lastName",
       "emailAddress",
       "organisationId",
-      "wsAccountStatusCode",
+      1,
       "establishmentUrn",
       "localAuthorityCode",
       [
@@ -47,7 +47,7 @@ describe("provisionUserCollectFormatter", () => {
           organisationId: "organisationId",
           userId: "saUserId",
           userName: "saUsername",
-          wsAccountStatusCode: "wsAccountStatusCode",
+          wsAccountStatusCode: "Active",
         },
       },
     });
@@ -61,8 +61,46 @@ describe("provisionUserCollectFormatter", () => {
         "<ws:firstName>firstName</ws:firstName><ws:lastName>lastName</ws:lastName>" +
         "<ws:organisationId>organisationId</ws:organisationId>" +
         "<ws:userId>saUserId</ws:userId><ws:userName>saUsername</ws:userName>" +
-        "<ws:wsAccountStatusCode>wsAccountStatusCode</ws:wsAccountStatusCode>" +
+        "<ws:wsAccountStatusCode>Active</ws:wsAccountStatusCode>" +
         "</ws:pur></ws:ProvisionUser></soapenv:Body></soapenv:Envelope>",
     );
+  });
+
+  it('sets wsAccountStatusCode to "Archived" when status is 0', () => {
+    const test = new provisionUserCollectFormatter();
+    const actual = test.getProvisionUserSoapMessage(
+      "http://example.com/ns",
+      "DEACTIVATE",
+      "uid1",
+      "uname1",
+      "Jane",
+      "Doe",
+      "jane@example.com",
+      "org-1",
+      0,
+      "URN123",
+      "LA01",
+      [],
+    );
+    expect(actual._body.ProvisionUser.pur.wsAccountStatusCode).toBe("Archived");
+  });
+
+  it('sets wsAccountStatusCode to "Active" when status is 1', () => {
+    const test = new provisionUserCollectFormatter();
+    const actual = test.getProvisionUserSoapMessage(
+      "http://example.com/ns",
+      "UPDATE",
+      "uid1",
+      "uname1",
+      "Jane",
+      "Doe",
+      "jane@example.com",
+      "org-1",
+      1,
+      "URN123",
+      "LA01",
+      [],
+    );
+    expect(actual._body.ProvisionUser.pur.wsAccountStatusCode).toBe("Active");
   });
 });
