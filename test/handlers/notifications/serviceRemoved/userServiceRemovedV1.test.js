@@ -102,6 +102,14 @@ describe("When handling user service removed v1 job", () => {
     );
   });
 
+  it("does not enqueue a userupdated_v1 job after sending the email", async () => {
+    const handler = getHandler(config, mockLogger);
+
+    await handler.processor(jobData);
+
+    expect(bullEnqueue).not.toHaveBeenCalled();
+  });
+
   describe("Error handling", () => {
     it("should still send email even if user lookup fails", async () => {
       mockGetUserRaw.mockRejectedValue(new Error("API error"));
