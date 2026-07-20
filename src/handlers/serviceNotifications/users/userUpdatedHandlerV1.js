@@ -133,6 +133,7 @@ const process = async (config, logger, data, jobId) => {
         if (!data.removedOrgId) {
           logger.warn(
             `removedOrgId missing for user ${data.sub} when enqueuing deactivation sync for service ${removedApp.id}`,
+            { correlationId },
           );
         } else {
           const user =
@@ -181,7 +182,8 @@ const process = async (config, logger, data, jobId) => {
             };
             await bullEnqueue(`sendwsuserupdated_v1_${removedApp.id}`, job);
             logger.info(
-              `Enqueued deactivation sync for removed service ${removedApp.id} for user ${data.sub}`,
+              `Enqueued deactivation sync for removed service ${data.removedServiceId} for user ${data.sub} (target application ${removedApp.id})`,
+              { correlationId },
             );
           } else {
             logger.warn(
@@ -199,6 +201,7 @@ const process = async (config, logger, data, jobId) => {
         error: { message: e.message, stack: e.stack },
         sub: data.sub,
         removedServiceId: data.removedServiceId,
+        correlationId,
       });
     }
   }

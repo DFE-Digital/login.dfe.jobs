@@ -190,7 +190,7 @@ describe("when handling sendwsuserupdated_v1 job", () => {
     const handler = getHandler(config, logger, application);
     await handler.processor(
       {
-        applicationId: "app-1",
+        applicationId: application.id,
         user: {
           userId: "user-1",
           organisationId: "org-1",
@@ -233,7 +233,7 @@ describe("when handling sendwsuserupdated_v1 job", () => {
     const handler = getHandler(config, logger, application);
     await handler.processor(
       {
-        applicationId: "app-1",
+        applicationId: application.id,
         user: {
           userId: "user-1",
           organisationId: "org-1",
@@ -254,7 +254,7 @@ describe("when handling sendwsuserupdated_v1 job", () => {
 
     expect(repository.userState.destroy).toHaveBeenCalledWith({
       where: {
-        service_id: "app-1",
+        service_id: application.id,
         user_id: "user-1",
         organisation_id: "org-1",
       },
@@ -268,7 +268,7 @@ describe("when handling sendwsuserupdated_v1 job", () => {
     const handler = getHandler(config, logger, application);
     await handler.processor(
       {
-        applicationId: "app-1",
+        applicationId: application.id,
         user: {
           userId: "user-1",
           organisationId: "org-1",
@@ -303,7 +303,7 @@ describe("when handling sendwsuserupdated_v1 job", () => {
     const handler = getHandler(config, logger, application);
     await handler.processor(
       {
-        applicationId: "app-1",
+        applicationId: application.id,
         user: {
           userId: "user-1",
           organisationId: "org-1",

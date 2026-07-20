@@ -612,6 +612,7 @@ describe("when handling userupdated_v1 job", () => {
 
     expect(logger.warn).toHaveBeenCalledWith(
       "removedOrgId missing for user 123 when enqueuing deactivation sync for service app-1",
+      { correlationId: "userupdated-removed-1" },
     );
     expect(mockAdd).not.toHaveBeenCalled();
   });
