@@ -150,6 +150,10 @@ const process = async (config, logger, application, data, jobId) => {
     const action =
       user.status === 0 ? "DEACTIVATE" : previousAction ? "UPDATE" : "CREATE";
 
+    logger.info(
+      `Sending SOAP request to application ${applicationId} for user ${user.userId} (action: ${action})`,
+      { correlationId },
+    );
     await sendUpdatedUserToApplication(
       action,
       user,
