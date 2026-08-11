@@ -80,8 +80,6 @@ const config = {
     profileUrl: "https://" + process.env.STANDALONE_PROFILE_HOST_NAME,
     servicesUrl: "https://" + process.env.STANDALONE_SERVICES_HOST_NAME,
     helpUrl: "https://" + process.env.STANDALONE_HELP_HOST_NAME,
-    slackWebHookUrl: process.env.PLATFORM_GLOBAL_SLACK_FEED,
-    envName: process.env.ENVIRONMENT_NAME,
     govNotify: {
         apiKey: process.env.GOVNOTIFY_API_KEY,
         templates: parseJson(process.env.GOVNOTIFY_TEMP_MAP, {})

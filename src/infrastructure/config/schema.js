@@ -84,9 +84,7 @@ const notificationsSchema = new SimpleSchema({
   supportEmailAddress: String,
   organisations: schemas.apiClient,
   directories: schemas.apiClient,
-  govNotify: govNotifySchema,
-  slackWebHookUrl: String,
-  envName: String
+  govNotify: govNotifySchema
 });
 
 const publicApiSchema = new SimpleSchema({
