@@ -12,7 +12,7 @@ describe("provisionUserCollectFormatter", () => {
       "lastName",
       "emailAddress",
       "organisationId",
-      "wsAccountStatusCode",
+      1,
       "establishmentUrn",
       "localAuthorityCode",
       [
@@ -47,7 +47,7 @@ describe("provisionUserCollectFormatter", () => {
           organisationId: "organisationId",
           userId: "saUserId",
           userName: "saUsername",
-          wsAccountStatusCode: "wsAccountStatusCode",
+          wsAccountStatusCode: 1,
         },
       },
     });
@@ -61,8 +61,48 @@ describe("provisionUserCollectFormatter", () => {
         "<ws:firstName>firstName</ws:firstName><ws:lastName>lastName</ws:lastName>" +
         "<ws:organisationId>organisationId</ws:organisationId>" +
         "<ws:userId>saUserId</ws:userId><ws:userName>saUsername</ws:userName>" +
-        "<ws:wsAccountStatusCode>wsAccountStatusCode</ws:wsAccountStatusCode>" +
+        "<ws:wsAccountStatusCode>1</ws:wsAccountStatusCode>" +
         "</ws:pur></ws:ProvisionUser></soapenv:Body></soapenv:Envelope>",
     );
+  });
+
+  it("maps an active DSI status (1) to the COLLECT active status code (1)", async () => {
+    const test = new provisionUserCollectFormatter();
+    const actual = test.getProvisionUserSoapMessage(
+      "targetNamespace",
+      "action",
+      "saUserId",
+      "saUsername",
+      "firstName",
+      "lastName",
+      "emailAddress",
+      "organisationId",
+      1,
+      "establishmentUrn",
+      "localAuthorityCode",
+      [],
+    );
+
+    expect(actual._body.ProvisionUser.pur.wsAccountStatusCode).toBe(1);
+  });
+
+  it("maps an inactive DSI status (0) to the COLLECT disabled status code (2)", async () => {
+    const test = new provisionUserCollectFormatter();
+    const actual = test.getProvisionUserSoapMessage(
+      "targetNamespace",
+      "action",
+      "saUserId",
+      "saUsername",
+      "firstName",
+      "lastName",
+      "emailAddress",
+      "organisationId",
+      0,
+      "establishmentUrn",
+      "localAuthorityCode",
+      [],
+    );
+
+    expect(actual._body.ProvisionUser.pur.wsAccountStatusCode).toBe(2);
   });
 });
