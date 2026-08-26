@@ -685,6 +685,160 @@ describe("when handling userupdated_v1 job", () => {
     );
   });
 
+  it("then it should not enqueue deactivation sync when user retains access to the parent application in the removed org", async () => {
+    getUserServicesRaw.mockReturnValue([
+      {
+        serviceId: "app-parent",
+        organisationId: "organisation1",
+        roles: [],
+      },
+    ]);
+
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-parent",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+        children: [{ id: "app-child" }],
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-child",
+        removedOrgId: "organisation1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    const deactivationCall = mockAdd.mock.calls.find(
+      ([type, payload]) =>
+        type === "sendwsuserupdated_v1_app-parent" &&
+        payload?.user?.status === 0,
+    );
+    expect(deactivationCall).toBeUndefined();
+    expect(logger.info).toHaveBeenCalledWith(
+      "Skipped deactivation sync for removed service app-child for user 123; user retains access to application app-parent in organisation organisation1",
+      { correlationId: "userupdated-removed-1" },
+    );
+  });
+
+  it("then it should not enqueue deactivation sync when user retains access to a sibling child of the removed service in the removed org", async () => {
+    getUserServicesRaw.mockReturnValue([
+      {
+        serviceId: "app-sibling-child",
+        organisationId: "organisation1",
+        roles: [],
+      },
+    ]);
+
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-parent",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+        children: [{ id: "app-child" }, { id: "app-sibling-child" }],
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-child",
+        removedOrgId: "organisation1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    const deactivationCall = mockAdd.mock.calls.find(
+      ([type, payload]) =>
+        type === "sendwsuserupdated_v1_app-parent" &&
+        payload?.user?.status === 0,
+    );
+    expect(deactivationCall).toBeUndefined();
+    expect(logger.info).toHaveBeenCalledWith(
+      "Skipped deactivation sync for removed service app-child for user 123; user retains access to application app-parent in organisation organisation1",
+      { correlationId: "userupdated-removed-1" },
+    );
+  });
+
+  it("then it should still enqueue deactivation sync when the retained access is in a different organisation", async () => {
+    getUserServicesRaw.mockReturnValue([
+      {
+        serviceId: "app-parent",
+        organisationId: "a-different-organisation",
+        roles: [],
+      },
+    ]);
+
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-parent",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+        children: [{ id: "app-child" }],
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-child",
+        removedOrgId: "organisation1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    expect(mockAdd).toHaveBeenCalledWith(
+      "sendwsuserupdated_v1_app-parent",
+      expect.objectContaining({
+        applicationId: "app-parent",
+        user: expect.objectContaining({ status: 0, userId: "123" }),
+      }),
+      bullQueueTtl,
+    );
+  });
+
+  it("then it should enqueue deactivation sync when user has no remaining access to the removed application in that org", async () => {
+    getUserServicesRaw.mockReturnValue([]);
+
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "app-parent",
+        relyingParty: { params: { receiveUserUpdates: "true" } },
+        children: [{ id: "app-child" }],
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(
+      {
+        sub: "123",
+        removedServiceId: "app-child",
+        removedOrgId: "organisation1",
+        email: "user@unit.tests",
+        status: 1,
+      },
+      jobId,
+    );
+
+    expect(mockAdd).toHaveBeenCalledWith(
+      "sendwsuserupdated_v1_app-parent",
+      expect.objectContaining({
+        applicationId: "app-parent",
+        user: expect.objectContaining({ status: 0, userId: "123" }),
+      }),
+      bullQueueTtl,
+    );
+  });
+
   it("then it should log a warning and not enqueue when removedOrgId does not match any user organisation", async () => {
     getUserOrganisationsRaw.mockReturnValue([
       {

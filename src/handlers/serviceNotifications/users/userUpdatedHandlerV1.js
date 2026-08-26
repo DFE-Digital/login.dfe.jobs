@@ -150,42 +150,63 @@ const process = async (config, logger, data, jobId) => {
               )
             : null;
           if (organisationAccess) {
-            let localAuthorityCode;
-            if (
-              organisationAccess.organisation.category &&
-              organisationAccess.organisation.category.id === "002"
-            ) {
-              localAuthorityCode =
-                organisationAccess.organisation.establishmentNumber;
-            } else if (organisationAccess.organisation.localAuthority) {
-              localAuthorityCode =
-                organisationAccess.organisation.localAuthority.code;
+            const removedOrgIdLower = data.removedOrgId.toLowerCase();
+            const removedAppIdLower = removedApp.id.toLowerCase();
+            const removedAppChildIds = removedApp.children
+              ? removedApp.children.map((c) => c.id.toLowerCase())
+              : [];
+            const remainingAccess = await getUserServicesRaw({ userId });
+            const stillHasAccessToRemovedApp =
+              remainingAccess &&
+              remainingAccess.some(
+                (a) =>
+                  a.organisationId.toLowerCase() === removedOrgIdLower &&
+                  (a.serviceId.toLowerCase() === removedAppIdLower ||
+                    removedAppChildIds.includes(a.serviceId.toLowerCase())),
+              );
+            if (stillHasAccessToRemovedApp) {
+              logger.info(
+                `Skipped deactivation sync for removed service ${data.removedServiceId} for user ${data.sub}; user retains access to application ${removedApp.id} in organisation ${data.removedOrgId}`,
+                { correlationId },
+              );
+            } else {
+              let localAuthorityCode;
+              if (
+                organisationAccess.organisation.category &&
+                organisationAccess.organisation.category.id === "002"
+              ) {
+                localAuthorityCode =
+                  organisationAccess.organisation.establishmentNumber;
+              } else if (organisationAccess.organisation.localAuthority) {
+                localAuthorityCode =
+                  organisationAccess.organisation.localAuthority.code;
+              }
+              const job = {
+                user: {
+                  userId,
+                  legacyUserId: organisationAccess.numericIdentifier,
+                  legacyUsername: organisationAccess.textIdentifier,
+                  firstName: user.given_name,
+                  lastName: user.family_name,
+                  email: user.email,
+                  status: 0,
+                  deactivateService: true,
+                  organisationId: organisationAccess.organisation.legacyId,
+                  organisationUrn: organisationAccess.organisation.urn,
+                  organisationUid: organisationAccess.organisation.uid,
+                  organisationLACode: localAuthorityCode
+                    ? localAuthorityCode
+                    : "",
+                  roles: [],
+                },
+                applicationId: removedApp.id,
+              };
+              await bullEnqueue(`sendwsuserupdated_v1_${removedApp.id}`, job);
+              logger.info(
+                `Enqueued deactivation sync for removed service ${data.removedServiceId} for user ${data.sub} (target application ${removedApp.id})`,
+                { correlationId },
+              );
             }
-            const job = {
-              user: {
-                userId,
-                legacyUserId: organisationAccess.numericIdentifier,
-                legacyUsername: organisationAccess.textIdentifier,
-                firstName: user.given_name,
-                lastName: user.family_name,
-                email: user.email,
-                status: 0,
-                deactivateService: true,
-                organisationId: organisationAccess.organisation.legacyId,
-                organisationUrn: organisationAccess.organisation.urn,
-                organisationUid: organisationAccess.organisation.uid,
-                organisationLACode: localAuthorityCode
-                  ? localAuthorityCode
-                  : "",
-                roles: [],
-              },
-              applicationId: removedApp.id,
-            };
-            await bullEnqueue(`sendwsuserupdated_v1_${removedApp.id}`, job);
-            logger.info(
-              `Enqueued deactivation sync for removed service ${data.removedServiceId} for user ${data.sub} (target application ${removedApp.id})`,
-              { correlationId },
-            );
           } else {
             logger.warn(
               `Could not find organisation ${data.removedOrgId} for user ${data.sub} when enqueuing deactivation sync for service ${removedApp.id}`,
