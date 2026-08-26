@@ -1,12 +1,10 @@
 jest.mock("../../../../src/infrastructure/notify");
 jest.mock("../../../../src/infrastructure/jobQueue/BullHelpers");
-jest.mock("login.dfe.api-client/users");
 
 const { getNotifyAdapter } = require("../../../../src/infrastructure/notify");
 const {
   bullEnqueue,
 } = require("../../../../src/infrastructure/jobQueue/BullHelpers");
-const { getUserRaw } = require("login.dfe.api-client/users");
 const {
   getHandler,
 } = require("../../../../src/handlers/notifications/userOrganisation/removedUserFromOrgV1");
@@ -28,7 +26,6 @@ const jobData = {
 describe("When handling user removed user from organisation v1 job", () => {
   const mockSendEmail = jest.fn();
   const mockBullEnqueue = jest.fn();
-  const mockGetUserRaw = jest.fn();
   const mockLogger = {
     warn: jest.fn(),
     error: jest.fn(),
@@ -37,14 +34,12 @@ describe("When handling user removed user from organisation v1 job", () => {
   beforeEach(() => {
     mockSendEmail.mockReset();
     mockBullEnqueue.mockReset();
-    mockGetUserRaw.mockReset();
     mockLogger.warn.mockReset();
     mockLogger.error.mockReset();
 
     getNotifyAdapter.mockReset();
     getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
     bullEnqueue.mockImplementation(mockBullEnqueue);
-    getUserRaw.mockImplementation(mockGetUserRaw);
   });
 
   it("should return a handler with a processor", async () => {
@@ -108,24 +103,11 @@ describe("When handling user removed user from organisation v1 job", () => {
     expect(bullEnqueue).not.toHaveBeenCalled();
   });
 
-  describe("Error handling", () => {
-    it("should still send email even if user lookup fails", async () => {
-      mockGetUserRaw.mockRejectedValue(new Error("API error"));
-      const handler = getHandler(config, mockLogger);
+  it("should send the email when no logger is supplied", async () => {
+    const handler = getHandler(config);
 
-      await handler.processor(jobData);
+    await handler.processor(jobData);
 
-      expect(mockSendEmail).toHaveBeenCalledTimes(1);
-    });
-
-    it("should continue without logger if logger is not provided", async () => {
-      mockGetUserRaw.mockResolvedValue(null);
-      const handler = getHandler(config);
-
-      // Should not throw
-      await handler.processor(jobData);
-
-      expect(mockSendEmail).toHaveBeenCalledTimes(1);
-    });
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
   });
 });
