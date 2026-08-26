@@ -443,6 +443,7 @@ describe("when handling userupdated_v1 job", () => {
           userId: "123",
           legacyUserId: "sauser1",
           status: 0,
+          deactivateService: true,
           organisationId: 123,
           organisationUrn: "985632",
           organisationLACode: "999",
@@ -451,6 +452,27 @@ describe("when handling userupdated_v1 job", () => {
       }),
       bullQueueTtl,
     );
+  });
+
+  it("then it should not include deactivateService flag in normal getRequiredJobs payloads", async () => {
+    getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+      {
+        id: "service1",
+        relyingParty: {
+          params: {
+            wsWsdlUrl: "https://service.one/wsdl",
+            wsProvisionUserAction: "pu-action",
+          },
+        },
+      },
+    ]);
+
+    const handler = getHandler(config, logger);
+    await handler.processor(data, jobId);
+
+    expect(mockAdd).toHaveBeenCalledTimes(1);
+    const [, payload] = mockAdd.mock.calls[0];
+    expect(payload.user).not.toHaveProperty("deactivateService");
   });
 
   it("then it should not enqueue deactivation sync and should run normal sync when removedServiceId is absent", async () => {

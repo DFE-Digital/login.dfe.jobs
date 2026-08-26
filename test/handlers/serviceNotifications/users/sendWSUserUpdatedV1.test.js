@@ -182,7 +182,7 @@ describe("when handling sendwsuserupdated_v1 job", () => {
     });
   });
 
-  it("sends DEACTIVATE action when user.status is 0", async () => {
+  it("sends DEACTIVATE action when user.deactivateService is true", async () => {
     repository.userState.findOne.mockResolvedValue({
       last_action_sent: "UPDATE",
     });
@@ -195,6 +195,7 @@ describe("when handling sendwsuserupdated_v1 job", () => {
           userId: "user-1",
           organisationId: "org-1",
           status: 0,
+          deactivateService: true,
           legacyUserId: "legacy-1",
           legacyUsername: "luser",
           firstName: "Jane",
@@ -238,6 +239,7 @@ describe("when handling sendwsuserupdated_v1 job", () => {
           userId: "user-1",
           organisationId: "org-1",
           status: 0,
+          deactivateService: true,
           legacyUserId: "legacy-1",
           legacyUsername: "luser",
           firstName: "Jane",
@@ -260,6 +262,82 @@ describe("when handling sendwsuserupdated_v1 job", () => {
       },
     });
     expect(repository.userState.upsert).not.toHaveBeenCalled();
+  });
+
+  it("sends UPDATE (not DEACTIVATE) and upserts (not destroys) when user.status is 0 but deactivateService flag is absent and a previous action exists — regression guard for global account deactivation", async () => {
+    repository.userState.findOne.mockResolvedValue({
+      last_action_sent: "UPDATE",
+    });
+
+    const handler = getHandler(config, logger, application);
+    await handler.processor(
+      {
+        applicationId: application.id,
+        user: {
+          userId: "user-1",
+          organisationId: "org-1",
+          status: 0,
+          legacyUserId: "legacy-1",
+          legacyUsername: "luser",
+          firstName: "Jane",
+          lastName: "Doe",
+          email: "jane@example.com",
+          organisationUrn: "URN1",
+          organisationLACode: "LA01",
+          roles: [],
+          organisationUid: "uid1",
+        },
+      },
+      "job-1",
+    );
+
+    expect(secureAccessWebServiceClient.provisionUser.mock.calls[0][0]).toBe(
+      "UPDATE",
+    );
+    expect(repository.userState.upsert).toHaveBeenCalledWith({
+      service_id: application.id,
+      user_id: "user-1",
+      organisation_id: "org-1",
+      last_action_sent: "UPDATE",
+    });
+    expect(repository.userState.destroy).not.toHaveBeenCalled();
+  });
+
+  it("sends CREATE and upserts when user.status is 0, deactivateService flag is absent, and no previous action exists", async () => {
+    repository.userState.findOne.mockResolvedValue(null);
+
+    const handler = getHandler(config, logger, application);
+    await handler.processor(
+      {
+        applicationId: application.id,
+        user: {
+          userId: "user-1",
+          organisationId: "org-1",
+          status: 0,
+          legacyUserId: "legacy-1",
+          legacyUsername: "luser",
+          firstName: "Jane",
+          lastName: "Doe",
+          email: "jane@example.com",
+          organisationUrn: "URN1",
+          organisationLACode: "LA01",
+          roles: [],
+          organisationUid: "uid1",
+        },
+      },
+      "job-1",
+    );
+
+    expect(secureAccessWebServiceClient.provisionUser.mock.calls[0][0]).toBe(
+      "CREATE",
+    );
+    expect(repository.userState.upsert).toHaveBeenCalledWith({
+      service_id: application.id,
+      user_id: "user-1",
+      organisation_id: "org-1",
+      last_action_sent: "CREATE",
+    });
+    expect(repository.userState.destroy).not.toHaveBeenCalled();
   });
 
   it("sends CREATE when user.status is 1 and no previous action exists", async () => {

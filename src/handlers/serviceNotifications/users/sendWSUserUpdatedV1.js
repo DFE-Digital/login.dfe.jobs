@@ -147,8 +147,11 @@ const process = async (config, logger, application, data, jobId) => {
       user.userId,
       user.organisationId,
     );
-    const action =
-      user.status === 0 ? "DEACTIVATE" : previousAction ? "UPDATE" : "CREATE";
+    const action = user.deactivateService
+      ? "DEACTIVATE"
+      : previousAction
+        ? "UPDATE"
+        : "CREATE";
 
     logger.info(
       `Sending SOAP request to application ${applicationId} for user ${user.userId} (action: ${action})`,
@@ -161,7 +164,7 @@ const process = async (config, logger, application, data, jobId) => {
       correlationId,
     );
 
-    if (action === "DEACTIVATE") {
+    if (user.deactivateService) {
       await clearAction(
         repository,
         applicationId,

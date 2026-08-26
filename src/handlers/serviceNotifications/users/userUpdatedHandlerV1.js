@@ -170,6 +170,7 @@ const process = async (config, logger, data, jobId) => {
                 lastName: user.family_name,
                 email: user.email,
                 status: 0,
+                deactivateService: true,
                 organisationId: organisationAccess.organisation.legacyId,
                 organisationUrn: organisationAccess.organisation.urn,
                 organisationUid: organisationAccess.organisation.uid,
