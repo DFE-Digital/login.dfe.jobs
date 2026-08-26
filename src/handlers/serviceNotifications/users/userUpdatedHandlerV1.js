@@ -141,32 +141,35 @@ const process = async (config, logger, data, jobId) => {
               ? data
               : await getUserRaw({ by: { id: data.sub } });
           const userId = user.sub || data.sub;
+          const removedOrgIdLower = data.removedOrgId.toLowerCase();
           const userOrganisations = await getUserOrganisationsRaw({ userId });
           const organisationAccess = userOrganisations
             ? userOrganisations.find(
-                (o) =>
-                  o.organisation.id.toLowerCase() ===
-                  data.removedOrgId.toLowerCase(),
+                (o) => o.organisation.id.toLowerCase() === removedOrgIdLower,
               )
             : null;
           if (organisationAccess) {
-            const removedOrgIdLower = data.removedOrgId.toLowerCase();
+            // Child services roll up into their parent application for SOAP sync
+            // purposes, so removing one child would otherwise enqueue a full
+            // deactivation of the parent even though the user still holds the
+            // parent (or a sibling child) in this same organisation. Check for
+            // that remaining access before deactivating.
             const removedAppIdLower = removedApp.id.toLowerCase();
             const removedAppChildIds = removedApp.children
               ? removedApp.children.map((c) => c.id.toLowerCase())
               : [];
             const remainingAccess = await getUserServicesRaw({ userId });
-            const stillHasAccessToRemovedApp =
+            const matchedRemainingAccess =
               remainingAccess &&
-              remainingAccess.some(
+              remainingAccess.find(
                 (a) =>
                   a.organisationId.toLowerCase() === removedOrgIdLower &&
                   (a.serviceId.toLowerCase() === removedAppIdLower ||
                     removedAppChildIds.includes(a.serviceId.toLowerCase())),
               );
-            if (stillHasAccessToRemovedApp) {
+            if (matchedRemainingAccess) {
               logger.info(
-                `Skipped deactivation sync for removed service ${data.removedServiceId} for user ${data.sub}; user retains access to application ${removedApp.id} in organisation ${data.removedOrgId}`,
+                `Skipped deactivation sync for removed service ${data.removedServiceId} for user ${data.sub}; user retains access to ${matchedRemainingAccess.serviceId} (application ${removedApp.id}) in organisation ${data.removedOrgId}`,
                 { correlationId },
               );
             } else {

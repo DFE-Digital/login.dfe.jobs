@@ -721,7 +721,7 @@ describe("when handling userupdated_v1 job", () => {
     );
     expect(deactivationCall).toBeUndefined();
     expect(logger.info).toHaveBeenCalledWith(
-      "Skipped deactivation sync for removed service app-child for user 123; user retains access to application app-parent in organisation organisation1",
+      "Skipped deactivation sync for removed service app-child for user 123; user retains access to app-parent (application app-parent) in organisation organisation1",
       { correlationId: "userupdated-removed-1" },
     );
   });
@@ -762,7 +762,7 @@ describe("when handling userupdated_v1 job", () => {
     );
     expect(deactivationCall).toBeUndefined();
     expect(logger.info).toHaveBeenCalledWith(
-      "Skipped deactivation sync for removed service app-child for user 123; user retains access to application app-parent in organisation organisation1",
+      "Skipped deactivation sync for removed service app-child for user 123; user retains access to app-sibling-child (application app-parent) in organisation organisation1",
       { correlationId: "userupdated-removed-1" },
     );
   });
