@@ -164,7 +164,7 @@ const process = async (config, logger, application, data, jobId) => {
       correlationId,
     );
 
-    if (user.deactivateService) {
+    if (action === "DEACTIVATE") {
       await clearAction(
         repository,
         applicationId,

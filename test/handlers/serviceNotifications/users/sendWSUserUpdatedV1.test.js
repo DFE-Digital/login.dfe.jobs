@@ -264,7 +264,10 @@ describe("when handling sendwsuserupdated_v1 job", () => {
     expect(repository.userState.upsert).not.toHaveBeenCalled();
   });
 
-  it("sends UPDATE (not DEACTIVATE) and upserts (not destroys) when user.status is 0 but deactivateService flag is absent and a previous action exists — regression guard for global account deactivation", async () => {
+  it("does not deactivate on global account deactivation without deactivateService flag", async () => {
+    // Global account deactivation sends status: 0 without the deactivateService
+    // flag (unlike service-removal jobs). This must keep behaving as UPDATE/upsert,
+    // not DEACTIVATE/destroy — regression guard for that pre-existing path.
     repository.userState.findOne.mockResolvedValue({
       last_action_sent: "UPDATE",
     });
