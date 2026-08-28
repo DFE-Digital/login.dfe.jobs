@@ -37,4 +37,45 @@ describe("provisionUserS2SFormatter", () => {
         "</ws:pur></ws:ProvisionUser></soapenv:Body></soapenv:Envelope>",
     );
   });
+
+  it("passes wsAccountStatusCode through unchanged as a number", () => {
+    const formatter = new provisionUserS2SFormatter();
+    const message = formatter.getProvisionUserSoapMessage(
+      "http://example.com/ns",
+      "UPDATE",
+      "uid1",
+      "uname1",
+      "Jane",
+      "Doe",
+      "jane@example.com",
+      "org-1",
+      1,
+    );
+    expect(message._body.ProvisionUser.pur.wsAccountStatusCode).toBe(1);
+  });
+
+  it("sends action DEACTIVATE with wsAccountStatusCode 0 for a deactivation", () => {
+    const formatter = new provisionUserS2SFormatter();
+    const message = formatter.getProvisionUserSoapMessage(
+      "http://example.com/ns",
+      "DEACTIVATE",
+      "uid1",
+      "uname1",
+      "Jane",
+      "Doe",
+      "jane@example.com",
+      "org-1",
+      0,
+    );
+    expect(message._body.ProvisionUser.pur.action).toBe("DEACTIVATE");
+    expect(message._body.ProvisionUser.pur.wsAccountStatusCode).toBe(0);
+    // Asserted on the serialised XML too: the in-memory body can hold a 0
+    // while the element on the wire is empty if serialisation drops it.
+    expect(message.toXmlString()).toContain(
+      "<ws:wsAccountStatusCode>0</ws:wsAccountStatusCode>",
+    );
+    expect(message.toXmlString()).toContain(
+      "<ws:action>DEACTIVATE</ws:action>",
+    );
+  });
 });
