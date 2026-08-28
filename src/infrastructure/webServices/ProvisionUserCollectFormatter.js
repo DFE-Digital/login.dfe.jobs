@@ -42,8 +42,7 @@ class ProvisionUserCollectFormatter {
             organisationId,
             userId: saUserId,
             userName: saUsername,
-            wsAccountStatusCode:
-              wsAccountStatusCode === 1 ? "Active" : "Archived",
+            wsAccountStatusCode,
           },
         },
       });
