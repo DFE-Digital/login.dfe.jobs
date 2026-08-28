@@ -26,21 +26,13 @@ const jobData = {
 
 describe("When handling user service removed v1 job", () => {
   const mockSendEmail = jest.fn();
-  const mockBullEnqueue = jest.fn();
-  const mockLogger = {
-    warn: jest.fn(),
-    error: jest.fn(),
-  };
 
   beforeEach(() => {
     mockSendEmail.mockReset();
-    mockBullEnqueue.mockReset();
-    mockLogger.warn.mockReset();
-    mockLogger.error.mockReset();
 
     getNotifyAdapter.mockReset();
     getNotifyAdapter.mockReturnValue({ sendEmail: mockSendEmail });
-    bullEnqueue.mockImplementation(mockBullEnqueue);
+    bullEnqueue.mockReset();
   });
 
   it("should return a handler with a processor", async () => {
@@ -53,7 +45,7 @@ describe("When handling user service removed v1 job", () => {
   });
 
   it("should get email adapter with supplied config", async () => {
-    const handler = getHandler(config, mockLogger);
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
@@ -63,7 +55,7 @@ describe("When handling user service removed v1 job", () => {
   });
 
   it("should send email with userServiceRemoved template", async () => {
-    const handler = getHandler(config, mockLogger);
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
@@ -76,7 +68,7 @@ describe("When handling user service removed v1 job", () => {
   });
 
   it("should send email to users email address", async () => {
-    const handler = getHandler(config, mockLogger);
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
@@ -98,7 +90,7 @@ describe("When handling user service removed v1 job", () => {
   });
 
   it("does not enqueue a userupdated_v1 job after sending the email", async () => {
-    const handler = getHandler(config, mockLogger);
+    const handler = getHandler(config);
 
     await handler.processor(jobData);
 
