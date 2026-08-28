@@ -114,6 +114,25 @@ const storeAction = async (
   }
 };
 
+const clearAction = async (
+  repository,
+  applicationId,
+  userId,
+  organisationId,
+) => {
+  try {
+    await repository.userState.destroy({
+      where: {
+        service_id: applicationId,
+        user_id: userId,
+        organisation_id: organisationId,
+      },
+    });
+  } catch (e) {
+    throw new Error(`${e.message} thrown when clearing state`);
+  }
+};
+
 const process = async (config, logger, application, data, jobId) => {
   const correlationId = `senduserupdated-${jobId || uuid()}`;
   const { applicationId, user } = data;
@@ -128,8 +147,16 @@ const process = async (config, logger, application, data, jobId) => {
       user.userId,
       user.organisationId,
     );
-    const action = previousAction ? "UPDATE" : "CREATE";
+    const action = user.deactivateService
+      ? "DEACTIVATE"
+      : previousAction
+        ? "UPDATE"
+        : "CREATE";
 
+    logger.info(
+      `Sending SOAP request to application ${applicationId} for user ${user.userId} (action: ${action})`,
+      { correlationId },
+    );
     await sendUpdatedUserToApplication(
       action,
       user,
@@ -137,13 +164,22 @@ const process = async (config, logger, application, data, jobId) => {
       correlationId,
     );
 
-    await storeAction(
-      repository,
-      applicationId,
-      user.userId,
-      user.organisationId,
-      action,
-    );
+    if (action === "DEACTIVATE") {
+      await clearAction(
+        repository,
+        applicationId,
+        user.userId,
+        user.organisationId,
+      );
+    } else {
+      await storeAction(
+        repository,
+        applicationId,
+        user.userId,
+        user.organisationId,
+        action,
+      );
+    }
   } catch (e) {
     logger.error(
       `Error sending user update for ${user.userId} to ${applicationId} - ${e.message}`,
