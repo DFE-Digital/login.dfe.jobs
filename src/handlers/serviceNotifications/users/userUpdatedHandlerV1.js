@@ -213,12 +213,14 @@ const process = async (config, logger, data, jobId) => {
           } else {
             logger.warn(
               `Could not find organisation ${data.removedOrgId} for user ${data.sub} when enqueuing deactivation sync for service ${removedApp.id}`,
+              { correlationId },
             );
           }
         }
       } else {
-        logger.warn(
+        logger.debug(
           `Removed service ${data.removedServiceId} not found in applications requiring notification`,
+          { correlationId },
         );
       }
     } catch (e) {

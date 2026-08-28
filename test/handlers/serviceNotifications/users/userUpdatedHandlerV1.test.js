@@ -561,7 +561,7 @@ describe("when handling userupdated_v1 job", () => {
     );
   });
 
-  it("then it should log a warning when removedServiceId does not match any application", async () => {
+  it("then it should log a debug message when removedServiceId does not match any application", async () => {
     getAllApplicationRequiringNotification.mockReset().mockReturnValue([
       {
         id: "app-1",
@@ -575,8 +575,9 @@ describe("when handling userupdated_v1 job", () => {
       jobId,
     );
 
-    expect(logger.warn).toHaveBeenCalledWith(
+    expect(logger.debug).toHaveBeenCalledWith(
       "Removed service nonexistent not found in applications requiring notification",
+      { correlationId: "userupdated-removed-1" },
     );
     expect(mockAdd).not.toHaveBeenCalled();
   });
@@ -872,6 +873,7 @@ describe("when handling userupdated_v1 job", () => {
 
     expect(logger.warn).toHaveBeenCalledWith(
       "Could not find organisation organisation1 for user 123 when enqueuing deactivation sync for service app-1",
+      { correlationId: "userupdated-removed-1" },
     );
     expect(mockAdd).not.toHaveBeenCalled();
   });
