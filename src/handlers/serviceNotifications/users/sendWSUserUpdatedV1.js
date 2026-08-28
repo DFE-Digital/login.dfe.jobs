@@ -153,10 +153,15 @@ const process = async (config, logger, application, data, jobId) => {
         ? "UPDATE"
         : "CREATE";
 
-    logger.info(
-      `Sending SOAP request to application ${applicationId} for user ${user.userId} (action: ${action})`,
-      { correlationId },
-    );
+    if (action === "DEACTIVATE") {
+      // Only deactivations are logged on the way out. The sibling organisation
+      // and role send handlers log nothing on success, and doing so for every
+      // CREATE/UPDATE would add a line per user per application sync.
+      logger.info(
+        `Sending SOAP deactivation to application ${applicationId} for user ${user.userId}`,
+        { correlationId },
+      );
+    }
     await sendUpdatedUserToApplication(
       action,
       user,
