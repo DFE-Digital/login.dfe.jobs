@@ -38,7 +38,7 @@ const syncEmailToSearchIndex = async (data, correlationId, logger) => {
       userPendingEmail: null,
     });
     logger.info(
-      `Refreshed search index email for user ${data.sub} and cleared pendingEmail`,
+      `Refreshed search index email for user ${data.sub} and ensured pendingEmail is cleared`,
       { correlationId },
     );
   } catch (e) {

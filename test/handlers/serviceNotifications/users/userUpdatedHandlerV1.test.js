@@ -525,6 +525,7 @@ describe("when handling userupdated_v1 job", () => {
         expect.stringContaining("search-unavailable"),
         expect.any(Object),
       );
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
       expect(mockAdd).toHaveBeenCalledTimes(1);
       expect(mockAdd).toHaveBeenCalledWith(
         "sendwsuserupdated_v1_service1",
