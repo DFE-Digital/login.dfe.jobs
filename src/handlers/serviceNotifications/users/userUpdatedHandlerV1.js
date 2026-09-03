@@ -3,6 +3,8 @@ const {
   getUserRaw,
   getUserServicesRaw,
   getUserOrganisationsRaw,
+  searchUserByIdRaw,
+  updateUserDetailsInSearchIndex,
 } = require("login.dfe.api-client/users");
 const { bullEnqueue } = require("../../../infrastructure/jobQueue/BullHelpers");
 const { v4: uuid } = require("uuid");
@@ -11,6 +13,41 @@ const applictionRequiringNotificationCondition = (a) =>
   a.relyingParty &&
   a.relyingParty.params &&
   a.relyingParty.params.receiveUserUpdates === "true";
+
+const syncEmailToSearchIndex = async (data, correlationId, logger) => {
+  try {
+    const currentEmail =
+      data.email || (await getUserRaw({ by: { id: data.sub } })).email;
+    if (!currentEmail) {
+      return;
+    }
+
+    const indexedUser = await searchUserByIdRaw({ userId: data.sub });
+    if (!indexedUser) {
+      return;
+    }
+
+    const indexedEmail = (indexedUser.email || "").toLowerCase();
+    if (indexedEmail === currentEmail.toLowerCase()) {
+      return;
+    }
+
+    await updateUserDetailsInSearchIndex({
+      userId: data.sub,
+      userEmail: currentEmail,
+      userPendingEmail: null,
+    });
+    logger.info(
+      `Refreshed search index email for user ${data.sub} and cleared pendingEmail`,
+      { correlationId },
+    );
+  } catch (e) {
+    logger.error(
+      `Failed to sync email to search index for user ${data.sub} - ${e.message}`,
+      { correlationId },
+    );
+  }
+};
 
 const getRequiredJobs = async (config, logger, userData, correlationId) => {
   let user = userData;
@@ -112,6 +149,12 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
 };
 
 const process = async (config, logger, data, jobId) => {
+  await syncEmailToSearchIndex(
+    data,
+    `userupdated-searchsync-${jobId || uuid()}`,
+    logger,
+  );
+
   const correlationId = `userupdated-${jobId || uuid()}`;
 
   const jobs = await getRequiredJobs(config, logger, data, correlationId);

@@ -4,6 +4,8 @@ jest.mock("login.dfe.api-client/users", () => ({
   getUserRaw: jest.fn(),
   getUserServicesRaw: jest.fn(),
   getUserOrganisationsRaw: jest.fn(),
+  searchUserByIdRaw: jest.fn(),
+  updateUserDetailsInSearchIndex: jest.fn(),
 }));
 
 jest.mock("../../../../src/infrastructure/config", () => ({}));
@@ -27,6 +29,8 @@ const {
   getUserRaw,
   getUserServicesRaw,
   getUserOrganisationsRaw,
+  searchUserByIdRaw,
+  updateUserDetailsInSearchIndex,
 } = require("login.dfe.api-client/users");
 const {
   getAllApplicationRequiringNotification,
@@ -80,6 +84,13 @@ describe("when handling userupdated_v1 job", () => {
       status: 2,
     });
     getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+
+    searchUserByIdRaw.mockResolvedValue({
+      id: "user1",
+      email: "user.one@unit.tests",
+      pendingEmail: null,
+    });
+    updateUserDetailsInSearchIndex.mockReset().mockResolvedValue(true);
   });
 
   it("then it should return handler with correct type", () => {
@@ -286,7 +297,9 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor({ sub: data.sub, status: data.status }, jobId);
 
-    expect(getUserRaw).toHaveBeenCalledTimes(1);
+    // Called twice: once by syncEmailToSearchIndex's independent email
+    // fallback, and once by getRequiredJobs' own fallback.
+    expect(getUserRaw).toHaveBeenCalledTimes(2);
     expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
     expect(mockClose).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledTimes(1);
@@ -413,5 +426,111 @@ describe("when handling userupdated_v1 job", () => {
       },
       bullQueueTtl,
     );
+  });
+
+  describe("when syncing email changes to the search index", () => {
+    it("then it should refresh the index and clear pendingEmail when directories email differs from the indexed email", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "user.one-old@unit.tests",
+        pendingEmail: "user.one@unit.tests",
+      });
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(searchUserByIdRaw).toHaveBeenCalledWith({ userId: "user1" });
+      expect(updateUserDetailsInSearchIndex).toHaveBeenCalledWith({
+        userId: "user1",
+        userEmail: "user.one@unit.tests",
+        userPendingEmail: null,
+      });
+    });
+
+    it("then it should treat emails as equal regardless of case and not update the index", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "USER.ONE@unit.tests",
+        pendingEmail: null,
+      });
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
+    });
+
+    it("then it should not update the index when the indexed email already matches directories", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "user.one@unit.tests",
+        pendingEmail: null,
+      });
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
+    });
+
+    it("then it should not update the index when the user has no indexed document yet", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue(undefined);
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
+    });
+
+    it("then it should resolve the email from directories when data has no email, for the purpose of the search sync", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "user.one-old@unit.tests",
+        pendingEmail: null,
+      });
+
+      const handler = getHandler(config, logger);
+      await handler.processor({ sub: data.sub, status: data.status }, jobId);
+
+      expect(updateUserDetailsInSearchIndex).toHaveBeenCalledWith({
+        userId: "user1",
+        userEmail: "user.one-fromdir@unit.tests",
+        userPendingEmail: null,
+      });
+    });
+
+    it("then it should log an error and still enqueue WS sync jobs when the search index sync fails", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+        {
+          id: "service1",
+          relyingParty: {
+            params: {
+              wsWsdlUrl: "https://service.one/wsdl",
+              wsProvisionUserAction: "pu-action",
+            },
+          },
+        },
+      ]);
+      searchUserByIdRaw.mockRejectedValueOnce(new Error("search-unavailable"));
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining("search-unavailable"),
+        expect.any(Object),
+      );
+      expect(mockAdd).toHaveBeenCalledTimes(1);
+      expect(mockAdd).toHaveBeenCalledWith(
+        "sendwsuserupdated_v1_service1",
+        expect.objectContaining({ applicationId: "service1" }),
+        bullQueueTtl,
+      );
+    });
   });
 });
