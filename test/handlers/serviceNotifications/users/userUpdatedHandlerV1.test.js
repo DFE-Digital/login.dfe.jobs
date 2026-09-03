@@ -533,5 +533,38 @@ describe("when handling userupdated_v1 job", () => {
         bullQueueTtl,
       );
     });
+
+    it("then it should not log a success message when the index update does not apply", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "user.one-old@unit.tests",
+        pendingEmail: null,
+      });
+      updateUserDetailsInSearchIndex.mockResolvedValue(false);
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("did not apply"),
+        expect.any(Object),
+      );
+      expect(logger.info).not.toHaveBeenCalledWith(
+        expect.stringContaining("Refreshed search index"),
+        expect.any(Object),
+      );
+    });
+
+    it("then it should not throw when data has no email and directories has no record for the user", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      getUserRaw.mockResolvedValueOnce(undefined);
+
+      const handler = getHandler(config, logger);
+      await handler.processor({ sub: data.sub, status: data.status }, jobId);
+
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
+      expect(logger.error).not.toHaveBeenCalled();
+    });
   });
 });

@@ -16,8 +16,10 @@ const applictionRequiringNotificationCondition = (a) =>
 
 const syncEmailToSearchIndex = async (data, correlationId, logger) => {
   try {
-    const currentEmail =
-      data.email || (await getUserRaw({ by: { id: data.sub } })).email;
+    const resolvedUser = data.email
+      ? data
+      : await getUserRaw({ by: { id: data.sub } });
+    const currentEmail = resolvedUser && resolvedUser.email;
     if (!currentEmail) {
       return;
     }
@@ -32,15 +34,22 @@ const syncEmailToSearchIndex = async (data, correlationId, logger) => {
       return;
     }
 
-    await updateUserDetailsInSearchIndex({
+    const updated = await updateUserDetailsInSearchIndex({
       userId: data.sub,
       userEmail: currentEmail,
       userPendingEmail: null,
     });
-    logger.info(
-      `Refreshed search index email for user ${data.sub} and ensured pendingEmail is cleared`,
-      { correlationId },
-    );
+    if (updated) {
+      logger.info(
+        `Refreshed search index email for user ${data.sub} and ensured pendingEmail is cleared`,
+        { correlationId },
+      );
+    } else {
+      logger.warn(
+        `Search index update did not apply for user ${data.sub} - user may no longer be indexed`,
+        { correlationId },
+      );
+    }
   } catch (e) {
     logger.error(
       `Failed to sync email to search index for user ${data.sub} - ${e.message}`,
