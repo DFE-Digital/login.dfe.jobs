@@ -297,8 +297,9 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor({ sub: data.sub, status: data.status }, jobId);
 
-    // Called twice: once by syncEmailToSearchIndex's independent email
-    // fallback, and once by getRequiredJobs' own fallback.
+    // Called twice: once by syncEmailToSearchIndex (which always resolves
+    // the current email from directories), and once by getRequiredJobs'
+    // own fallback (email is absent here).
     expect(getUserRaw).toHaveBeenCalledTimes(2);
     expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
     expect(mockClose).toHaveBeenCalledTimes(1);
@@ -343,7 +344,10 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor({ sub: data.sub, email: data.email }, jobId);
 
-    expect(getUserRaw).toHaveBeenCalledTimes(1);
+    // Called twice: once by syncEmailToSearchIndex (which always resolves
+    // the current email from directories), and once by getRequiredJobs'
+    // own fallback (status is absent here).
+    expect(getUserRaw).toHaveBeenCalledTimes(2);
     expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
     expect(mockClose).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledTimes(1);
@@ -429,30 +433,60 @@ describe("when handling userupdated_v1 job", () => {
   });
 
   describe("when syncing email changes to the search index", () => {
+    // Every test in this block relies on the beforeEach default:
+    // getUserRaw resolves { email: "user.one-fromdir@unit.tests" }, which
+    // syncEmailToSearchIndex now always treats as the current directories
+    // email, regardless of what data.email says.
+
     it("then it should refresh the index and clear pendingEmail when directories email differs from the indexed email", async () => {
       getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
       searchUserByIdRaw.mockResolvedValue({
         id: "user1",
         email: "user.one-old@unit.tests",
-        pendingEmail: "user.one@unit.tests",
+        pendingEmail: "user.one-fromdir@unit.tests",
       });
 
       const handler = getHandler(config, logger);
       await handler.processor(data, jobId);
 
+      expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
       expect(searchUserByIdRaw).toHaveBeenCalledWith({ userId: "user1" });
       expect(updateUserDetailsInSearchIndex).toHaveBeenCalledWith({
         userId: "user1",
-        userEmail: "user.one@unit.tests",
+        userEmail: "user.one-fromdir@unit.tests",
         userPendingEmail: null,
       });
+    });
+
+    it("then it should ignore a stale email in the event payload and use the current directories value instead", async () => {
+      // data.email ("user.one@unit.tests") is an out-of-date snapshot from
+      // when this event was originally fired. If a later event for the
+      // same user has already been processed and brought directories and
+      // the index into agreement on a newer email, this (delayed/retried,
+      // now stale) event must not revert the index back to the old value.
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      getUserRaw.mockResolvedValue({
+        sub: "user1",
+        email: "user.one-current@unit.tests",
+        status: 2,
+      });
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "user.one-current@unit.tests",
+        pendingEmail: null,
+      });
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
     });
 
     it("then it should treat emails as equal regardless of case and not update the index", async () => {
       getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
       searchUserByIdRaw.mockResolvedValue({
         id: "user1",
-        email: "USER.ONE@unit.tests",
+        email: "USER.ONE-FROMDIR@unit.tests",
         pendingEmail: null,
       });
 
@@ -466,7 +500,7 @@ describe("when handling userupdated_v1 job", () => {
       getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
       searchUserByIdRaw.mockResolvedValue({
         id: "user1",
-        email: "user.one@unit.tests",
+        email: "user.one-fromdir@unit.tests",
         pendingEmail: null,
       });
 
@@ -486,7 +520,7 @@ describe("when handling userupdated_v1 job", () => {
       expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
     });
 
-    it("then it should resolve the email from directories when data has no email, for the purpose of the search sync", async () => {
+    it("then it should resolve the current email from directories even when the event payload has no email", async () => {
       getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
       searchUserByIdRaw.mockResolvedValue({
         id: "user1",
@@ -556,15 +590,34 @@ describe("when handling userupdated_v1 job", () => {
       );
     });
 
-    it("then it should not throw when data has no email and directories has no record for the user", async () => {
-      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
-      getUserRaw.mockResolvedValueOnce(undefined);
+    it("then it should not throw and should skip WS sync enqueue when directories has no record for the user", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+        {
+          id: "service1",
+          relyingParty: {
+            params: {
+              wsWsdlUrl: "https://service.one/wsdl",
+              wsProvisionUserAction: "pu-action",
+            },
+          },
+        },
+      ]);
+      // Persistent (not once): both syncEmailToSearchIndex's own lookup and
+      // getRequiredJobs' fallback lookup must see a missing record, since
+      // data lacks status/email and each function calls getUserRaw
+      // independently.
+      getUserRaw.mockResolvedValue(undefined);
 
       const handler = getHandler(config, logger);
       await handler.processor({ sub: data.sub, status: data.status }, jobId);
 
       expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
       expect(logger.error).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Could not find directory record"),
+        expect.any(Object),
+      );
+      expect(mockAdd).not.toHaveBeenCalled();
     });
   });
 });

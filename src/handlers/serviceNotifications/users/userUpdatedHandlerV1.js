@@ -16,9 +16,13 @@ const applictionRequiringNotificationCondition = (a) =>
 
 const syncEmailToSearchIndex = async (data, correlationId, logger) => {
   try {
-    const resolvedUser = data.email
-      ? data
-      : await getUserRaw({ by: { id: data.sub } });
+    // Always resolve the email from directories rather than trusting
+    // data.email: the event payload is a snapshot from whenever it was
+    // fired, and an older, delayed event processed after a newer one for
+    // the same user would otherwise overwrite the index with a stale
+    // value. Reading current directory state is what makes this genuinely
+    // self-healing regardless of queue ordering.
+    const resolvedUser = await getUserRaw({ by: { id: data.sub } });
     const currentEmail = resolvedUser && resolvedUser.email;
     if (!currentEmail) {
       return;
@@ -62,6 +66,13 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
   let user = userData;
   if (!user.status || !user.email) {
     user = await getUserRaw({ by: { id: user.sub } });
+  }
+  if (!user) {
+    logger.warn(
+      `Could not find directory record for user ${userData.sub}; skipping WS sync job enqueue`,
+      { correlationId },
+    );
+    return [];
   }
 
   const jobs = [];
@@ -157,20 +168,29 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
   return jobs;
 };
 
-const process = async (config, logger, data, jobId) => {
-  await syncEmailToSearchIndex(
-    data,
-    `userupdated-searchsync-${jobId || uuid()}`,
-    logger,
-  );
-
-  const correlationId = `userupdated-${jobId || uuid()}`;
-
+const enqueueWsSyncJobs = async (config, logger, data, correlationId) => {
   const jobs = await getRequiredJobs(config, logger, data, correlationId);
 
   for (let i = 0; i < jobs.length; i += 1) {
     await bullEnqueue(`sendwsuserupdated_v1_${jobs[i].applicationId}`, jobs[i]);
   }
+};
+
+const process = async (config, logger, data, jobId) => {
+  const correlationId = `userupdated-${jobId || uuid()}`;
+
+  // Run independently and concurrently: a slow or unavailable search index
+  // must not delay/stall the legacy WS-sync jobs this handler is also
+  // responsible for enqueueing (syncEmailToSearchIndex never throws, so
+  // this can't mask a WS-sync failure or vice versa).
+  await Promise.all([
+    syncEmailToSearchIndex(
+      data,
+      `userupdated-searchsync-${jobId || uuid()}`,
+      logger,
+    ),
+    enqueueWsSyncJobs(config, logger, data, correlationId),
+  ]);
 };
 
 const getHandler = (config, logger) => {
