@@ -297,10 +297,10 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor({ sub: data.sub, status: data.status }, jobId);
 
-    // Called twice: once by syncEmailToSearchIndex (which always resolves
-    // the current email from directories), and once by getRequiredJobs'
-    // own fallback (email is absent here).
-    expect(getUserRaw).toHaveBeenCalledTimes(2);
+    // syncEmailToSearchIndex and getRequiredJobs share a single in-flight
+    // getUserRaw request (started once in process()), so this is called
+    // exactly once even though both would otherwise need it here.
+    expect(getUserRaw).toHaveBeenCalledTimes(1);
     expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
     expect(mockClose).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledTimes(1);
@@ -344,10 +344,10 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor({ sub: data.sub, email: data.email }, jobId);
 
-    // Called twice: once by syncEmailToSearchIndex (which always resolves
-    // the current email from directories), and once by getRequiredJobs'
-    // own fallback (status is absent here).
-    expect(getUserRaw).toHaveBeenCalledTimes(2);
+    // syncEmailToSearchIndex and getRequiredJobs share a single in-flight
+    // getUserRaw request (started once in process()), so this is called
+    // exactly once even though both would otherwise need it here.
+    expect(getUserRaw).toHaveBeenCalledTimes(1);
     expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
     expect(mockClose).toHaveBeenCalledTimes(1);
     expect(mockAdd).toHaveBeenCalledTimes(1);
@@ -568,6 +568,26 @@ describe("when handling userupdated_v1 job", () => {
       );
     });
 
+    it("then it should propagate a WS sync failure so the job fails, even though the search sync succeeds", async () => {
+      // The two branches run concurrently via Promise.all: a rejection
+      // from the WS-sync side must still fail process() (so BullMQ can
+      // retry/alert on it), and must not be masked or swallowed by the
+      // unrelated, always-successful-or-caught search sync running
+      // alongside it.
+      getAllApplicationRequiringNotification
+        .mockReset()
+        .mockImplementation(() => {
+          throw new Error("ws-sync-unavailable");
+        });
+
+      const handler = getHandler(config, logger);
+
+      await expect(handler.processor(data, jobId)).rejects.toThrow(
+        "ws-sync-unavailable",
+      );
+      expect(updateUserDetailsInSearchIndex).toHaveBeenCalled();
+    });
+
     it("then it should not log a success message when the index update does not apply", async () => {
       getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
       searchUserByIdRaw.mockResolvedValue({
@@ -602,10 +622,9 @@ describe("when handling userupdated_v1 job", () => {
           },
         },
       ]);
-      // Persistent (not once): both syncEmailToSearchIndex's own lookup and
-      // getRequiredJobs' fallback lookup must see a missing record, since
-      // data lacks status/email and each function calls getUserRaw
-      // independently.
+      // Persistent (not once): syncEmailToSearchIndex and getRequiredJobs
+      // both await the same shared getUserRaw request, so a single
+      // resolved value of undefined must be visible to both.
       getUserRaw.mockResolvedValue(undefined);
 
       const handler = getHandler(config, logger);

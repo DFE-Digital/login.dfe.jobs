@@ -14,15 +14,22 @@ const applictionRequiringNotificationCondition = (a) =>
   a.relyingParty.params &&
   a.relyingParty.params.receiveUserUpdates === "true";
 
-const syncEmailToSearchIndex = async (data, correlationId, logger) => {
+const syncEmailToSearchIndex = async (
+  data,
+  userLookup,
+  correlationId,
+  logger,
+) => {
   try {
     // Always resolve the email from directories rather than trusting
     // data.email: the event payload is a snapshot from whenever it was
     // fired, and an older, delayed event processed after a newer one for
     // the same user would otherwise overwrite the index with a stale
     // value. Reading current directory state is what makes this genuinely
-    // self-healing regardless of queue ordering.
-    const resolvedUser = await getUserRaw({ by: { id: data.sub } });
+    // self-healing regardless of queue ordering. userLookup is a single
+    // in-flight getUserRaw request shared with getRequiredJobs, so this
+    // never costs a second directories round trip on its own.
+    const resolvedUser = await userLookup;
     const currentEmail = resolvedUser && resolvedUser.email;
     if (!currentEmail) {
       return;
@@ -62,10 +69,16 @@ const syncEmailToSearchIndex = async (data, correlationId, logger) => {
   }
 };
 
-const getRequiredJobs = async (config, logger, userData, correlationId) => {
+const getRequiredJobs = async (
+  config,
+  logger,
+  userData,
+  userLookup,
+  correlationId,
+) => {
   let user = userData;
   if (!user.status || !user.email) {
-    user = await getUserRaw({ by: { id: user.sub } });
+    user = await userLookup;
   }
   if (!user) {
     logger.warn(
@@ -168,8 +181,20 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
   return jobs;
 };
 
-const enqueueWsSyncJobs = async (config, logger, data, correlationId) => {
-  const jobs = await getRequiredJobs(config, logger, data, correlationId);
+const enqueueWsSyncJobs = async (
+  config,
+  logger,
+  data,
+  userLookup,
+  correlationId,
+) => {
+  const jobs = await getRequiredJobs(
+    config,
+    logger,
+    data,
+    userLookup,
+    correlationId,
+  );
 
   for (let i = 0; i < jobs.length; i += 1) {
     await bullEnqueue(`sendwsuserupdated_v1_${jobs[i].applicationId}`, jobs[i]);
@@ -179,17 +204,19 @@ const enqueueWsSyncJobs = async (config, logger, data, correlationId) => {
 const process = async (config, logger, data, jobId) => {
   const correlationId = `userupdated-${jobId || uuid()}`;
 
+  // Started once, before the Promise.all, and shared: a Promise's
+  // underlying request runs exactly once no matter how many places await
+  // it, so both branches below get the same directories read without a
+  // second round trip.
+  const userLookup = getUserRaw({ by: { id: data.sub } });
+
   // Run independently and concurrently: a slow or unavailable search index
   // must not delay/stall the legacy WS-sync jobs this handler is also
   // responsible for enqueueing (syncEmailToSearchIndex never throws, so
   // this can't mask a WS-sync failure or vice versa).
   await Promise.all([
-    syncEmailToSearchIndex(
-      data,
-      `userupdated-searchsync-${jobId || uuid()}`,
-      logger,
-    ),
-    enqueueWsSyncJobs(config, logger, data, correlationId),
+    syncEmailToSearchIndex(data, userLookup, correlationId, logger),
+    enqueueWsSyncJobs(config, logger, data, userLookup, correlationId),
   ]);
 };
 
