@@ -4,6 +4,8 @@ jest.mock("login.dfe.api-client/users", () => ({
   getUserRaw: jest.fn(),
   getUserServicesRaw: jest.fn(),
   getUserOrganisationsRaw: jest.fn(),
+  searchUserByIdRaw: jest.fn(),
+  updateUserDetailsInSearchIndex: jest.fn(),
 }));
 
 jest.mock("../../../../src/infrastructure/config", () => ({}));
@@ -27,6 +29,8 @@ const {
   getUserRaw,
   getUserServicesRaw,
   getUserOrganisationsRaw,
+  searchUserByIdRaw,
+  updateUserDetailsInSearchIndex,
 } = require("login.dfe.api-client/users");
 const {
   getAllApplicationRequiringNotification,
@@ -80,6 +84,13 @@ describe("when handling userupdated_v1 job", () => {
       status: 2,
     });
     getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+
+    searchUserByIdRaw.mockResolvedValue({
+      id: "user1",
+      email: "user.one@unit.tests",
+      pendingEmail: null,
+    });
+    updateUserDetailsInSearchIndex.mockReset().mockResolvedValue(true);
   });
 
   it("then it should return handler with correct type", () => {
@@ -286,6 +297,9 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor({ sub: data.sub, status: data.status }, jobId);
 
+    // syncEmailToSearchIndex and getRequiredJobs share a single in-flight
+    // getUserRaw request (started once in process()), so this is called
+    // exactly once even though both would otherwise need it here.
     expect(getUserRaw).toHaveBeenCalledTimes(1);
     expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
     expect(mockClose).toHaveBeenCalledTimes(1);
@@ -330,6 +344,9 @@ describe("when handling userupdated_v1 job", () => {
     const handler = getHandler(config, logger);
     await handler.processor({ sub: data.sub, email: data.email }, jobId);
 
+    // syncEmailToSearchIndex and getRequiredJobs share a single in-flight
+    // getUserRaw request (started once in process()), so this is called
+    // exactly once even though both would otherwise need it here.
     expect(getUserRaw).toHaveBeenCalledTimes(1);
     expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
     expect(mockClose).toHaveBeenCalledTimes(1);
@@ -413,5 +430,213 @@ describe("when handling userupdated_v1 job", () => {
       },
       bullQueueTtl,
     );
+  });
+
+  describe("when syncing email changes to the search index", () => {
+    // Every test in this block relies on the beforeEach default:
+    // getUserRaw resolves { email: "user.one-fromdir@unit.tests" }, which
+    // syncEmailToSearchIndex now always treats as the current directories
+    // email, regardless of what data.email says.
+
+    it("then it should refresh the index and clear pendingEmail when directories email differs from the indexed email", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "user.one-old@unit.tests",
+        pendingEmail: "user.one-fromdir@unit.tests",
+      });
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(getUserRaw).toHaveBeenCalledWith({ by: { id: "user1" } });
+      expect(searchUserByIdRaw).toHaveBeenCalledWith({ userId: "user1" });
+      expect(updateUserDetailsInSearchIndex).toHaveBeenCalledWith({
+        userId: "user1",
+        userEmail: "user.one-fromdir@unit.tests",
+        userPendingEmail: null,
+      });
+    });
+
+    it("then it should ignore a stale email in the event payload and use the current directories value instead", async () => {
+      // data.email ("user.one@unit.tests") is an out-of-date snapshot from
+      // when this event was originally fired. If a later event for the
+      // same user has already been processed and brought directories and
+      // the index into agreement on a newer email, this (delayed/retried,
+      // now stale) event must not revert the index back to the old value.
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      getUserRaw.mockResolvedValue({
+        sub: "user1",
+        email: "user.one-current@unit.tests",
+        status: 2,
+      });
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "user.one-current@unit.tests",
+        pendingEmail: null,
+      });
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
+    });
+
+    it("then it should treat emails as equal regardless of case and not update the index", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "USER.ONE-FROMDIR@unit.tests",
+        pendingEmail: null,
+      });
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
+    });
+
+    it("then it should not update the index when the indexed email already matches directories", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "user.one-fromdir@unit.tests",
+        pendingEmail: null,
+      });
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
+    });
+
+    it("then it should not update the index when the user has no indexed document yet", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue(undefined);
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
+    });
+
+    it("then it should resolve the current email from directories even when the event payload has no email", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "user.one-old@unit.tests",
+        pendingEmail: null,
+      });
+
+      const handler = getHandler(config, logger);
+      await handler.processor({ sub: data.sub, status: data.status }, jobId);
+
+      expect(updateUserDetailsInSearchIndex).toHaveBeenCalledWith({
+        userId: "user1",
+        userEmail: "user.one-fromdir@unit.tests",
+        userPendingEmail: null,
+      });
+    });
+
+    it("then it should log an error and still enqueue WS sync jobs when the search index sync fails", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+        {
+          id: "service1",
+          relyingParty: {
+            params: {
+              wsWsdlUrl: "https://service.one/wsdl",
+              wsProvisionUserAction: "pu-action",
+            },
+          },
+        },
+      ]);
+      searchUserByIdRaw.mockRejectedValueOnce(new Error("search-unavailable"));
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining("search-unavailable"),
+        expect.any(Object),
+      );
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
+      expect(mockAdd).toHaveBeenCalledTimes(1);
+      expect(mockAdd).toHaveBeenCalledWith(
+        "sendwsuserupdated_v1_service1",
+        expect.objectContaining({ applicationId: "service1" }),
+        bullQueueTtl,
+      );
+    });
+
+    it("then it should propagate a WS sync failure so the job fails, even though the search sync succeeds", async () => {
+      // The two branches run concurrently via Promise.all: a rejection
+      // from the WS-sync side must still fail process() (so BullMQ can
+      // retry/alert on it), and must not be masked or swallowed by the
+      // unrelated, always-successful-or-caught search sync running
+      // alongside it.
+      getAllApplicationRequiringNotification
+        .mockReset()
+        .mockImplementation(() => {
+          throw new Error("ws-sync-unavailable");
+        });
+
+      const handler = getHandler(config, logger);
+
+      await expect(handler.processor(data, jobId)).rejects.toThrow(
+        "ws-sync-unavailable",
+      );
+      expect(updateUserDetailsInSearchIndex).toHaveBeenCalled();
+    });
+
+    it("then it should not log a success message when the index update does not apply", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([]);
+      searchUserByIdRaw.mockResolvedValue({
+        id: "user1",
+        email: "user.one-old@unit.tests",
+        pendingEmail: null,
+      });
+      updateUserDetailsInSearchIndex.mockResolvedValue(false);
+
+      const handler = getHandler(config, logger);
+      await handler.processor(data, jobId);
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("did not apply"),
+        expect.any(Object),
+      );
+      expect(logger.info).not.toHaveBeenCalledWith(
+        expect.stringContaining("Refreshed search index"),
+        expect.any(Object),
+      );
+    });
+
+    it("then it should not throw and should skip WS sync enqueue when directories has no record for the user", async () => {
+      getAllApplicationRequiringNotification.mockReset().mockReturnValue([
+        {
+          id: "service1",
+          relyingParty: {
+            params: {
+              wsWsdlUrl: "https://service.one/wsdl",
+              wsProvisionUserAction: "pu-action",
+            },
+          },
+        },
+      ]);
+      // Persistent (not once): syncEmailToSearchIndex and getRequiredJobs
+      // both await the same shared getUserRaw request, so a single
+      // resolved value of undefined must be visible to both.
+      getUserRaw.mockResolvedValue(undefined);
+
+      const handler = getHandler(config, logger);
+      await handler.processor({ sub: data.sub, status: data.status }, jobId);
+
+      expect(updateUserDetailsInSearchIndex).not.toHaveBeenCalled();
+      expect(logger.error).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Could not find directory record"),
+        expect.any(Object),
+      );
+      expect(mockAdd).not.toHaveBeenCalled();
+    });
   });
 });
