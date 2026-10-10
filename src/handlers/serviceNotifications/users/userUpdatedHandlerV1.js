@@ -203,6 +203,17 @@ const process = async (config, logger, data, jobId) => {
                   roles: [],
                 },
                 applicationId: removedApp.id,
+                // Lets the sender re-verify, immediately before the SOAP call,
+                // that the user has not been re-granted this application.
+                retainedAccessCheck: {
+                  organisationId: data.removedOrgId,
+                  serviceIds: [
+                    removedApp.id,
+                    ...(removedApp.children
+                      ? removedApp.children.map((c) => c.id)
+                      : []),
+                  ],
+                },
               };
               await bullEnqueue(`sendwsuserupdated_v1_${removedApp.id}`, job);
               logger.info(

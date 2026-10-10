@@ -1,8 +1,12 @@
 jest.mock("../../../../src/infrastructure/repository");
+jest.mock("login.dfe.api-client/users", () => ({
+  getUserServicesRaw: jest.fn(),
+}));
 jest.mock(
   "../../../../src/infrastructure/webServices/SecureAccessWebServiceClient",
 );
 
+const { getUserServicesRaw } = require("login.dfe.api-client/users");
 const { getRepository } = require("../../../../src/infrastructure/repository");
 const SecureAccessWebServiceClient = require("../../../../src/infrastructure/webServices/SecureAccessWebServiceClient");
 const {
@@ -465,5 +469,111 @@ describe("when handling sendwsuserupdated_v1 job", () => {
     expect(repository.userState.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ last_action_sent: "UPDATE" }),
     );
+  });
+
+  describe("when re-checking access before sending a deactivation", () => {
+    const deactivationJob = () => ({
+      applicationId: application.id,
+      retainedAccessCheck: {
+        organisationId: "Org-GUID-1",
+        serviceIds: ["parent-svc", "child-svc"],
+      },
+      user: {
+        userId: "user-1",
+        organisationId: "org-1",
+        status: 0,
+        deactivateService: true,
+        roles: [],
+      },
+    });
+
+    beforeEach(() => {
+      getUserServicesRaw.mockReset();
+      logger.mockResetAll();
+      repository.userState.findOne.mockResolvedValue({
+        last_action_sent: "UPDATE",
+      });
+    });
+
+    it("sends the deactivation when the user holds none of the application services in that organisation", async () => {
+      getUserServicesRaw.mockResolvedValue([
+        { serviceId: "other-svc", organisationId: "org-guid-1" },
+        { serviceId: "parent-svc", organisationId: "org-guid-2" },
+      ]);
+
+      await getHandler(config, logger, application).processor(
+        deactivationJob(),
+        "job-1",
+      );
+
+      expect(getUserServicesRaw).toHaveBeenCalledWith({ userId: "user-1" });
+      expect(secureAccessWebServiceClient.provisionUser.mock.calls[0][0]).toBe(
+        "DEACTIVATE",
+      );
+      expect(repository.userState.destroy).toHaveBeenCalled();
+    });
+
+    it("skips the deactivation when the user was re-granted the application service in that organisation", async () => {
+      getUserServicesRaw.mockResolvedValue([
+        { serviceId: "PARENT-SVC", organisationId: "org-guid-1" },
+      ]);
+
+      await getHandler(config, logger, application).processor(
+        deactivationJob(),
+        "job-1",
+      );
+
+      expect(secureAccessWebServiceClient.provisionUser).not.toHaveBeenCalled();
+      expect(repository.userState.destroy).not.toHaveBeenCalled();
+      expect(repository.userState.upsert).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(
+        `Skipped SOAP deactivation to application ${application.id} for user user-1; user holds PARENT-SVC in organisation org-guid-1`,
+        { correlationId: "senduserupdated-job-1" },
+      );
+    });
+
+    it("skips the deactivation when the user holds a child service in that organisation", async () => {
+      getUserServicesRaw.mockResolvedValue([
+        { serviceId: "child-svc", organisationId: "ORG-GUID-1" },
+      ]);
+
+      await getHandler(config, logger, application).processor(
+        deactivationJob(),
+        "job-1",
+      );
+
+      expect(secureAccessWebServiceClient.provisionUser).not.toHaveBeenCalled();
+    });
+
+    it("does not send or clear state, and rethrows, when the access lookup fails", async () => {
+      getUserServicesRaw.mockRejectedValue(new Error("access api down"));
+
+      await expect(
+        getHandler(config, logger, application).processor(
+          deactivationJob(),
+          "job-1",
+        ),
+      ).rejects.toThrow("access api down");
+
+      expect(secureAccessWebServiceClient.provisionUser).not.toHaveBeenCalled();
+      expect(repository.userState.destroy).not.toHaveBeenCalled();
+    });
+
+    it("does not look up access for non-deactivation jobs", async () => {
+      await getHandler(config, logger, application).processor(
+        {
+          applicationId: application.id,
+          user: {
+            userId: "user-1",
+            organisationId: "org-1",
+            status: 1,
+            roles: [],
+          },
+        },
+        "job-1",
+      );
+
+      expect(getUserServicesRaw).not.toHaveBeenCalled();
+    });
   });
 });

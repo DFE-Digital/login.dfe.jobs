@@ -439,6 +439,10 @@ describe("when handling userupdated_v1 job", () => {
       "sendwsuserupdated_v1_app-1",
       expect.objectContaining({
         applicationId: "app-1",
+        retainedAccessCheck: {
+          organisationId: "organisation1",
+          serviceIds: ["app-1"],
+        },
         user: expect.objectContaining({
           userId: "123",
           legacyUserId: "sauser1",

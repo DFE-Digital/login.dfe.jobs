@@ -1,3 +1,4 @@
+const { getUserServicesRaw } = require("login.dfe.api-client/users");
 const { getRepository } = require("../../../infrastructure/repository");
 const SecureAccessWebServiceClient = require("../../../infrastructure/webServices/SecureAccessWebServiceClient");
 const { v4: uuid } = require("uuid");
@@ -152,6 +153,28 @@ const process = async (config, logger, application, data, jobId) => {
       : previousAction
         ? "UPDATE"
         : "CREATE";
+
+    if (action === "DEACTIVATE" && data.retainedAccessCheck) {
+      // The check that queued this job may be stale by the time it runs
+      // (queue delay, retries, a quick re-grant), so confirm again that the
+      // user does not hold the application in this organisation. A failed
+      // lookup throws rather than deactivating on unverified data.
+      const { organisationId, serviceIds } = data.retainedAccessCheck;
+      const serviceIdsLower = serviceIds.map((id) => id.toLowerCase());
+      const currentAccess = await getUserServicesRaw({ userId: user.userId });
+      const retainedAccess = currentAccess?.find(
+        (a) =>
+          a.organisationId.toLowerCase() === organisationId.toLowerCase() &&
+          serviceIdsLower.includes(a.serviceId.toLowerCase()),
+      );
+      if (retainedAccess) {
+        logger.info(
+          `Skipped SOAP deactivation to application ${applicationId} for user ${user.userId}; user holds ${retainedAccess.serviceId} in organisation ${retainedAccess.organisationId}`,
+          { correlationId },
+        );
+        return;
+      }
+    }
 
     if (action === "DEACTIVATE") {
       // Only deactivations are logged on the way out. The sibling organisation
