@@ -1,3 +1,4 @@
+const { getUserServicesRaw } = require("login.dfe.api-client/users");
 const { getRepository } = require("../../../infrastructure/repository");
 const SecureAccessWebServiceClient = require("../../../infrastructure/webServices/SecureAccessWebServiceClient");
 const { v4: uuid } = require("uuid");
@@ -114,6 +115,25 @@ const storeAction = async (
   }
 };
 
+const clearAction = async (
+  repository,
+  applicationId,
+  userId,
+  organisationId,
+) => {
+  try {
+    await repository.userState.destroy({
+      where: {
+        service_id: applicationId,
+        user_id: userId,
+        organisation_id: organisationId,
+      },
+    });
+  } catch (e) {
+    throw new Error(`${e.message} thrown when clearing state`);
+  }
+};
+
 const process = async (config, logger, application, data, jobId) => {
   const correlationId = `senduserupdated-${jobId || uuid()}`;
   const { applicationId, user } = data;
@@ -128,8 +148,43 @@ const process = async (config, logger, application, data, jobId) => {
       user.userId,
       user.organisationId,
     );
-    const action = previousAction ? "UPDATE" : "CREATE";
+    const action = user.deactivateService
+      ? "DEACTIVATE"
+      : previousAction
+        ? "UPDATE"
+        : "CREATE";
 
+    if (action === "DEACTIVATE" && data.retainedAccessCheck) {
+      // The check that queued this job may be stale by the time it runs
+      // (queue delay, retries, a quick re-grant), so confirm again that the
+      // user does not hold the application in this organisation. A failed
+      // lookup throws rather than deactivating on unverified data.
+      const { organisationId, serviceIds } = data.retainedAccessCheck;
+      const serviceIdsLower = serviceIds.map((id) => id.toLowerCase());
+      const currentAccess = await getUserServicesRaw({ userId: user.userId });
+      const retainedAccess = currentAccess?.find(
+        (a) =>
+          a.organisationId.toLowerCase() === organisationId.toLowerCase() &&
+          serviceIdsLower.includes(a.serviceId.toLowerCase()),
+      );
+      if (retainedAccess) {
+        logger.info(
+          `Skipped SOAP deactivation to application ${applicationId} for user ${user.userId}; user holds ${retainedAccess.serviceId} in organisation ${retainedAccess.organisationId}`,
+          { correlationId },
+        );
+        return;
+      }
+    }
+
+    if (action === "DEACTIVATE") {
+      // Only deactivations are logged on the way out. The sibling organisation
+      // and role send handlers log nothing on success, and doing so for every
+      // CREATE/UPDATE would add a line per user per application sync.
+      logger.info(
+        `Sending SOAP deactivation to application ${applicationId} for user ${user.userId}`,
+        { correlationId },
+      );
+    }
     await sendUpdatedUserToApplication(
       action,
       user,
@@ -137,13 +192,22 @@ const process = async (config, logger, application, data, jobId) => {
       correlationId,
     );
 
-    await storeAction(
-      repository,
-      applicationId,
-      user.userId,
-      user.organisationId,
-      action,
-    );
+    if (action === "DEACTIVATE") {
+      await clearAction(
+        repository,
+        applicationId,
+        user.userId,
+        user.organisationId,
+      );
+    } else {
+      await storeAction(
+        repository,
+        applicationId,
+        user.userId,
+        user.organisationId,
+        action,
+      );
+    }
   } catch (e) {
     logger.error(
       `Error sending user update for ${user.userId} to ${applicationId} - ${e.message}`,
