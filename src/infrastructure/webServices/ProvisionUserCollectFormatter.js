@@ -1,5 +1,9 @@
 const SoapMessage = require("./SoapMessage");
 
+// COLLECT only accepts 1 (active) or 2 (disabled) for the account status, so the
+// DSI status 0 that marks a deactivation is rejected with a 500 (NSA-9989).
+const DISABLED_ACCOUNT_STATUS = 2;
+
 class ProvisionUserCollectFormatter {
   getProvisionUserSoapMessage(
     targetNamespace,
@@ -42,7 +46,10 @@ class ProvisionUserCollectFormatter {
             organisationId,
             userId: saUserId,
             userName: saUsername,
-            wsAccountStatusCode,
+            wsAccountStatusCode:
+              action === "DEACTIVATE"
+                ? DISABLED_ACCOUNT_STATUS
+                : wsAccountStatusCode,
           },
         },
       });
