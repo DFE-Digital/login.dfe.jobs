@@ -32,7 +32,12 @@ const expandTreeToXml = (item, supportsNil) => {
       } else if (isObject) {
         xml += expandTreeToXml(value, supportsNil);
       } else {
-        xml += xmlescape((value || "").toString());
+        // Numbers must go through String() rather than `value || ""`, which
+        // collapses a legitimate 0 to an empty element. Deactivation syncs
+        // send wsAccountStatusCode 0, so that element has to carry the zero.
+        xml += xmlescape(
+          Number.isFinite(value) ? String(value) : (value || "").toString(),
+        );
       }
       xml += `</${tag}>`;
     }

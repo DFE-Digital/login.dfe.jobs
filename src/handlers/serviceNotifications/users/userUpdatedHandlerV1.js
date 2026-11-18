@@ -112,6 +112,127 @@ const getRequiredJobs = async (config, logger, userData, correlationId) => {
 };
 
 const process = async (config, logger, data, jobId) => {
+  if (data.removedServiceId) {
+    const correlationId = `userupdated-removed-${jobId || uuid()}`;
+    try {
+      const allApps = await getAllApplicationRequiringNotification(
+        config,
+        applictionRequiringNotificationCondition,
+        correlationId,
+        true,
+      );
+      const removedId = data.removedServiceId.toLowerCase();
+      const removedApp =
+        allApps.find((a) => a.id.toLowerCase() === removedId) ||
+        allApps.find(
+          (a) =>
+            a.children &&
+            a.children.some((c) => c.id.toLowerCase() === removedId),
+        );
+      if (removedApp) {
+        if (!data.removedOrgId) {
+          logger.warn(
+            `removedOrgId missing for user ${data.sub} when enqueuing deactivation sync for service ${removedApp.id}`,
+            { correlationId },
+          );
+        } else {
+          const user =
+            data.email && data.status != null
+              ? data
+              : await getUserRaw({ by: { id: data.sub } });
+          const userId = user.sub || data.sub;
+          const removedOrgIdLower = data.removedOrgId.toLowerCase();
+          const userOrganisations = await getUserOrganisationsRaw({ userId });
+          const organisationAccess = userOrganisations
+            ? userOrganisations.find(
+                (o) => o.organisation.id.toLowerCase() === removedOrgIdLower,
+              )
+            : null;
+          if (organisationAccess) {
+            // Child services roll up into their parent application for SOAP sync
+            // purposes, so removing one child would otherwise enqueue a full
+            // deactivation of the parent even though the user still holds the
+            // parent (or a sibling child) in this same organisation. Check for
+            // that remaining access before deactivating.
+            const removedAppIdLower = removedApp.id.toLowerCase();
+            const removedAppChildIds = removedApp.children
+              ? removedApp.children.map((c) => c.id.toLowerCase())
+              : [];
+            const remainingAccess = await getUserServicesRaw({ userId });
+            const matchedRemainingAccess =
+              remainingAccess &&
+              remainingAccess.find(
+                (a) =>
+                  a.organisationId.toLowerCase() === removedOrgIdLower &&
+                  (a.serviceId.toLowerCase() === removedAppIdLower ||
+                    removedAppChildIds.includes(a.serviceId.toLowerCase())),
+              );
+            if (matchedRemainingAccess) {
+              logger.info(
+                `Skipped deactivation sync for removed service ${data.removedServiceId} for user ${data.sub}; user retains access to ${matchedRemainingAccess.serviceId} (application ${removedApp.id}) in organisation ${data.removedOrgId}`,
+                { correlationId },
+              );
+            } else {
+              let localAuthorityCode;
+              if (
+                organisationAccess.organisation.category &&
+                organisationAccess.organisation.category.id === "002"
+              ) {
+                localAuthorityCode =
+                  organisationAccess.organisation.establishmentNumber;
+              } else if (organisationAccess.organisation.localAuthority) {
+                localAuthorityCode =
+                  organisationAccess.organisation.localAuthority.code;
+              }
+              const job = {
+                user: {
+                  userId,
+                  legacyUserId: organisationAccess.numericIdentifier,
+                  legacyUsername: organisationAccess.textIdentifier,
+                  firstName: user.given_name,
+                  lastName: user.family_name,
+                  email: user.email,
+                  status: 0,
+                  deactivateService: true,
+                  organisationId: organisationAccess.organisation.legacyId,
+                  organisationUrn: organisationAccess.organisation.urn,
+                  organisationUid: organisationAccess.organisation.uid,
+                  organisationLACode: localAuthorityCode
+                    ? localAuthorityCode
+                    : "",
+                  roles: [],
+                },
+                applicationId: removedApp.id,
+              };
+              await bullEnqueue(`sendwsuserupdated_v1_${removedApp.id}`, job);
+              logger.info(
+                `Enqueued deactivation sync for removed service ${data.removedServiceId} for user ${data.sub} (target application ${removedApp.id})`,
+                { correlationId },
+              );
+            }
+          } else {
+            logger.warn(
+              `Could not find organisation ${data.removedOrgId} for user ${data.sub} when enqueuing deactivation sync for service ${removedApp.id}`,
+              { correlationId },
+            );
+          }
+        }
+      } else {
+        logger.debug(
+          `Removed service ${data.removedServiceId} not found in applications requiring notification`,
+          { correlationId },
+        );
+      }
+    } catch (e) {
+      logger.error(`Failed to enqueue deactivation sync for removed service`, {
+        error: { message: e.message, stack: e.stack },
+        sub: data.sub,
+        removedServiceId: data.removedServiceId,
+        correlationId,
+      });
+    }
+  }
+
   const correlationId = `userupdated-${jobId || uuid()}`;
 
   const jobs = await getRequiredJobs(config, logger, data, correlationId);
