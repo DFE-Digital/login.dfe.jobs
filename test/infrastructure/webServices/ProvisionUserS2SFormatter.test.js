@@ -37,4 +37,39 @@ describe("provisionUserS2SFormatter", () => {
         "</ws:pur></ws:ProvisionUser></soapenv:Body></soapenv:Envelope>",
     );
   });
+
+  describe("wsAccountStatusCode", () => {
+    const build = (action, status) =>
+      new provisionUserS2SFormatter().getProvisionUserSoapMessage(
+        "targetNamespace",
+        action,
+        "saUserId",
+        "saUsername",
+        "firstName",
+        "lastName",
+        "emailAddress",
+        "organisationId",
+        status,
+      );
+
+    it("sends 2 (disabled) for a DEACTIVATE, which S2S requires instead of the DSI status 0", () => {
+      const actual = build("DEACTIVATE", 0);
+
+      expect(actual.toXmlString()).toContain(
+        "<ws:wsAccountStatusCode>2</ws:wsAccountStatusCode>",
+      );
+    });
+
+    it("leaves the status unchanged for a CREATE", () => {
+      expect(build("CREATE", 1).toXmlString()).toContain(
+        "<ws:wsAccountStatusCode>1</ws:wsAccountStatusCode>",
+      );
+    });
+
+    it("leaves the status unchanged for an UPDATE", () => {
+      expect(build("UPDATE", 1).toXmlString()).toContain(
+        "<ws:wsAccountStatusCode>1</ws:wsAccountStatusCode>",
+      );
+    });
+  });
 });

@@ -28,10 +28,12 @@ const getLoggerMock = () => {
   return {
     info: jest.fn(),
     warn: jest.fn(),
+    debug: jest.fn(),
     error: jest.fn(),
     mockResetAll: function () {
       this.info.mockReset();
       this.warn.mockReset();
+      this.debug.mockReset();
       this.error.mockReset();
     },
   };
